@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda Estética</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: auto; padding: 20px; background: #f9f0f0; }
+    .container { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    h1, h2 { color: #d46b6b; text-align: center; }
+    .tab { overflow: hidden; border-bottom: 1px solid #ccc; margin-bottom: 20px; }
+    .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; font-size: 17px; width: 33%; }
+    .tab button:hover { background-color: #ddd; }
+    .tab button.active { background-color: #d46b6b; color: white; }
+    .tabcontent { display: none; }
+    label { font-weight: bold; display: block; margin-top: 15px; }
+    input, select, button { width: 100%; padding: 10px; margin-top: 5px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+    button { background-color: #d46b6b; color: white; font-weight: bold; border: none; cursor: pointer; }
+    button:hover { background-color: #b55555; }
+    .horario-btn { background-color: #e9ecef; color: black; margin: 5px; width: auto; display: inline-block; padding: 8px 12px; }
+    .horario-btn.seleccionado { background-color: #d46b6b; color: white; }
+    #horariosLista { margin-top: 10px; text-align: center; }
+    .mensaje { margin-top: 20px; padding: 10px; border-radius: 10px; text-align: center; }
+    .exito { background-color: #d4edda; color: #155724; }
+    .error { background-color: #f8d7da; color: #721c24; }
+    .loading { display: none; text-align: center; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
+    th { background-color: #f2f2f2; }
+    tr:nth-child(even) { background-color: #fafafa; }
+  </style>
+</head>
+<body>
+
+<div class="tab">
+  <button class="tablinks" onclick="openTab(event, 'Reservar')" id="defaultOpen">📅 Reservar turno</button>
+  <button class="tablinks" onclick="openTab(event, 'Cancelar')">❌ Cancelar turno</button>
+  <button class="tablinks" onclick="openTab(event, 'Admin')">👩‍💼 Panel Administración</button>
+</div>
+
+<!-- Reservar -->
+<div id="Reservar" class="tabcontent">
+  <div class="container">
+    <h1>📅 Reservá tu turno</h1>
+    <form id="turnoForm">
+      <label>📛 Nombre completo</label>
+      <input type="text" id="nombre" required>
+      <label>📞 Teléfono</label>
+      <input type="tel" id="telefono" required>
+      <label>💆 Servicio</label>
+      <select id="servicio" required><option>Cargando...</option></select>
+      <label>📆 Fecha</label>
+      <input type="date" id="fecha" required>
+      <label>⏰ Horario disponible</label>
+      <div id="horariosLista">Primero seleccioná un servicio y una fecha</div>
+      <input type="hidden" id="horaSeleccionada" required>
+      <button type="submit" style="margin-top:20px;">Solicitar turno</button>
+    </form>
+    <div id="mensaje" class="mensaje"></div>
+  </div>
+</div>
+
+<!-- Cancelar -->
+<div id="Cancelar" class="tabcontent">
+  <div class="container">
+    <h2>❌ Cancelar turno</h2>
+    <label>🔑 Código de cancelación</label>
+    <input type="text" id="codigoCancel" placeholder="Ej: A1B2C3">
+    <button id="btnCancelar">Cancelar mi turno</button>
+    <div id="mensajeCancel" class="mensaje"></div>
+  </div>
+</div>
+
+<!-- Admin -->
+<div id="Admin" class="tabcontent">
+  <div class="container">
+    <h2>👩‍💼 Turnos de hoy</h2>
+    <button id="recargarAdmin">🔄 Recargar</button>
+    <div id="turnosAdmin" style="margin-top:10px;"><p>Cargando...</p></div>
+
+    <h2 style="margin-top:30px;">📅 Turnos próximos </h2>
+    <div id="turnosFuturos"><p>Cargando...</p></div>
+  </div>
+</div>
+
+<div class="loading" id="loading">⏳ Procesando...</div>
+
+<script>
+  // ========== PESTAÑAS ==========
+  function openTab(evt, tabName) {
+    var tabcontent = document.getElementsByClassName("tabcontent");
+    for (var i = 0; i < tabcontent.length; i++) tabcontent[i].style.display = "none";
+    var tablinks = document.getElementsByClassName("tablinks");
+    for (var i = 0; i < tablinks.length; i++) tablinks[i].className = tablinks[i].className.replace(" active", "");
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+    if (tabName === "Admin") cargarAdmin();
+  }
+  document.getElementById("defaultOpen").click();
+
+  // ========== FECHA MÍNIMA ==========
+  function setMinDate() {
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById("fecha").setAttribute("min", yyyy + "-" + mm + "-" + dd);
+  }
+  setMinDate();
+
+  // ========== SERVICIOS ==========
+  function cargarServicios() {
+    google.script.run
+      .withSuccessHandler(poblarServicios)
+      .withFailureHandler(function(error) {
+        document.getElementById("servicio").innerHTML = '<option value="">Error al cargar servicios</option>';
+      })
+      .obtenerServicios();
+  }
+
+  function poblarServicios(servicios) {
+    var select = document.getElementById("servicio");
+    if (!servicios || servicios.length === 0) {
+      select.innerHTML = '<option value="">No hay servicios disponibles</option>';
+      return;
+    }
+    select.innerHTML = '<option value="">Seleccioná un servicio</option>';
+    servicios.forEach(function(s) {
+      var option = document.createElement("option");
+      option.value = s.nombre;
+      option.textContent = s.nombre + " (" + s.duracion + " min) - " + s.responsable + " - Cupo: " + s.capacidad;
+      select.appendChild(option);
+    });
+  }
+
+  // ========== HORARIOS ==========
+  var servicioSelect = document.getElementById("servicio");
+  var fechaInput = document.getElementById("fecha");
+
+  function actualizarHorarios() {
+    var servicio = servicioSelect.value;
+    var fecha = fechaInput.value;
+    if (!servicio || !fecha) {
+      document.getElementById("horariosLista").innerHTML = "Seleccioná un servicio y una fecha";
+      return;
+    }
+    document.getElementById("horariosLista").innerHTML = "<p>Cargando horarios...</p>";
+    google.script.run
+      .withSuccessHandler(mostrarHorarios)
+      .withFailureHandler(function(error) {
+        document.getElementById("horariosLista").innerHTML = "<p style='color:red'>Error: " + error.message + "</p>";
+      })
+      .obtenerHorariosDisponibles(servicio, fecha);
+  }
+
+  servicioSelect.addEventListener("change", actualizarHorarios);
+  fechaInput.addEventListener("change", actualizarHorarios);
+
+  function mostrarHorarios(horarios) {
+    var contenedor = document.getElementById("horariosLista");
+    if (!horarios || horarios.length === 0) {
+      contenedor.innerHTML = "<p>❌ No hay horarios disponibles para este servicio en esa fecha.</p>";
+      return;
+    }
+    var html = "";
+    horarios.forEach(function(hora) {
+      html += '<button type="button" class="horario-btn" data-hora="' + hora + '">' + hora + '</button>';
+    });
+    contenedor.innerHTML = html;
+    document.querySelectorAll(".horario-btn").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        document.querySelectorAll(".horario-btn").forEach(function(b) { b.classList.remove("seleccionado"); });
+        this.classList.add("seleccionado");
+        document.getElementById("horaSeleccionada").value = this.getAttribute("data-hora");
+      });
+    });
+  }
+
+  // ========== GUARDAR TURNO ==========
+  document.getElementById("turnoForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    var datos = {
+      nombre: document.getElementById("nombre").value,
+      telefono: document.getElementById("telefono").value,
+      servicio: document.getElementById("servicio").value,
+      fecha: document.getElementById("fecha").value,
+      hora: document.getElementById("horaSeleccionada").value
+    };
+    if (!datos.hora) {
+      mostrarMensaje("Seleccioná un horario.", "error", "mensaje");
+      return;
+    }
+    document.getElementById("loading").style.display = "block";
+    google.script.run
+      .withSuccessHandler(function(resp) {
+        document.getElementById("loading").style.display = "none";
+        if (resp.exito) {
+          mostrarMensaje(resp.mensaje, "exito", "mensaje");
+          document.getElementById("turnoForm").reset();
+          document.getElementById("horaSeleccionada").value = "";
+          document.getElementById("horariosLista").innerHTML = "Seleccioná un servicio y una fecha";
+          setMinDate();
+        } else {
+          mostrarMensaje(resp.mensaje, "error", "mensaje");
+        }
+      })
+      .withFailureHandler(function(error) {
+        document.getElementById("loading").style.display = "none";
+        mostrarMensaje("Error: " + error.message, "error", "mensaje");
+      })
+      .guardarTurno(datos);
+  });
+
+  // ========== CANCELAR TURNO ==========
+  document.getElementById("btnCancelar").addEventListener("click", function() {
+    var codigo = document.getElementById("codigoCancel").value.trim();
+    if (!codigo) {
+      mostrarMensaje("Ingresá el código.", "error", "mensajeCancel");
+      return;
+    }
+    document.getElementById("loading").style.display = "block";
+    google.script.run
+      .withSuccessHandler(function(resp) {
+        document.getElementById("loading").style.display = "none";
+        mostrarMensaje(resp.mensaje, resp.exito ? "exito" : "error", "mensajeCancel");
+        if (resp.exito) document.getElementById("codigoCancel").value = "";
+      })
+      .withFailureHandler(function(error) {
+        document.getElementById("loading").style.display = "none";
+        mostrarMensaje("Error: " + error.message, "error", "mensajeCancel");
+      })
+      .cancelarTurno(codigo);
+  });
+
+  // ========== ADMIN ==========
+  function cargarAdmin() {
+    var divHoy = document.getElementById("turnosAdmin");
+    var divFuturos = document.getElementById("turnosFuturos");
+    divHoy.innerHTML = "<p>Cargando turnos de hoy...</p>";
+    divFuturos.innerHTML = "<p>Cargando turnos próximos...</p>";
+
+    google.script.run
+      .withSuccessHandler(mostrarTurnosHoy)
+      .withFailureHandler(function(error) {
+        divHoy.innerHTML = '<p style="color:red">Error al cargar turnos de hoy: ' + error.message + '</p>';
+      })
+      .obtenerTurnosHoy();
+
+    google.script.run
+      .withSuccessHandler(mostrarTurnosFuturos)
+      .withFailureHandler(function(error) {
+        divFuturos.innerHTML = '<p style="color:red">Error al cargar turnos próximos: ' + error.message + '</p>';
+      })
+      .obtenerTodosTurnosFuturos();
+  }
+
+  function mostrarTurnosHoy(turnos) {
+    var div = document.getElementById("turnosAdmin");
+    if (!turnos || turnos.length === 0) {
+      div.innerHTML = "<p>✅ No hay turnos programados para hoy.</p>";
+      return;
+    }
+    var html = '<table><thead><tr>' +
+      '<th>Hora</th><th>Cliente</th><th>Servicio</th>' +
+      '<th>Responsable</th><th>Teléfono</th><th>Código</th>' +
+      '</tr></thead><tbody>';
+    turnos.forEach(function(t) {
+      html += '<tr>' +
+        '<td>' + (t.hora || '—') + '</td>' +
+        '<td>' + (t.nombre || '—') + '</td>' +
+        '<td>' + (t.servicio || '—') + '</td>' +
+        '<td>' + (t.responsable || '—') + '</td>' +
+        '<td>' + (t.telefono || '—') + '</td>' +
+        '<td>' + (t.codigo || '—') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  }
+
+  function mostrarTurnosFuturos(turnos) {
+    var div = document.getElementById("turnosFuturos");
+    if (!turnos || turnos.length === 0) {
+      div.innerHTML = "<p>📅 No hay turnos próximos programados.</p>";
+      return;
+    }
+    var html = '<table><thead><tr>' +
+      '<th>Fecha</th><th>Hora</th><th>Cliente</th>' +
+      '<th>Servicio</th><th>Responsable</th><th>Teléfono</th><th>Código</th>' +
+      '</tr></thead><tbody>';
+    turnos.forEach(function(t) {
+      html += '<tr>' +
+        '<td>' + (t.fecha || '—') + '</td>' +
+        '<td>' + (t.hora || '—') + '</td>' +
+        '<td>' + (t.nombre || '—') + '</td>' +
+        '<td>' + (t.servicio || '—') + '</td>' +
+        '<td>' + (t.responsable || '—') + '</td>' +
+        '<td>' + (t.telefono || '—') + '</td>' +
+        '<td>' + (t.codigo || '—') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+  }
+
+  document.getElementById("recargarAdmin").addEventListener("click", cargarAdmin);
+
+  // ========== MENSAJE ==========
+  function mostrarMensaje(texto, tipo, elementoId) {
+    var div = document.getElementById(elementoId);
+    div.textContent = texto;
+    div.className = "mensaje " + tipo;
+    setTimeout(function() {
+      if (div) { div.textContent = ""; div.className = "mensaje"; }
+    }, 6000);
+  }
+
+  // ========== INICIO ==========
+  cargarServicios();
+</script>
+</body>
+</html>
