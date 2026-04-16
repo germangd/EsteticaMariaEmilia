@@ -7,7 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Raleway:wght@300;400;500&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
       --gold: #C9A84C;
       --gold-light: #E8C97A;
@@ -21,17 +20,13 @@
       --text: #4A3F3A;
       --text-light: #8A7A74;
     }
-
     html { scroll-behavior: smooth; }
-
     body {
       font-family: 'Raleway', sans-serif;
       background: var(--cream);
       color: var(--text);
       overflow-x: hidden;
     }
-
-    /* ===== NOISE TEXTURE OVERLAY ===== */
     body::before {
       content: '';
       position: fixed;
@@ -51,12 +46,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(250, 247, 244, 0.85);
+      background: rgba(250,247,244,0.85);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+      border-bottom: 1px solid rgba(201,168,76,0.2);
       transition: all 0.3s ease;
     }
-
     .nav-logo {
       font-family: 'Cormorant Garamond', serif;
       font-size: 1.3rem;
@@ -64,14 +58,9 @@
       color: var(--gold-dark);
       letter-spacing: 0.15em;
       text-transform: uppercase;
+      cursor: pointer;
     }
-
-    .nav-links {
-      display: flex;
-      gap: 36px;
-      list-style: none;
-    }
-
+    .nav-links { display: flex; gap: 36px; list-style: none; }
     .nav-links a {
       font-family: 'Raleway', sans-serif;
       font-size: 0.72rem;
@@ -81,10 +70,9 @@
       color: var(--text);
       text-decoration: none;
       transition: color 0.3s;
+      cursor: pointer;
     }
-
     .nav-links a:hover { color: var(--gold); }
-
     .nav-cta {
       background: var(--gold);
       color: white !important;
@@ -95,6 +83,10 @@
     }
     .nav-cta:hover { background: var(--gold-dark) !important; color: white !important; }
 
+    /* ===== VISTAS: LANDING vs AGENDA ===== */
+    #vista-landing { display: block; }
+    #vista-agenda  { display: none; }
+
     /* ===== HERO ===== */
     .hero {
       min-height: 100vh;
@@ -103,7 +95,6 @@
       position: relative;
       overflow: hidden;
     }
-
     .hero-left {
       display: flex;
       flex-direction: column;
@@ -112,593 +103,150 @@
       position: relative;
       z-index: 2;
     }
-
-    .hero-eyebrow {
-      font-size: 0.68rem;
-      font-weight: 500;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 24px;
-      animation: fadeUp 0.8s ease both;
-    }
-
-    .hero-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(3rem, 5vw, 5.5rem);
-      font-weight: 300;
-      line-height: 1.05;
-      color: var(--dark);
-      margin-bottom: 16px;
-      animation: fadeUp 0.8s ease 0.15s both;
-    }
-
-    .hero-title em {
-      font-style: italic;
-      color: var(--gold);
-    }
-
-    .hero-subtitle {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.25rem;
-      font-style: italic;
-      font-weight: 300;
-      color: var(--text-light);
-      margin-bottom: 48px;
-      animation: fadeUp 0.8s ease 0.3s both;
-    }
-
-    .hero-actions {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      animation: fadeUp 0.8s ease 0.45s both;
-    }
-
-    .btn-primary {
-      display: inline-block;
-      background: var(--gold);
-      color: white;
-      padding: 16px 36px;
-      font-family: 'Raleway', sans-serif;
-      font-size: 0.72rem;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      text-decoration: none;
-      border-radius: 2px;
-      transition: background 0.3s, transform 0.2s;
-    }
+    .hero-eyebrow { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold); margin-bottom: 24px; animation: fadeUp 0.8s ease both; }
+    .hero-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(3rem,5vw,5.5rem); font-weight: 300; line-height: 1.05; color: var(--dark); margin-bottom: 16px; animation: fadeUp 0.8s ease 0.15s both; }
+    .hero-title em { font-style: italic; color: var(--gold); }
+    .hero-subtitle { font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; font-style: italic; font-weight: 300; color: var(--text-light); margin-bottom: 48px; animation: fadeUp 0.8s ease 0.3s both; }
+    .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; animation: fadeUp 0.8s ease 0.45s both; }
+    .btn-primary { display: inline-block; background: var(--gold); color: white; padding: 16px 36px; font-family: 'Raleway', sans-serif; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; border-radius: 2px; transition: background 0.3s, transform 0.2s; cursor: pointer; border: none; }
     .btn-primary:hover { background: var(--gold-dark); transform: translateY(-2px); }
-
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--text);
-      font-family: 'Raleway', sans-serif;
-      font-size: 0.72rem;
-      font-weight: 500;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      text-decoration: none;
-      padding: 16px 0;
-      border-bottom: 1px solid var(--gold);
-      transition: color 0.3s;
-    }
+    .btn-secondary { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-family: 'Raleway', sans-serif; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; padding: 16px 0; border-bottom: 1px solid var(--gold); transition: color 0.3s; }
     .btn-secondary:hover { color: var(--gold); }
-
-    .hero-right {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .hero-bg {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, var(--rose) 0%, var(--lila) 50%, #EDD9F5 100%);
-    }
-
-    /* Decorative circles */
-    .hero-circle-1 {
-      position: absolute;
-      width: 500px; height: 500px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%);
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-    }
-    .hero-circle-2 {
-      position: absolute;
-      width: 300px; height: 300px;
-      border-radius: 50%;
-      border: 1px solid rgba(201,168,76,0.3);
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      animation: rotate 20s linear infinite;
-    }
-    .hero-circle-3 {
-      position: absolute;
-      width: 420px; height: 420px;
-      border-radius: 50%;
-      border: 1px solid rgba(201,168,76,0.15);
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      animation: rotate 30s linear infinite reverse;
-    }
-
-    /* Logo en hero */
-    .hero-logo-wrap {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 260px; height: 260px;
-      border-radius: 50%;
-      background: rgba(250,247,244,0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 20px 60px rgba(160,120,48,0.2);
-      animation: fadeIn 1s ease 0.5s both;
-    }
-
-    .hero-logo-svg {
-      width: 180px;
-    }
-
-    .hero-sparkle {
-      position: absolute;
-      color: var(--gold);
-      font-size: 1.2rem;
-      animation: sparkle 3s ease-in-out infinite;
-    }
+    .hero-right { position: relative; overflow: hidden; }
+    .hero-bg { position: absolute; inset: 0; background: linear-gradient(135deg, var(--rose) 0%, var(--lila) 50%, #EDD9F5 100%); }
+    .hero-circle-1 { position: absolute; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(201,168,76,0.15) 0%, transparent 70%); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    .hero-circle-2 { position: absolute; width: 300px; height: 300px; border-radius: 50%; border: 1px solid rgba(201,168,76,0.3); top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotate 20s linear infinite; }
+    .hero-circle-3 { position: absolute; width: 420px; height: 420px; border-radius: 50%; border: 1px solid rgba(201,168,76,0.15); top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotate 30s linear infinite reverse; }
+    .hero-logo-wrap { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 260px; height: 260px; border-radius: 50%; background: rgba(250,247,244,0.9); display: flex; align-items: center; justify-content: center; box-shadow: 0 20px 60px rgba(160,120,48,0.2); animation: fadeIn 1s ease 0.5s both; }
+    .hero-logo-svg { width: 180px; }
+    .hero-sparkle { position: absolute; color: var(--gold); font-size: 1.2rem; animation: sparkle 3s ease-in-out infinite; }
     .hero-sparkle:nth-child(1) { top: 20%; left: 15%; animation-delay: 0s; }
     .hero-sparkle:nth-child(2) { top: 30%; right: 20%; animation-delay: 0.8s; }
     .hero-sparkle:nth-child(3) { bottom: 25%; left: 25%; animation-delay: 1.6s; }
     .hero-sparkle:nth-child(4) { bottom: 35%; right: 15%; animation-delay: 2.4s; }
+    .hero-location { position: absolute; bottom: 40px; left: 0; right: 0; text-align: center; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-light); animation: fadeUp 0.8s ease 0.6s both; }
 
-    .hero-location {
-      position: absolute;
-      bottom: 40px;
-      left: 0; right: 0;
-      text-align: center;
-      font-size: 0.65rem;
-      letter-spacing: 0.25em;
-      text-transform: uppercase;
-      color: var(--text-light);
-      animation: fadeUp 0.8s ease 0.6s both;
-    }
-
-    /* ===== DECORATIVE LINE ===== */
-    .gold-line {
-      width: 60px;
-      height: 1px;
-      background: var(--gold);
-      margin: 0 auto 20px;
-    }
-
-    /* ===== SECTION BASE ===== */
-    section {
-      padding: 100px 80px;
-    }
-
-    .section-label {
-      font-size: 0.65rem;
-      letter-spacing: 0.35em;
-      text-transform: uppercase;
-      color: var(--gold);
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .section-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(2rem, 3.5vw, 3.2rem);
-      font-weight: 300;
-      text-align: center;
-      color: var(--dark);
-      line-height: 1.2;
-      margin-bottom: 60px;
-    }
-
+    /* ===== SECCIONES LANDING ===== */
+    .gold-line { width: 60px; height: 1px; background: var(--gold); margin: 0 auto 20px; }
+    section { padding: 100px 80px; }
+    .section-label { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); text-align: center; margin-bottom: 16px; }
+    .section-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem,3.5vw,3.2rem); font-weight: 300; text-align: center; color: var(--dark); line-height: 1.2; margin-bottom: 60px; }
     .section-title em { font-style: italic; color: var(--gold); }
-
-    /* ===== SERVICIOS ===== */
-    #servicios {
-      background: white;
-    }
-
-    .servicios-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 2px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .servicio-card {
-      position: relative;
-      padding: 50px 40px;
-      background: var(--cream);
-      overflow: hidden;
-      transition: transform 0.3s ease;
-      cursor: default;
-    }
-
-    .servicio-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, var(--rose) 0%, var(--lila) 100%);
-      opacity: 0;
-      transition: opacity 0.4s ease;
-    }
-
+    #servicios { background: white; }
+    .servicios-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2px; max-width: 1200px; margin: 0 auto; }
+    .servicio-card { position: relative; padding: 50px 40px; background: var(--cream); overflow: hidden; transition: transform 0.3s ease; cursor: default; }
+    .servicio-card::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, var(--rose) 0%, var(--lila) 100%); opacity: 0; transition: opacity 0.4s ease; }
     .servicio-card:hover { transform: translateY(-4px); }
     .servicio-card:hover::before { opacity: 1; }
-
     .servicio-card > * { position: relative; z-index: 1; }
-
-    .servicio-icon {
-      font-size: 2rem;
-      margin-bottom: 20px;
-      display: block;
-    }
-
-    .servicio-name {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.5rem;
-      font-weight: 400;
-      color: var(--dark);
-      margin-bottom: 12px;
-      transition: color 0.3s;
-    }
-
-    .servicio-desc {
-      font-size: 0.82rem;
-      line-height: 1.7;
-      color: var(--text-light);
-      font-weight: 300;
-    }
-
-    .servicio-num {
-      position: absolute;
-      top: 30px; right: 30px;
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 4rem;
-      font-weight: 300;
-      color: rgba(201,168,76,0.08);
-      line-height: 1;
-      z-index: 0;
-    }
-
-    /* ===== NOSOTROS ===== */
-    #nosotros {
-      background: var(--cream);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: center;
-      padding: 100px 80px;
-    }
-
-    .nosotros-text .section-label,
-    .nosotros-text .section-title { text-align: left; }
-
+    .servicio-icon { font-size: 2rem; margin-bottom: 20px; display: block; }
+    .servicio-name { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 400; color: var(--dark); margin-bottom: 12px; }
+    .servicio-desc { font-size: 0.82rem; line-height: 1.7; color: var(--text-light); font-weight: 300; }
+    .servicio-num { position: absolute; top: 30px; right: 30px; font-family: 'Cormorant Garamond', serif; font-size: 4rem; font-weight: 300; color: rgba(201,168,76,0.08); line-height: 1; z-index: 0; }
+    #nosotros { background: var(--cream); display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; padding: 100px 80px; }
+    .nosotros-text .section-label, .nosotros-text .section-title { text-align: left; }
     .nosotros-text .gold-line { margin: 0 0 20px; }
-
-    .nosotros-body {
-      font-size: 0.95rem;
-      line-height: 1.9;
-      color: var(--text-light);
-      font-weight: 300;
-      margin-bottom: 40px;
-    }
-
-    .nosotros-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 30px;
-      padding: 40px 0;
-      border-top: 1px solid rgba(201,168,76,0.2);
-    }
-
-    .stat-num {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 2.5rem;
-      font-weight: 300;
-      color: var(--gold);
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-
-    .stat-label {
-      font-size: 0.68rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--text-light);
-    }
-
-    .nosotros-visual {
-      position: relative;
-    }
-
-    .nosotros-card {
-      background: linear-gradient(135deg, var(--rose) 0%, var(--lila) 100%);
-      border-radius: 4px;
-      padding: 60px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .nosotros-card::after {
-      content: '';
-      position: absolute;
-      top: -40px; right: -40px;
-      width: 200px; height: 200px;
-      border-radius: 50%;
-      background: rgba(201,168,76,0.15);
-    }
-
-    .nosotros-card-logo {
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      background: rgba(250,247,244,0.9);
-      margin: 0 auto 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 10px 40px rgba(160,120,48,0.2);
-      position: relative;
-      z-index: 1;
-    }
-
-    .nosotros-card-title {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.6rem;
-      font-style: italic;
-      color: var(--dark);
-      margin-bottom: 8px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .nosotros-card-sub {
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--gold-dark);
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ===== ZONAS ===== */
-    #zonas {
-      background: var(--dark);
-      text-align: center;
-      padding: 80px;
-    }
-
+    .nosotros-body { font-size: 0.95rem; line-height: 1.9; color: var(--text-light); font-weight: 300; margin-bottom: 40px; }
+    .nosotros-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; padding: 40px 0; border-top: 1px solid rgba(201,168,76,0.2); }
+    .stat-num { font-family: 'Cormorant Garamond', serif; font-size: 2.5rem; font-weight: 300; color: var(--gold); line-height: 1; margin-bottom: 6px; }
+    .stat-label { font-size: 0.68rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-light); }
+    .nosotros-visual { position: relative; }
+    .nosotros-card { background: linear-gradient(135deg, var(--rose) 0%, var(--lila) 100%); border-radius: 4px; padding: 60px; text-align: center; position: relative; overflow: hidden; }
+    .nosotros-card::after { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(201,168,76,0.15); }
+    .nosotros-card-logo { width: 160px; height: 160px; border-radius: 50%; background: rgba(250,247,244,0.9); margin: 0 auto 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 40px rgba(160,120,48,0.2); position: relative; z-index: 1; }
+    .nosotros-card-title { font-family: 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; color: var(--dark); margin-bottom: 8px; position: relative; z-index: 1; }
+    .nosotros-card-sub { font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold-dark); position: relative; z-index: 1; }
+    #zonas { background: var(--dark); text-align: center; padding: 80px; }
     #zonas .section-label { color: var(--gold-light); }
     #zonas .section-title { color: white; }
     #zonas .section-title em { color: var(--gold-light); }
-
-    .zonas-list {
-      display: flex;
-      justify-content: center;
-      gap: 60px;
-      flex-wrap: wrap;
-      margin-top: 40px;
-    }
-
-    .zona-item {
-      text-align: center;
-    }
-
-    .zona-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--gold);
-      margin: 0 auto 16px;
-    }
-
-    .zona-name {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.4rem;
-      font-weight: 300;
-      color: white;
-      margin-bottom: 6px;
-    }
-
-    .zona-sub {
-      font-size: 0.65rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.4);
-    }
-
-    /* ===== TURNO CTA ===== */
-    #turnos {
-      background: linear-gradient(135deg, var(--rose) 0%, var(--lila) 60%, #EDD9F5 100%);
-      text-align: center;
-      padding: 120px 80px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    #turnos::before {
-      content: '';
-      position: absolute;
-      top: -100px; left: -100px;
-      width: 400px; height: 400px;
-      border-radius: 50%;
-      background: rgba(201,168,76,0.1);
-    }
-
-    #turnos::after {
-      content: '';
-      position: absolute;
-      bottom: -80px; right: -80px;
-      width: 300px; height: 300px;
-      border-radius: 50%;
-      background: rgba(201,168,76,0.08);
-    }
-
+    .zonas-list { display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; margin-top: 40px; }
+    .zona-item { text-align: center; }
+    .zona-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); margin: 0 auto 16px; }
+    .zona-name { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; font-weight: 300; color: white; margin-bottom: 6px; }
+    .zona-sub { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+    #turnos { background: linear-gradient(135deg, var(--rose) 0%, var(--lila) 60%, #EDD9F5 100%); text-align: center; padding: 120px 80px; position: relative; overflow: hidden; }
+    #turnos::before { content: ''; position: absolute; top: -100px; left: -100px; width: 400px; height: 400px; border-radius: 50%; background: rgba(201,168,76,0.1); }
+    #turnos::after { content: ''; position: absolute; bottom: -80px; right: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(201,168,76,0.08); }
     #turnos .section-title { margin-bottom: 20px; }
-
-    .turnos-sub {
-      font-size: 0.9rem;
-      color: var(--text-light);
-      margin-bottom: 50px;
-      font-weight: 300;
-    }
-
-    .turnos-actions {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 1;
-    }
-
-    .btn-wa {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: #25D366;
-      color: white;
-      padding: 16px 32px;
-      border-radius: 2px;
-      font-size: 0.72rem;
-      font-weight: 500;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      text-decoration: none;
-      transition: background 0.3s, transform 0.2s;
-    }
+    .turnos-sub { font-size: 0.9rem; color: var(--text-light); margin-bottom: 50px; font-weight: 300; }
+    .turnos-actions { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1; }
+    .btn-wa { display: inline-flex; align-items: center; gap: 10px; background: #25D366; color: white; padding: 16px 32px; border-radius: 2px; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; text-decoration: none; transition: background 0.3s, transform 0.2s; }
     .btn-wa:hover { background: #1da851; transform: translateY(-2px); }
-
-    /* ===== FOOTER ===== */
-    footer {
-      background: #1C1410;
-      padding: 60px 80px 40px;
-    }
-
-    .footer-top {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 60px;
-      padding-bottom: 40px;
-      border-bottom: 1px solid rgba(201,168,76,0.15);
-      margin-bottom: 40px;
-    }
-
-    .footer-brand .nav-logo {
-      display: block;
-      margin-bottom: 16px;
-      font-size: 1.1rem;
-    }
-
-    .footer-brand p {
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.4);
-      line-height: 1.7;
-      font-weight: 300;
-    }
-
-    .footer-col h4 {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1rem;
-      font-weight: 400;
-      color: var(--gold-light);
-      margin-bottom: 20px;
-      letter-spacing: 0.1em;
-    }
-
-    .footer-col ul {
-      list-style: none;
-    }
-
-    .footer-col ul li {
-      font-size: 0.78rem;
-      color: rgba(255,255,255,0.45);
-      margin-bottom: 10px;
-      letter-spacing: 0.05em;
-    }
-
-    .footer-col a {
-      color: rgba(255,255,255,0.45);
-      text-decoration: none;
-      font-size: 0.78rem;
-      transition: color 0.3s;
-    }
+    footer { background: #1C1410; padding: 60px 80px 40px; }
+    .footer-top { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 60px; padding-bottom: 40px; border-bottom: 1px solid rgba(201,168,76,0.15); margin-bottom: 40px; }
+    .footer-brand .nav-logo { display: block; margin-bottom: 16px; font-size: 1.1rem; }
+    .footer-brand p { font-size: 0.8rem; color: rgba(255,255,255,0.4); line-height: 1.7; font-weight: 300; }
+    .footer-col h4 { font-family: 'Cormorant Garamond', serif; font-size: 1rem; font-weight: 400; color: var(--gold-light); margin-bottom: 20px; letter-spacing: 0.1em; }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { font-size: 0.78rem; color: rgba(255,255,255,0.45); margin-bottom: 10px; letter-spacing: 0.05em; }
+    .footer-col a { color: rgba(255,255,255,0.45); text-decoration: none; font-size: 0.78rem; transition: color 0.3s; }
     .footer-col a:hover { color: var(--gold-light); }
+    .footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.68rem; color: rgba(255,255,255,0.25); letter-spacing: 0.1em; }
+    .footer-ig { display: inline-flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.45) !important; font-size: 0.72rem !important; letter-spacing: 0.1em; }
 
-    .footer-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.68rem;
-      color: rgba(255,255,255,0.25);
-      letter-spacing: 0.1em;
+    /* ===== VISTA AGENDA ===== */
+    #vista-agenda {
+      min-height: 100vh;
+      padding-top: 80px;
+      background: #f9f0f0;
     }
+    .agenda-wrap {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+    }
+    .agenda-wrap .container { background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .agenda-wrap h1, .agenda-wrap h2 { color: #d46b6b; text-align: center; }
+    .agenda-tab { overflow: hidden; border-bottom: 1px solid #ccc; margin-bottom: 20px; }
+    .agenda-tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; font-size: 17px; width: 33%; }
+    .agenda-tab button:hover { background-color: #ddd; }
+    .agenda-tab button.active { background-color: #d46b6b; color: white; }
+    .agenda-tabcontent { display: none; }
+    .agenda-wrap label { font-weight: bold; display: block; margin-top: 15px; }
+    .agenda-wrap input, .agenda-wrap select { width: 100%; padding: 10px; margin-top: 5px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-family: inherit; font-size: 1rem; }
+    .agenda-wrap button.btn-accion { width: 100%; padding: 10px; margin-top: 5px; border-radius: 10px; border: none; background-color: #d46b6b; color: white; font-weight: bold; cursor: pointer; font-size: 1rem; }
+    .agenda-wrap button.btn-accion:hover { background-color: #b55555; }
+    .horario-btn { background-color: #e9ecef !important; color: black !important; margin: 5px; width: auto !important; display: inline-block; padding: 8px 12px; border-radius: 10px; border: 1px solid #ddd; cursor: pointer; font-size: 0.95rem; }
+    .horario-btn.seleccionado { background-color: #d46b6b !important; color: white !important; }
+    #horariosLista { margin-top: 10px; text-align: center; }
+    .agenda-mensaje { margin-top: 20px; padding: 10px; border-radius: 10px; text-align: center; }
+    .agenda-exito { background-color: #d4edda; color: #155724; }
+    .agenda-error { background-color: #f8d7da; color: #721c24; }
+    .agenda-loading { display: none; text-align: center; margin-top: 20px; font-size: 16px; color: #d46b6b; }
+    .agenda-wrap table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .agenda-wrap th, .agenda-wrap td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
+    .agenda-wrap th { background-color: #f2f2f2; }
+    .agenda-wrap tr:nth-child(even) { background-color: #fafafa; }
 
-    .footer-ig {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: rgba(255,255,255,0.45) !important;
-      font-size: 0.72rem !important;
-      letter-spacing: 0.1em;
-    }
+    /* Modal WhatsApp */
+    #waModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 9999; align-items: center; justify-content: center; }
+    #waModal.visible { display: flex; }
+    .wa-card { background: white; border-radius: 20px; padding: 32px 28px; max-width: 420px; width: 92%; text-align: center; box-shadow: 0 8px 40px rgba(0,0,0,0.25); }
+    .wa-card h3 { color: #155724; margin-bottom: 10px; font-size: 1.3rem; }
+    .wa-card p { color: #444; margin-bottom: 16px; font-size: 0.95rem; line-height: 1.6; }
+    .wa-codigo { background: #f9f0f0; border-radius: 10px; padding: 10px 20px; font-size: 1.6rem; font-weight: bold; letter-spacing: 6px; color: #d46b6b; margin-bottom: 8px; display: inline-block; }
+    .wa-nota { font-size: 0.82rem !important; color: #888 !important; margin-bottom: 20px !important; }
+    .btn-wa-modal { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #25D366; color: white; font-weight: bold; padding: 13px 20px; border-radius: 12px; text-decoration: none; font-size: 1rem; width: 100%; box-sizing: border-box; margin-bottom: 12px; transition: background 0.2s; }
+    .btn-wa-modal:hover { background: #1da851; }
+    .btn-cerrar-modal { background: #e9ecef; color: #444; border: none; padding: 11px 20px; border-radius: 10px; cursor: pointer; width: 100%; font-size: 0.92rem; }
+    .btn-cerrar-modal:hover { background: #ddd; }
 
-    /* ===== ANIMACIONES ===== */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    /* Animaciones */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes rotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+    @keyframes sparkle { 0%,100% { opacity: 0.2; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+    .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    @keyframes rotate {
-      from { transform: translate(-50%, -50%) rotate(0deg); }
-      to   { transform: translate(-50%, -50%) rotate(360deg); }
-    }
-
-    @keyframes sparkle {
-      0%, 100% { opacity: 0.2; transform: scale(0.8); }
-      50%       { opacity: 1;   transform: scale(1.2); }
-    }
-
-    /* Scroll reveal */
-    .reveal {
-      opacity: 0;
-      transform: translateY(30px);
-      transition: opacity 0.7s ease, transform 0.7s ease;
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* ===== MOBILE ===== */
     @media (max-width: 768px) {
       nav { padding: 16px 20px; }
       .nav-links { display: none; }
-
-      .hero {
-        grid-template-columns: 1fr;
-        min-height: auto;
-      }
+      .hero { grid-template-columns: 1fr; min-height: auto; }
       .hero-left { padding: 120px 30px 60px; }
       .hero-right { height: 350px; }
-
       section { padding: 70px 30px; }
       #nosotros { grid-template-columns: 1fr; padding: 70px 30px; gap: 50px; }
       .footer-top { grid-template-columns: 1fr; gap: 40px; }
@@ -711,260 +259,455 @@
 </head>
 <body>
 
-  <!-- NAV -->
   <nav>
-    <span class="nav-logo">ME Estética</span>
+    <span class="nav-logo" onclick="mostrarLanding()">ME Estética</span>
     <ul class="nav-links">
-      <li><a href="#servicios">Servicios</a></li>
-      <li><a href="#nosotros">Nosotros</a></li>
-      <li><a href="#zonas">Zonas</a></li>
-      <li><a href="agenda.html" class="nav-cta">Reservar turno</a></li>
+      <li><a onclick="mostrarLanding(); setTimeout(()=>document.getElementById('servicios').scrollIntoView({behavior:'smooth'}),100)">Servicios</a></li>
+      <li><a onclick="mostrarLanding(); setTimeout(()=>document.getElementById('nosotros').scrollIntoView({behavior:'smooth'}),100)">Nosotros</a></li>
+      <li><a onclick="mostrarLanding(); setTimeout(()=>document.getElementById('zonas').scrollIntoView({behavior:'smooth'}),100)">Zonas</a></li>
+      <li><a onclick="mostrarAgenda()" class="nav-cta">Reservar turno</a></li>
     </ul>
   </nav>
 
-  <!-- HERO -->
-  <section class="hero" id="inicio">
-    <div class="hero-left">
-      <p class="hero-eyebrow">Estética profesional</p>
-      <h1 class="hero-title">María<br><em>Emilia</em><br>Estética</h1>
-      <p class="hero-subtitle">Tu espacio de belleza y bienestar</p>
-      <div class="hero-actions">
-        <a href="agenda.html" class="btn-primary">Reservar turno</a>
-        <a href="#servicios" class="btn-secondary">Ver servicios →</a>
-      </div>
-      <p class="hero-location">Ensenada · Bartolomé Bavio · Magdalena</p>
-    </div>
-    <div class="hero-right">
-      <div class="hero-bg"></div>
-      <div class="hero-circle-1"></div>
-      <div class="hero-circle-2"></div>
-      <div class="hero-circle-3"></div>
-      <!-- Sparkles -->
-      <span class="hero-sparkle">✦</span>
-      <span class="hero-sparkle">✦</span>
-      <span class="hero-sparkle">✧</span>
-      <span class="hero-sparkle">✦</span>
-      <!-- Logo -->
-      <div class="hero-logo-wrap">
-        <svg class="hero-logo-svg" viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
-          <!-- M -->
-          <text x="10" y="100" font-family="Cormorant Garamond, Georgia, serif" font-size="110" font-weight="300" fill="url(#goldGrad)" letter-spacing="-5">M</text>
-          <!-- E -->
-          <text x="105" y="100" font-family="Cormorant Garamond, Georgia, serif" font-size="100" font-weight="300" fill="url(#goldGrad)">E</text>
-          <!-- Decorative line under ME -->
-          <path d="M15 108 Q100 120 185 108" stroke="url(#goldGrad)" stroke-width="1.2" fill="none"/>
-          <!-- ESTETICA text -->
-          <text x="100" y="130" font-family="Raleway, sans-serif" font-size="13" font-weight="400" fill="#C9A84C" text-anchor="middle" letter-spacing="6">ESTETICA</text>
-          <!-- Star -->
-          <text x="158" y="118" font-size="12" fill="#C9A84C">✦</text>
-          <defs>
-            <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#E8C97A"/>
-              <stop offset="50%" stop-color="#C9A84C"/>
-              <stop offset="100%" stop-color="#A07830"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-    </div>
-  </section>
-
-  <!-- SERVICIOS -->
-  <section id="servicios">
-    <p class="section-label reveal">Lo que hacemos</p>
-    <h2 class="section-title reveal">Nuestros <em>Servicios</em></h2>
-    <div class="servicios-grid">
-
-      <div class="servicio-card reveal">
-        <span class="servicio-num">01</span>
-        <span class="servicio-icon">✨</span>
-        <h3 class="servicio-name">Depilación Láser</h3>
-        <p class="servicio-desc">Tecnología de última generación para una depilación definitiva, segura y sin dolor. Resultados duraderos desde la primera sesión.</p>
-      </div>
-
-      <div class="servicio-card reveal">
-        <span class="servicio-num">02</span>
-        <span class="servicio-icon">🌸</span>
-        <h3 class="servicio-name">Faciales</h3>
-        <p class="servicio-desc">Tratamientos personalizados para limpiar, hidratar y rejuvenecer tu piel. Protocolos adaptados a cada tipo de cutis.</p>
-      </div>
-
-      <div class="servicio-card reveal">
-        <span class="servicio-num">03</span>
-        <span class="servicio-icon">💅</span>
-        <h3 class="servicio-name">Uñas & Esculpidas</h3>
-        <p class="servicio-desc">Manicuría, esmaltado semipermanente y uñas esculpidas en acrílico o gel. Diseños únicos para cada ocasión.</p>
-      </div>
-
-      <div class="servicio-card reveal">
-        <span class="servicio-num">04</span>
-        <span class="servicio-icon">🦶</span>
-        <h3 class="servicio-name">Podología</h3>
-        <p class="servicio-desc">Cuidado profesional de pies para tu salud y bienestar. Tratamientos preventivos y estéticos a cargo de especialistas.</p>
-      </div>
-
-      <div class="servicio-card reveal">
-        <span class="servicio-num">05</span>
-        <span class="servicio-icon">🎨</span>
-        <h3 class="servicio-name">Coloración</h3>
-        <p class="servicio-desc">Tintura, mechas, balayage y técnicas de color actuales. Transformá tu look con los mejores productos del mercado.</p>
-      </div>
-
-      <div class="servicio-card reveal">
-        <span class="servicio-num">06</span>
-        <span class="servicio-icon">💫</span>
-        <h3 class="servicio-name">Alisado</h3>
-        <p class="servicio-desc">Alisado progresivo y keratinas para un cabello liso, brillante y sin frizz. Resultados que duran meses.</p>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- NOSOTROS -->
-  <section id="nosotros">
-    <div class="nosotros-text">
-      <p class="section-label reveal">Quiénes somos</p>
-      <div class="gold-line reveal"></div>
-      <h2 class="section-title reveal">Un espacio creado<br>para <em>vos</em></h2>
-      <p class="nosotros-body reveal">
-        En María Emilia Estética creemos que el cuidado personal es una forma de amor propio. 
-        Ofrecemos un ambiente cálido, profesional y personalizado donde cada cliente recibe 
-        la atención que merece. Trabajamos con los mejores productos y técnicas actualizadas 
-        para que salgas sintiéndote increíble.
-      </p>
-      <div class="nosotros-stats reveal">
-        <div>
-          <div class="stat-num">7+</div>
-          <div class="stat-label">Servicios</div>
+  <!-- ===================== VISTA LANDING ===================== -->
+  <div id="vista-landing">
+    <section class="hero" id="inicio">
+      <div class="hero-left">
+        <p class="hero-eyebrow">Estética profesional</p>
+        <h1 class="hero-title">María<br><em>Emilia</em><br>Estética</h1>
+        <p class="hero-subtitle">Tu espacio de belleza y bienestar</p>
+        <div class="hero-actions">
+          <button class="btn-primary" onclick="mostrarAgenda()">Reservar turno</button>
+          <a href="#servicios" class="btn-secondary">Ver servicios →</a>
         </div>
-        <div>
-          <div class="stat-num">3</div>
-          <div class="stat-label">Zonas</div>
-        </div>
-        <div>
-          <div class="stat-num">100%</div>
-          <div class="stat-label">Profesional</div>
-        </div>
+        <p class="hero-location">Ensenada · Bartolomé Bavio · Magdalena</p>
       </div>
-    </div>
-    <div class="nosotros-visual reveal">
-      <div class="nosotros-card">
-        <div class="nosotros-card-logo">
-          <svg width="110" viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
-            <text x="10" y="100" font-family="Cormorant Garamond, Georgia, serif" font-size="110" font-weight="300" fill="url(#goldGrad2)" letter-spacing="-5">M</text>
-            <text x="105" y="100" font-family="Cormorant Garamond, Georgia, serif" font-size="100" font-weight="300" fill="url(#goldGrad2)">E</text>
-            <path d="M15 108 Q100 120 185 108" stroke="url(#goldGrad2)" stroke-width="1.2" fill="none"/>
+      <div class="hero-right">
+        <div class="hero-bg"></div>
+        <div class="hero-circle-1"></div>
+        <div class="hero-circle-2"></div>
+        <div class="hero-circle-3"></div>
+        <span class="hero-sparkle">✦</span><span class="hero-sparkle">✦</span><span class="hero-sparkle">✧</span><span class="hero-sparkle">✦</span>
+        <div class="hero-logo-wrap">
+          <svg class="hero-logo-svg" viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="10" y="100" font-family="Cormorant Garamond, Georgia, serif" font-size="110" font-weight="300" fill="url(#goldGrad)" letter-spacing="-5">M</text>
+            <text x="105" y="100" font-family="Cormorant Garamond, Georgia, serif" font-size="100" font-weight="300" fill="url(#goldGrad)">E</text>
+            <path d="M15 108 Q100 120 185 108" stroke="url(#goldGrad)" stroke-width="1.2" fill="none"/>
             <text x="100" y="130" font-family="Raleway, sans-serif" font-size="13" font-weight="400" fill="#C9A84C" text-anchor="middle" letter-spacing="6">ESTETICA</text>
             <text x="158" y="118" font-size="12" fill="#C9A84C">✦</text>
-            <defs>
-              <linearGradient id="goldGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#E8C97A"/>
-                <stop offset="50%" stop-color="#C9A84C"/>
-                <stop offset="100%" stop-color="#A07830"/>
-              </linearGradient>
-            </defs>
+            <defs><linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E8C97A"/><stop offset="50%" stop-color="#C9A84C"/><stop offset="100%" stop-color="#A07830"/></linearGradient></defs>
           </svg>
         </div>
-        <p class="nosotros-card-title">María Emilia</p>
-        <p class="nosotros-card-sub">Estética profesional</p>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ZONAS -->
-  <section id="zonas">
-    <p class="section-label reveal">Dónde encontrarnos</p>
-    <h2 class="section-title reveal">Atendemos en <em>tu zona</em></h2>
-    <div class="zonas-list">
-      <div class="zona-item reveal">
-        <div class="zona-dot"></div>
-        <p class="zona-name">Ensenada</p>
-        <p class="zona-sub">Provincia de Buenos Aires</p>
+    <section id="servicios">
+      <p class="section-label reveal">Lo que hacemos</p>
+      <h2 class="section-title reveal">Nuestros <em>Servicios</em></h2>
+      <div class="servicios-grid">
+        <div class="servicio-card reveal"><span class="servicio-num">01</span><span class="servicio-icon">✨</span><h3 class="servicio-name">Depilación Láser</h3><p class="servicio-desc">Tecnología de última generación para una depilación definitiva, segura y sin dolor. Resultados duraderos desde la primera sesión.</p></div>
+        <div class="servicio-card reveal"><span class="servicio-num">02</span><span class="servicio-icon">🌸</span><h3 class="servicio-name">Faciales</h3><p class="servicio-desc">Tratamientos personalizados para limpiar, hidratar y rejuvenecer tu piel. Protocolos adaptados a cada tipo de cutis.</p></div>
+        <div class="servicio-card reveal"><span class="servicio-num">03</span><span class="servicio-icon">💅</span><h3 class="servicio-name">Uñas & Esculpidas</h3><p class="servicio-desc">Manicuría, esmaltado semipermanente y uñas esculpidas en acrílico o gel. Diseños únicos para cada ocasión.</p></div>
+        <div class="servicio-card reveal"><span class="servicio-num">04</span><span class="servicio-icon">🦶</span><h3 class="servicio-name">Podología</h3><p class="servicio-desc">Cuidado profesional de pies para tu salud y bienestar. Tratamientos preventivos y estéticos a cargo de especialistas.</p></div>
+        <div class="servicio-card reveal"><span class="servicio-num">05</span><span class="servicio-icon">🎨</span><h3 class="servicio-name">Coloración</h3><p class="servicio-desc">Tintura, mechas, balayage y técnicas de color actuales. Transformá tu look con los mejores productos del mercado.</p></div>
+        <div class="servicio-card reveal"><span class="servicio-num">06</span><span class="servicio-icon">💫</span><h3 class="servicio-name">Alisado</h3><p class="servicio-desc">Alisado progresivo y keratinas para un cabello liso, brillante y sin frizz. Resultados que duran meses.</p></div>
       </div>
-      <div class="zona-item reveal">
-        <div class="zona-dot"></div>
-        <p class="zona-name">Bartolomé Bavio</p>
-        <p class="zona-sub">Provincia de Buenos Aires</p>
-      </div>
-      <div class="zona-item reveal">
-        <div class="zona-dot"></div>
-        <p class="zona-name">Magdalena</p>
-        <p class="zona-sub">Provincia de Buenos Aires</p>
-      </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- TURNO CTA -->
-  <section id="turnos">
-    <p class="section-label reveal">Fácil y rápido</p>
-    <h2 class="section-title reveal">Reservá tu <em>turno online</em></h2>
-    <p class="turnos-sub reveal">Elegí el servicio, la fecha y el horario que más te convenga.<br>Sin esperas, sin llamadas.</p>
-    <div class="turnos-actions reveal">
-      <a href="agenda.html" class="btn-primary" style="font-size:0.8rem; padding:18px 44px;">
-        ✦ &nbsp;Reservar turno online
-      </a>
-      <a href="https://wa.me/5492215918286?text=Hola!%20Quiero%20consultar%20sobre%20los%20servicios%20de%20María%20Emilia%20Estética" class="btn-wa" target="_blank">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        Escribinos por WhatsApp
-      </a>
-    </div>
-  </section>
+    <section id="nosotros">
+      <div class="nosotros-text">
+        <p class="section-label reveal">Quiénes somos</p>
+        <div class="gold-line reveal"></div>
+        <h2 class="section-title reveal">Un espacio creado<br>para <em>vos</em></h2>
+        <p class="nosotros-body reveal">En María Emilia Estética creemos que el cuidado personal es una forma de amor propio. Ofrecemos un ambiente cálido, profesional y personalizado donde cada cliente recibe la atención que merece. Trabajamos con los mejores productos y técnicas actualizadas para que salgas sintiéndote increíble.</p>
+        <div class="nosotros-stats reveal">
+          <div><div class="stat-num">7+</div><div class="stat-label">Servicios</div></div>
+          <div><div class="stat-num">3</div><div class="stat-label">Zonas</div></div>
+          <div><div class="stat-num">100%</div><div class="stat-label">Profesional</div></div>
+        </div>
+      </div>
+      <div class="nosotros-visual reveal">
+        <div class="nosotros-card">
+          <div class="nosotros-card-logo">
+            <svg width="110" viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg">
+              <text x="10" y="100" font-family="Cormorant Garamond, Georgia, serif" font-size="110" font-weight="300" fill="url(#goldGrad2)" letter-spacing="-5">M</text>
+              <text x="105" y="100" font-family="Cormorant Garamond, Georgia, serif" font-size="100" font-weight="300" fill="url(#goldGrad2)">E</text>
+              <path d="M15 108 Q100 120 185 108" stroke="url(#goldGrad2)" stroke-width="1.2" fill="none"/>
+              <text x="100" y="130" font-family="Raleway, sans-serif" font-size="13" font-weight="400" fill="#C9A84C" text-anchor="middle" letter-spacing="6">ESTETICA</text>
+              <text x="158" y="118" font-size="12" fill="#C9A84C">✦</text>
+              <defs><linearGradient id="goldGrad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#E8C97A"/><stop offset="50%" stop-color="#C9A84C"/><stop offset="100%" stop-color="#A07830"/></linearGradient></defs>
+            </svg>
+          </div>
+          <p class="nosotros-card-title">María Emilia</p>
+          <p class="nosotros-card-sub">Estética profesional</p>
+        </div>
+      </div>
+    </section>
 
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-top">
-      <div class="footer-brand">
-        <span class="nav-logo" style="color: var(--gold-light);">ME Estética</span>
-        <p>Tu espacio de belleza y bienestar profesional en la zona de Ensenada, Bartolomé Bavio y Magdalena.</p>
+    <section id="zonas">
+      <p class="section-label reveal">Dónde encontrarnos</p>
+      <h2 class="section-title reveal">Atendemos en <em>tu zona</em></h2>
+      <div class="zonas-list">
+        <div class="zona-item reveal"><div class="zona-dot"></div><p class="zona-name">Ensenada</p><p class="zona-sub">Provincia de Buenos Aires</p></div>
+        <div class="zona-item reveal"><div class="zona-dot"></div><p class="zona-name">Bartolomé Bavio</p><p class="zona-sub">Provincia de Buenos Aires</p></div>
+        <div class="zona-item reveal"><div class="zona-dot"></div><p class="zona-name">Magdalena</p><p class="zona-sub">Provincia de Buenos Aires</p></div>
       </div>
-      <div class="footer-col">
-        <h4>Servicios</h4>
-        <ul>
-          <li>Depilación Láser</li>
-          <li>Faciales</li>
-          <li>Uñas & Esculpidas</li>
-          <li>Podología</li>
-          <li>Coloración</li>
-          <li>Alisado</li>
-        </ul>
+    </section>
+
+    <section id="turnos">
+      <p class="section-label reveal">Fácil y rápido</p>
+      <h2 class="section-title reveal">Reservá tu <em>turno online</em></h2>
+      <p class="turnos-sub reveal">Elegí el servicio, la fecha y el horario que más te convenga.<br>Sin esperas, sin llamadas.</p>
+      <div class="turnos-actions reveal">
+        <button class="btn-primary" onclick="mostrarAgenda()" style="font-size:0.8rem; padding:18px 44px;">✦ &nbsp;Reservar turno online</button>
+        <a href="https://wa.me/5492215918286?text=Hola!%20Quiero%20consultar%20sobre%20los%20servicios%20de%20María%20Emilia%20Estética" class="btn-wa" target="_blank">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Escribinos por WhatsApp
+        </a>
       </div>
-      <div class="footer-col">
-        <h4>Contacto</h4>
-        <ul>
+    </section>
+
+    <footer>
+      <div class="footer-top">
+        <div class="footer-brand"><span class="nav-logo" style="color: var(--gold-light); cursor:default;">ME Estética</span><p>Tu espacio de belleza y bienestar profesional en la zona de Ensenada, Bartolomé Bavio y Magdalena.</p></div>
+        <div class="footer-col"><h4>Servicios</h4><ul><li>Depilación Láser</li><li>Faciales</li><li>Uñas & Esculpidas</li><li>Podología</li><li>Coloración</li><li>Alisado</li></ul></div>
+        <div class="footer-col"><h4>Contacto</h4><ul>
           <li><a href="https://wa.me/5492215918286" target="_blank" class="footer-ig">📱 +54 9 221 591-8286</a></li>
           <li><a href="https://instagram.com/mariaemilia_estetica_" target="_blank" class="footer-ig">📸 @mariaemilia_estetica_</a></li>
-          <li style="margin-top:20px;"><a href="agenda.html" class="btn-primary" style="display:inline-block; padding:12px 24px; font-size:0.68rem;">Reservar turno</a></li>
-        </ul>
+          <li style="margin-top:20px;"><button onclick="mostrarAgenda()" class="btn-primary" style="display:inline-block; padding:12px 24px; font-size:0.68rem;">Reservar turno</button></li>
+        </ul></div>
       </div>
-    </div>
-    <div class="footer-bottom">
-      <span>© 2026 María Emilia Estética. Todos los derechos reservados.</span>
-      <span>Ensenada · Bartolomé Bavio · Magdalena</span>
-    </div>
-  </footer>
+      <div class="footer-bottom"><span>© 2026 María Emilia Estética. Todos los derechos reservados.</span><span>Ensenada · Bartolomé Bavio · Magdalena</span></div>
+    </footer>
+  </div>
+  <!-- fin vista-landing -->
 
-  <script>
-    // Scroll reveal
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry, i) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => entry.target.classList.add('visible'), i * 80);
-          observer.unobserve(entry.target);
-        }
+  <!-- ===================== VISTA AGENDA ===================== -->
+  <div id="vista-agenda">
+    <div class="agenda-wrap">
+
+      <div class="agenda-tab">
+        <button class="agenda-tablinks" id="agendaDefaultOpen" onclick="openAgendaTab(event,'Reservar')">📅 Reservar turno</button>
+        <button class="agenda-tablinks" onclick="openAgendaTab(event,'Cancelar')">❌ Cancelar turno</button>
+        <button class="agenda-tablinks" onclick="openAgendaTab(event,'Admin')">👩‍💼 Administración</button>
+      </div>
+
+      <!-- Reservar -->
+      <div id="agendaReservar" class="agenda-tabcontent">
+        <div class="container">
+          <h1>📅 Reservá tu turno</h1>
+          <form id="turnoForm">
+            <label>📛 Nombre completo</label>
+            <input type="text" id="nombre" required>
+            <label>📞 Teléfono (con código de área, sin 0 ni 15)</label>
+            <input type="tel" id="telefono" required placeholder="Ej: 2215918286">
+            <label>💆 Servicio</label>
+            <select id="servicio" required><option value="">Cargando servicios...</option></select>
+            <label>📆 Fecha</label>
+            <input type="date" id="fecha" required>
+            <label>⏰ Horario disponible</label>
+            <div id="horariosLista">Primero seleccioná un servicio y una fecha</div>
+            <input type="hidden" id="horaSeleccionada">
+            <button type="submit" class="btn-accion" style="margin-top:20px;">Solicitar turno</button>
+          </form>
+          <div id="mensajeReserva" class="agenda-mensaje"></div>
+        </div>
+      </div>
+
+      <!-- Cancelar -->
+      <div id="agendaCancelar" class="agenda-tabcontent">
+        <div class="container">
+          <h2>❌ Cancelar turno</h2>
+          <label>🔑 Código de cancelación</label>
+          <input type="text" id="codigoCancel" placeholder="Ej: A1B2C3">
+          <button class="btn-accion" id="btnCancelar">Cancelar mi turno</button>
+          <div id="mensajeCancel" class="agenda-mensaje"></div>
+        </div>
+      </div>
+
+      <!-- Admin -->
+      <div id="agendaAdmin" class="agenda-tabcontent">
+        <div class="container">
+          <h2>👩‍💼 Turnos de hoy</h2>
+          <button class="btn-accion" id="recargarAdmin">🔄 Recargar</button>
+          <div id="turnosAdmin" style="margin-top:10px;"><p>Cargando...</p></div>
+          <h2 style="margin-top:30px;">📅 Turnos próximos</h2>
+          <div id="turnosFuturos"><p>Cargando...</p></div>
+        </div>
+      </div>
+
+      <div class="agenda-loading" id="agendaLoading">⏳ Procesando...</div>
+
+    </div>
+  </div>
+  <!-- fin vista-agenda -->
+
+  <!-- Modal WhatsApp -->
+  <div id="waModal">
+    <div class="wa-card">
+      <h3>✅ ¡Turno confirmado!</h3>
+      <p id="waTextoInfo"></p>
+      <div class="wa-codigo" id="waCodigoDisplay"></div>
+      <p class="wa-nota">Guardá este código para cancelar tu turno si lo necesitás.</p>
+      <a id="waLink" href="#" target="_blank" class="btn-wa-modal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+        Enviar confirmación por WhatsApp
+      </a>
+      <button class="btn-cerrar-modal" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+
+<script>
+  // ===== CAMBIO DE VISTAS =====
+  var agendaInicializada = false;
+
+  function mostrarAgenda() {
+    document.getElementById('vista-landing').style.display = 'none';
+    document.getElementById('vista-agenda').style.display = 'block';
+    window.scrollTo(0, 0);
+    if (!agendaInicializada) {
+      agendaInicializada = true;
+      inicializarAgenda();
+    }
+  }
+
+  function mostrarLanding() {
+    document.getElementById('vista-agenda').style.display = 'none';
+    document.getElementById('vista-landing').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+
+  // ===== TABS AGENDA =====
+  function openAgendaTab(evt, tabName) {
+    var tabcontent = document.getElementsByClassName('agenda-tabcontent');
+    for (var i = 0; i < tabcontent.length; i++) tabcontent[i].style.display = 'none';
+    var tablinks = document.getElementsByClassName('agenda-tablinks');
+    for (var i = 0; i < tablinks.length; i++) tablinks[i].className = tablinks[i].className.replace(' active', '');
+    document.getElementById('agenda' + tabName).style.display = 'block';
+    evt.currentTarget.className += ' active';
+    if (tabName === 'Admin') cargarAdmin();
+  }
+
+  // ===== INICIALIZAR AGENDA (solo la primera vez) =====
+  function inicializarAgenda() {
+    // Abrir tab por defecto
+    document.getElementById('agendaDefaultOpen').click();
+    setMinDate();
+    cargarServicios();
+
+    // Eventos horarios
+    document.getElementById('servicio').addEventListener('change', actualizarHorarios);
+    document.getElementById('fecha').addEventListener('change', actualizarHorarios);
+
+    // Enviar formulario
+    document.getElementById('turnoForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var datos = {
+        nombre: document.getElementById('nombre').value,
+        telefono: document.getElementById('telefono').value,
+        servicio: document.getElementById('servicio').value,
+        fecha: document.getElementById('fecha').value,
+        hora: document.getElementById('horaSeleccionada').value
+      };
+      if (!datos.hora) { mostrarMensaje('Seleccioná un horario.', 'error', 'mensajeReserva'); return; }
+      document.getElementById('agendaLoading').style.display = 'block';
+      google.script.run
+        .withSuccessHandler(function(resp) {
+          document.getElementById('agendaLoading').style.display = 'none';
+          if (resp.exito) {
+            document.getElementById('turnoForm').reset();
+            document.getElementById('horaSeleccionada').value = '';
+            document.getElementById('horariosLista').innerHTML = 'Seleccioná un servicio y una fecha';
+            setMinDate();
+            abrirModalWhatsApp(datos, resp.codigo);
+          } else {
+            mostrarMensaje(resp.mensaje, 'error', 'mensajeReserva');
+          }
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('agendaLoading').style.display = 'none';
+          mostrarMensaje('Error: ' + error.message, 'error', 'mensajeReserva');
+        })
+        .guardarTurno(datos);
+    });
+
+    // Cancelar turno
+    document.getElementById('btnCancelar').addEventListener('click', function() {
+      var codigo = document.getElementById('codigoCancel').value.trim();
+      if (!codigo) { mostrarMensaje('Ingresá el código.', 'error', 'mensajeCancel'); return; }
+      document.getElementById('agendaLoading').style.display = 'block';
+      google.script.run
+        .withSuccessHandler(function(resp) {
+          document.getElementById('agendaLoading').style.display = 'none';
+          mostrarMensaje(resp.mensaje, resp.exito ? 'exito' : 'error', 'mensajeCancel');
+          if (resp.exito) document.getElementById('codigoCancel').value = '';
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('agendaLoading').style.display = 'none';
+          mostrarMensaje('Error: ' + error.message, 'error', 'mensajeCancel');
+        })
+        .cancelarTurno(codigo);
+    });
+
+    // Recargar admin
+    document.getElementById('recargarAdmin').addEventListener('click', cargarAdmin);
+  }
+
+  // ===== FECHA MÍNIMA =====
+  function setMinDate() {
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
+    document.getElementById('fecha').setAttribute('min', yyyy + '-' + mm + '-' + dd);
+  }
+
+  // ===== SERVICIOS =====
+  function cargarServicios() {
+    var select = document.getElementById('servicio');
+    select.innerHTML = '<option value="">Cargando servicios...</option>';
+    google.script.run
+      .withSuccessHandler(poblarServicios)
+      .withFailureHandler(function(error) {
+        select.innerHTML = '<option value="">Error al cargar servicios</option>';
+      })
+      .obtenerServicios();
+  }
+
+  function poblarServicios(servicios) {
+    var select = document.getElementById('servicio');
+    if (!servicios || servicios.length === 0) {
+      select.innerHTML = '<option value="">No hay servicios disponibles</option>';
+      return;
+    }
+    select.innerHTML = '<option value="">Seleccioná un servicio</option>';
+    servicios.forEach(function(s) {
+      var option = document.createElement('option');
+      option.value = s.nombre;
+      option.textContent = s.nombre + ' (' + s.duracion + ' min) - ' + s.responsable + ' - Cupo: ' + s.capacidad;
+      select.appendChild(option);
+    });
+  }
+
+  // ===== HORARIOS =====
+  function actualizarHorarios() {
+    var servicio = document.getElementById('servicio').value;
+    var fecha = document.getElementById('fecha').value;
+    if (!servicio || !fecha) {
+      document.getElementById('horariosLista').innerHTML = 'Seleccioná un servicio y una fecha';
+      return;
+    }
+    document.getElementById('horariosLista').innerHTML = '<p>Cargando horarios...</p>';
+    google.script.run
+      .withSuccessHandler(mostrarHorarios)
+      .withFailureHandler(function(error) {
+        document.getElementById('horariosLista').innerHTML = '<p style="color:red">Error: ' + error.message + '</p>';
+      })
+      .obtenerHorariosDisponibles(servicio, fecha);
+  }
+
+  function mostrarHorarios(horarios) {
+    var contenedor = document.getElementById('horariosLista');
+    if (!horarios || horarios.length === 0) {
+      contenedor.innerHTML = '<p>❌ No hay horarios disponibles para este servicio en esa fecha.</p>';
+      return;
+    }
+    var html = '';
+    horarios.forEach(function(hora) {
+      html += '<button type="button" class="horario-btn" data-hora="' + hora + '">' + hora + '</button>';
+    });
+    contenedor.innerHTML = html;
+    document.querySelectorAll('.horario-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.horario-btn').forEach(function(b) { b.classList.remove('seleccionado'); });
+        this.classList.add('seleccionado');
+        document.getElementById('horaSeleccionada').value = this.getAttribute('data-hora');
       });
-    }, { threshold: 0.1 });
+    });
+  }
 
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+  // ===== MODAL WHATSAPP =====
+  function abrirModalWhatsApp(datos, codigo) {
+    var partes = datos.fecha.split('-');
+    var fechaLegible = partes[2] + '/' + partes[1] + '/' + partes[0];
+    var mensaje =
+      '✅ *¡Turno confirmado!*\n\n' +
+      '👤 *Cliente:* ' + datos.nombre + '\n' +
+      '💆 *Servicio:* ' + datos.servicio + '\n' +
+      '📆 *Fecha:* ' + fechaLegible + '\n' +
+      '⏰ *Hora:* ' + datos.hora + '\n' +
+      '🔑 *Código de cancelación:* ' + codigo + '\n\n' +
+      'Si necesitás cancelar tu turno, usá ese código en la sección ❌ Cancelar turno.\n\n' +
+      '_¡Te esperamos! — María Emilia Estética_ 🌸';
+    var telLimpio = datos.telefono.replace(/[\s\-\(\)]/g, '');
+    if (!telLimpio.startsWith('54')) telLimpio = '54' + telLimpio;
+    document.getElementById('waCodigoDisplay').textContent = codigo;
+    document.getElementById('waTextoInfo').textContent = 'Turno para ' + datos.nombre + ' — ' + fechaLegible + ' a las ' + datos.hora + '.';
+    document.getElementById('waLink').href = 'https://wa.me/' + telLimpio + '?text=' + encodeURIComponent(mensaje);
+    document.getElementById('waModal').classList.add('visible');
+  }
 
-    // Nav scroll effect
-    window.addEventListener('scroll', () => {
-      const nav = document.querySelector('nav');
-      if (window.scrollY > 50) {
-        nav.style.boxShadow = '0 4px 30px rgba(0,0,0,0.08)';
-      } else {
-        nav.style.boxShadow = 'none';
+  function cerrarModal() {
+    document.getElementById('waModal').classList.remove('visible');
+  }
+
+  document.getElementById('waModal').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+  });
+
+  // ===== ADMIN =====
+  function cargarAdmin() {
+    document.getElementById('turnosAdmin').innerHTML = '<p>Cargando turnos de hoy...</p>';
+    document.getElementById('turnosFuturos').innerHTML = '<p>Cargando turnos próximos...</p>';
+    google.script.run.withSuccessHandler(mostrarTurnosHoy).withFailureHandler(function(e) {
+      document.getElementById('turnosAdmin').innerHTML = '<p style="color:red">Error: ' + e.message + '</p>';
+    }).obtenerTurnosHoy();
+    google.script.run.withSuccessHandler(mostrarTurnosFuturos).withFailureHandler(function(e) {
+      document.getElementById('turnosFuturos').innerHTML = '<p style="color:red">Error: ' + e.message + '</p>';
+    }).obtenerTodosTurnosFuturos();
+  }
+
+  function mostrarTurnosHoy(turnos) {
+    var div = document.getElementById('turnosAdmin');
+    if (!turnos || turnos.length === 0) { div.innerHTML = '<p>✅ No hay turnos para hoy.</p>'; return; }
+    var html = '<table><thead><tr><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Responsable</th><th>Teléfono</th><th>Código</th></tr></thead><tbody>';
+    turnos.forEach(function(t) { html += '<tr><td>' + (t.hora||'—') + '</td><td>' + (t.nombre||'—') + '</td><td>' + (t.servicio||'—') + '</td><td>' + (t.responsable||'—') + '</td><td>' + (t.telefono||'—') + '</td><td>' + (t.codigo||'—') + '</td></tr>'; });
+    div.innerHTML = html + '</tbody></table>';
+  }
+
+  function mostrarTurnosFuturos(turnos) {
+    var div = document.getElementById('turnosFuturos');
+    if (!turnos || turnos.length === 0) { div.innerHTML = '<p>📅 No hay turnos próximos.</p>'; return; }
+    var html = '<table><thead><tr><th>Fecha</th><th>Hora</th><th>Cliente</th><th>Servicio</th><th>Responsable</th><th>Teléfono</th><th>Código</th></tr></thead><tbody>';
+    turnos.forEach(function(t) { html += '<tr><td>' + (t.fecha||'—') + '</td><td>' + (t.hora||'—') + '</td><td>' + (t.nombre||'—') + '</td><td>' + (t.servicio||'—') + '</td><td>' + (t.responsable||'—') + '</td><td>' + (t.telefono||'—') + '</td><td>' + (t.codigo||'—') + '</td></tr>'; });
+    div.innerHTML = html + '</tbody></table>';
+  }
+
+  // ===== MENSAJE =====
+  function mostrarMensaje(texto, tipo, elementoId) {
+    var div = document.getElementById(elementoId);
+    div.textContent = texto;
+    div.className = 'agenda-mensaje agenda-' + tipo;
+    setTimeout(function() { div.textContent = ''; div.className = 'agenda-mensaje'; }, 6000);
+  }
+
+  // ===== ANIMACIONES LANDING =====
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
       }
     });
-  </script>
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('nav');
+    nav.style.boxShadow = window.scrollY > 50 ? '0 4px 30px rgba(0,0,0,0.08)' : 'none';
+  });
+</script>
 </body>
 </html>

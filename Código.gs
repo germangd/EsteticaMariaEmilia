@@ -8,14 +8,27 @@ function getZonaHoraria() {
   return SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
 }
 
-// ========== SERVIDOR WEB ==========
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile("agenda")
-    .setTitle("Agenda de la Estética")
-    .addMetaTag("viewport", "width=device-width, initial-scale=1");
+// ========== SERVIDOR WEB (con manejo de páginas) ==========
+function doGet(e) {
+  try {
+    const page = e && e.parameter && e.parameter.page ? e.parameter.page : "index";
+    if (page === "agenda") {
+      return HtmlService.createHtmlOutputFromFile("agenda")
+        .setTitle("Reservar turno - María Emilia Estética")
+        .addMetaTag("viewport", "width=device-width, initial-scale=1")
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    } else {
+      return HtmlService.createHtmlOutputFromFile("index")
+        .setTitle("María Emilia Estética")
+        .addMetaTag("viewport", "width=device-width, initial-scale=1")
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+  } catch (error) {
+    return HtmlService.createHtmlOutput("<h1>Error</h1><p>" + error.toString() + "</p>");
+  }
 }
 
-// ========== OBTENER SERVICIOS ==========
+// ========== FUNCIONES DE BACKEND ==========
 function obtenerServicios() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -48,7 +61,6 @@ function obtenerServicios() {
   }
 }
 
-// ========== NORMALIZAR FECHA ==========
 function normalizarFecha(fecha) {
   const tz = getZonaHoraria();
   if (!fecha) return "";
@@ -71,7 +83,6 @@ function normalizarFecha(fecha) {
   return fecha.toString();
 }
 
-// ========== NORMALIZAR HORA ==========
 function normalizarHora(hora) {
   const tz = getZonaHoraria();
   if (!hora) return "";
@@ -85,7 +96,6 @@ function normalizarHora(hora) {
   return hora.toString();
 }
 
-// ========== GENERAR HORARIOS ==========
 function generarHorarios(inicioStr, finStr) {
   try {
     const horarios = [];
@@ -106,7 +116,6 @@ function generarHorarios(inicioStr, finStr) {
   }
 }
 
-// ========== OBTENER HORARIOS DISPONIBLES ==========
 function obtenerHorariosDisponibles(servicioNombre, fecha) {
   try {
     const servicios = obtenerServicios();
@@ -141,7 +150,6 @@ function obtenerHorariosDisponibles(servicioNombre, fecha) {
   }
 }
 
-// ========== VALIDAR FECHA Y HORA ==========
 function esFechaHoraValida(fechaStr, horaStr) {
   if (!fechaStr || !horaStr) return false;
   const tz = getZonaHoraria();
@@ -157,7 +165,6 @@ function esFechaHoraValida(fechaStr, horaStr) {
   return true;
 }
 
-// ========== GENERAR CÓDIGO ==========
 function generarCodigo(longitud = 6) {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let codigo = "";
@@ -165,7 +172,6 @@ function generarCodigo(longitud = 6) {
   return codigo;
 }
 
-// ========== GUARDAR TURNO ==========
 function guardarTurno(datos) {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(3000)) return { exito: false, mensaje: "Sistema ocupado, intentá de nuevo." };
@@ -208,7 +214,6 @@ function guardarTurno(datos) {
   }
 }
 
-// ========== CANCELAR TURNO ==========
 function cancelarTurno(codigo) {
   const lock = LockService.getScriptLock();
   lock.tryLock(1000);
@@ -230,12 +235,6 @@ function cancelarTurno(codigo) {
   }
 }
 
-// ========== ADMIN: FECHA ACTUAL ==========
-function getFechaActual() {
-  return Utilities.formatDate(new Date(), getZonaHoraria(), "yyyy-MM-dd");
-}
-
-// ========== ADMIN: TURNOS DE HOY ==========
 function obtenerTurnosHoy() {
   try {
     const tz = getZonaHoraria();
@@ -261,16 +260,13 @@ function obtenerTurnosHoy() {
         });
       }
     }
-    // Ordenar por hora
     turnos.sort((a, b) => a.hora.localeCompare(b.hora));
     return JSON.parse(JSON.stringify(turnos));
   } catch (e) {
-    Logger.log("Error en obtenerTurnosHoy: " + e.toString());
     return [];
   }
 }
 
-// ========== ADMIN: TURNOS FUTUROS ==========
 function obtenerTodosTurnosFuturos() {
   try {
     const tz = getZonaHoraria();
@@ -302,7 +298,6 @@ function obtenerTodosTurnosFuturos() {
     });
     return JSON.parse(JSON.stringify(turnos));
   } catch (e) {
-    Logger.log("Error en obtenerTodosTurnosFuturos: " + e.toString());
     return [];
   }
 }
