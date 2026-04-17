@@ -203,8 +203,62 @@ function guardarTurno(datos) {
     const nuevoId = sheet.getLastRow() + 1;
     const codigoCancel = generarCodigo();
     sheet.appendRow([nuevoId, datos.fecha, datos.hora, datos.nombre, datos.telefono, datos.servicio, servicio.responsable, codigoCancel, "activo"]);
+    // Formatear fecha legible
+    const partes = datos.fecha.split('-');
+    const fechaLegible = partes[2] + '/' + partes[1] + '/' + partes[0];
+
+    // Email al CLIENTE
+    if (datos.email) {
+      const htmlCliente = `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;border:1px solid #eee;border-radius:12px;overflow:hidden;">
+          <div style="background:linear-gradient(135deg,#F2D9DF,#E8D9F0);padding:32px;text-align:center;">
+            <p style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#A07830;margin:0 0 8px;">María Emilia Estética</p>
+            <h1 style="font-family:Georgia,serif;font-size:28px;font-weight:300;color:#2C2420;margin:0;">✅ ¡Turno confirmado!</h1>
+          </div>
+          <div style="padding:32px;">
+            <p style="color:#4A3F3A;font-size:15px;">Hola <strong>${datos.nombre}</strong>, tu turno fue reservado con éxito. Acá están los detalles:</p>
+            <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+              <tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">💆 Servicio</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${datos.servicio}</td></tr>
+              <tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">👩 Responsable</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${servicio.responsable}</td></tr>
+              <tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📆 Fecha</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${fechaLegible}</td></tr>
+              <tr><td style="padding:10px 0;color:#8A7A74;font-size:13px;">⏰ Hora</td><td style="padding:10px 0;font-weight:bold;color:#2C2420;">${datos.hora}</td></tr>
+            </table>
+            <div style="background:#fdf5f5;border-radius:10px;padding:20px;text-align:center;margin:20px 0;">
+              <p style="color:#8A7A74;font-size:12px;margin:0 0 8px;">🔑 Tu código de cancelación</p>
+              <p style="font-size:28px;font-weight:bold;letter-spacing:8px;color:#d46b6b;margin:0;">${codigoCancel}</p>
+              <p style="color:#aaa;font-size:11px;margin:8px 0 0;">Guardalo para cancelar tu turno si lo necesitás.</p>
+            </div>
+            <p style="color:#8A7A74;font-size:13px;line-height:1.7;">Para cancelar, ingresá a la web y usá la sección <strong>❌ Cancelar turno</strong> con este código.</p>
+          </div>
+          <div style="background:#f9f0f0;padding:20px;text-align:center;border-top:1px solid #eee;">
+            <p style="color:#aaa;font-size:11px;margin:0;">© María Emilia Estética · Ensenada · Bartolomé Bavio · Magdalena</p>
+          </div>
+        </div>`;
+      try {
+        MailApp.sendEmail({ to: datos.email, subject: `✅ Turno confirmado — ${datos.servicio} el ${fechaLegible}`, htmlBody: htmlCliente });
+      } catch (e) {}
+    }
+
+    // Email al DUEÑO
+    const htmlDuenio = `
+      <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;border:1px solid #eee;border-radius:12px;overflow:hidden;">
+        <div style="background:#2C2420;padding:24px;text-align:center;">
+          <p style="color:#C9A84C;font-size:13px;letter-spacing:3px;text-transform:uppercase;margin:0;">Nuevo turno reservado</p>
+        </div>
+        <div style="padding:28px;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">👤 Cliente</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;">${datos.nombre}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📞 Teléfono</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${datos.telefono}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📧 Email</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${datos.email || '—'}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">💆 Servicio</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${datos.servicio}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">👩 Responsable</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${servicio.responsable}</td></tr>
+            <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📆 Fecha</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${fechaLegible}</td></tr>
+            <tr><td style="padding:8px 0;color:#8A7A74;font-size:13px;">⏰ Hora</td><td style="padding:8px 0;">${datos.hora}</td></tr>
+          </table>
+        </div>
+      </div>`;
     try {
-      MailApp.sendEmail(EMAIL_DUENIO, `Nuevo turno - ${datos.servicio}`, `Cliente: ${datos.nombre}\nTeléfono: ${datos.telefono}\nServicio: ${datos.servicio}\nResponsable: ${servicio.responsable}\nFecha: ${datos.fecha}\nHora: ${datos.hora}\nCódigo: ${codigoCancel}`);
+      MailApp.sendEmail({ to: EMAIL_DUENIO, subject: `📅 Nuevo turno — ${datos.nombre} · ${fechaLegible} ${datos.hora}`, htmlBody: htmlDuenio });
     } catch (e) {}
     lock.releaseLock();
     return { exito: true, mensaje: `Turno guardado con ${servicio.responsable}. Código: ${codigoCancel}`, codigo: codigoCancel };
