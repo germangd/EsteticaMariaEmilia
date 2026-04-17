@@ -386,10 +386,24 @@
   <div id="vista-agenda">
     <div class="agenda-wrap">
 
-      <div class="agenda-tab">
-        <button class="agenda-tablinks" id="agendaDefaultOpen" onclick="openAgendaTab(event,'Reservar')">📅 Reservar turno</button>
-        <button class="agenda-tablinks" onclick="openAgendaTab(event,'Cancelar')">❌ Cancelar turno</button>
-        <button class="agenda-tablinks" onclick="openAgendaTab(event,'Admin')">👩‍💼 Administración</button>
+      <div class="agenda-tab" style="display:flex; align-items:stretch;">
+        <button class="agenda-tablinks" id="agendaDefaultOpen" onclick="openAgendaTab(event,'Reservar')" style="width:auto; flex:1;">📅 Reservar turno</button>
+        <button class="agenda-tablinks" onclick="openAgendaTab(event,'Cancelar')" style="width:auto; flex:1;">❌ Cancelar turno</button>
+        <button class="agenda-tablinks" id="btnAdminTab" onclick="openAgendaTab(event,'Admin')" style="display:none; width:auto; flex:1;">👩‍💼 Administración</button>
+        <button id="btnIniciarSesion" onclick="abrirLoginAdmin()" style="width:auto; padding:14px 18px; background:none; border:none; border-left:1px solid #ccc; cursor:pointer; font-size:13px; color:#888; white-space:nowrap; transition:background 0.2s, color 0.2s;" title="Iniciar sesión como administradora">🔐 Iniciar sesión</button>
+      </div>
+
+      <!-- Acceso Admin (oculto, se activa con clic en el título) -->
+      <div id="adminLoginOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:white; border-radius:20px; padding:32px 28px; max-width:380px; width:92%; text-align:center; box-shadow:0 8px 40px rgba(0,0,0,0.25);">
+          <div style="font-size:2rem; margin-bottom:8px;">🔐</div>
+          <h3 style="color:#d46b6b; margin-bottom:8px; font-size:1.2rem;">Acceso administración</h3>
+          <p style="color:#666; font-size:0.88rem; margin-bottom:20px;">Ingresá la contraseña para continuar.</p>
+          <input type="password" id="adminPasswordInput" placeholder="Contraseña" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; font-size:1rem; margin-bottom:12px; box-sizing:border-box; text-align:center; letter-spacing:0.2em;">
+          <div id="adminLoginError" style="color:#721c24; background:#f8d7da; border-radius:8px; padding:8px; font-size:0.85rem; margin-bottom:12px; display:none;">Contraseña incorrecta.</div>
+          <button onclick="verificarPasswordAdmin()" style="width:100%; padding:11px; background:#d46b6b; color:white; border:none; border-radius:10px; font-size:1rem; font-weight:bold; cursor:pointer; margin-bottom:10px;">Ingresar</button>
+          <button onclick="cerrarLoginAdmin()" style="width:100%; padding:10px; background:#e9ecef; color:#444; border:none; border-radius:10px; font-size:0.92rem; cursor:pointer;">Cancelar</button>
+        </div>
       </div>
 
       <!-- Reservar -->
@@ -657,7 +671,48 @@
     if (e.target === this) cerrarModal();
   });
 
-  // ===== ADMIN =====
+  // ===== ADMIN LOGIN =====
+  var adminAutenticado = false;
+  var ADMIN_PASSWORD = 'mestetica2026'; // Cambiá esta contraseña
+
+  function abrirLoginAdmin() {
+    if (adminAutenticado) return; // ya está logueada
+    document.getElementById('adminLoginOverlay').style.display = 'flex';
+    document.getElementById('adminPasswordInput').value = '';
+    document.getElementById('adminLoginError').style.display = 'none';
+    setTimeout(function() { document.getElementById('adminPasswordInput').focus(); }, 100);
+  }
+
+  function cerrarLoginAdmin() {
+    document.getElementById('adminLoginOverlay').style.display = 'none';
+  }
+
+  function verificarPasswordAdmin() {
+    var pass = document.getElementById('adminPasswordInput').value;
+    if (pass === ADMIN_PASSWORD) {
+      adminAutenticado = true;
+      cerrarLoginAdmin();
+      document.getElementById('btnIniciarSesion').style.display = 'none';
+      document.getElementById('btnAdminTab').style.display = 'inline-block';
+      document.getElementById('btnAdminTab').click();
+    } else {
+      document.getElementById('adminLoginError').style.display = 'block';
+      document.getElementById('adminPasswordInput').value = '';
+      document.getElementById('adminPasswordInput').focus();
+    }
+  }
+
+  // Permitir Enter en el campo de contraseña
+  document.getElementById('adminPasswordInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') verificarPasswordAdmin();
+  });
+
+  // Cerrar overlay clickeando afuera
+  document.getElementById('adminLoginOverlay').addEventListener('click', function(e) {
+    if (e.target === this) cerrarLoginAdmin();
+  });
+
+
   function cargarAdmin() {
     document.getElementById('turnosAdmin').innerHTML = '<p>Cargando turnos de hoy...</p>';
     document.getElementById('turnosFuturos').innerHTML = '<p>Cargando turnos próximos...</p>';
