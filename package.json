@@ -3,6 +3,7 @@
   "private": true,
   "description": "Raíz del repo: scripts con cd estetica-web/. API: DATABASE_URL (pooled). Drizzle Kit: si hace falta, DATABASE_URL_DIRECT (Neon, conexión directa).",
   "scripts": {
+    "postinstall": "npm install --prefix estetica-web",
     "dev": "cd estetica-web && npm run dev",
     "build": "cd estetica-web && npm run build",
     "start": "cd estetica-web && npm run start",

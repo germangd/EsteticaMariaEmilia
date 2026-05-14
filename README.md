@@ -12,7 +12,7 @@ Sitio y agenda de turnos para **María Emilia Estética**: landing en `index.htm
 | `vercel-site/` | Landing estática para Vercel que enlaza a la app de Apps Script. |
 | `estetica-web/` | Next.js 15 (stack propio futuro): API + front en Vercel. Ver `docs/migracion-stack-propio.md`. |
 
-**Next.js / Drizzle:** desde la raíz podés `npm run dev`, `npm run db:push`, etc. (los scripts hacen `cd estetica-web`). La primera vez: `cd estetica-web && npm install` o `npm install --prefix estetica-web`. **`DATABASE_URL`** (pooled) en `estetica-web/.env.local` para la API; para **`db:push`** en Windows, Neon recomienda también **`DATABASE_URL_DIRECT`** (conexión directa, sin pooler). Detalle en `estetica-web/.env.example`.
+**Next.js / Drizzle:** desde la raíz podés `npm run dev`, `npm run db:push`, etc. (los scripts hacen `cd estetica-web`). La primera vez: **`npm install` en la raíz** (el `postinstall` instala dependencias en `estetica-web/`) o `cd estetica-web && npm install`. **`DATABASE_URL`** (pooled) en `estetica-web/.env.local` para la API; para **`db:push`** en Windows, Neon recomienda también **`DATABASE_URL_DIRECT`** (conexión directa, sin pooler). Detalle en `estetica-web/.env.example`.
 
 | `Código.gs` | Backend actual (Apps Script): servicios, horarios, turnos, mails, admin. |
 
@@ -67,7 +67,7 @@ En este repo tenés la carpeta **`vercel-site/`**: landing mínima lista para Ve
 
 ## Stack propio (futuro): Next.js en Vercel
 
-Para **reemplazar** Apps Script por API + base de datos en el mismo dominio, existe la carpeta **`estetica-web/`** (Next.js 15). Guía de arquitectura y fases: [`docs/migracion-stack-propio.md`](docs/migracion-stack-propio.md). En Vercel usá **Root Directory = `estetica-web`**.
+Para **reemplazar** Apps Script por API + base de datos en el mismo dominio, existe la carpeta **`estetica-web/`** (Next.js 15). Guía de arquitectura y fases: [`docs/migracion-stack-propio.md`](docs/migracion-stack-propio.md). En Vercel, lo más claro es **Root Directory = `estetica-web`**. Si el proyecto en Vercel apunta a la **raíz del repo** (p. ej. framework *Other*), el `postinstall` de la raíz evita el error **`next: command not found`** al instalar dependencias dentro de `estetica-web/` antes del build.
 
 ## Licencia
 
