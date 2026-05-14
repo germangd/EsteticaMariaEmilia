@@ -39,6 +39,25 @@ function obtenerEmailRecuperacionAdmin() {
   return String(EMAIL_DUENIO || "").trim().toLowerCase();
 }
 
+/**
+ * Compara direcciones de forma tolerante (minúsculas, espacios; en Gmail/Googlemail ignora puntos en el usuario y +alias).
+ */
+function normalizarEmailParaMatch(raw) {
+  let e = String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s/g, "");
+  if (!e || e.indexOf("@") < 0) return e;
+  const at = e.lastIndexOf("@");
+  let local = e.slice(0, at);
+  let domain = e.slice(at + 1);
+  const plus = local.indexOf("+");
+  if (plus >= 0) local = local.slice(0, plus);
+  if (domain === "googlemail.com") domain = "gmail.com";
+  if (domain === "gmail.com") local = local.replace(/\./g, "");
+  return local + "@" + domain;
+}
+
 function obtenerUrlWebApp() {
   let url = "";
   try {
@@ -80,7 +99,7 @@ function verificarPasswordAdmin(password) {
 
 /**
  * Solicita recuperación: solo envía email si el correo coincide con ADMIN_RECOVERY_EMAIL o EMAIL_DUENIO.
- * Respuesta siempre genérica por privacidad.
+ * Respuesta siempre genérica por privacidad si el correo no coincide.
  */
 function solicitarRecuperacionAdmin(email) {
   const mensajeGenerico = {
@@ -88,47 +107,52 @@ function solicitarRecuperacionAdmin(email) {
     mensaje:
       "Si el correo está registrado para recuperación, recibirás un enlace en los próximos minutos. Revisá también spam."
   };
-  const em = email == null ? "" : String(email).trim().toLowerCase();
-  if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return mensajeGenerico;
-
-  const permitido = obtenerEmailRecuperacionAdmin();
-  if (!permitido || em !== permitido) return mensajeGenerico;
-
-  const token = Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, "");
-  CacheService.getScriptCache().put(CACHE_ADMIN_RESET + token, "1", ADMIN_RESET_SEGUNDOS);
-
-  const base = obtenerUrlWebApp();
-  if (!base) {
-    return {
-      exito: false,
-      mensaje:
-        "Falta la URL del despliegue. En Apps Script: Implementar → URL de la aplicación web, o configurá la propiedad WEB_APP_URL en Propiedades del proyecto."
-    };
-  }
-  const sep = base.indexOf("?") >= 0 ? "&" : "?";
-  const link = base + sep + "page=adminReset&token=" + encodeURIComponent(token);
-
-  const html =
-    "<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;\">" +
-    "<p style=\"color:#2C2420;\">Recibimos una solicitud para <strong>cambiar la contraseña de administración</strong> de María Emilia Estética.</p>" +
-    "<p style=\"color:#666;font-size:14px;\">Si no fuiste vos, ignorá este mensaje. El enlace vence en 15 minutos.</p>" +
-    "<p style=\"margin:28px 0;\"><a href=\"" +
-    link +
-    "\" style=\"background:#d46b6b;color:#fff;padding:14px 24px;border-radius:10px;text-decoration:none;font-weight:bold;display:inline-block;\">Elegir nueva contraseña</a></p>" +
-    "<p style=\"color:#aaa;font-size:12px;word-break:break-all;\">" +
-    link +
-    "</p></div>";
-
   try {
-    MailApp.sendEmail({
-      to: em,
-      subject: "Recuperar contraseña de administración — María Emilia Estética",
-      htmlBody: html
-    });
-  } catch (e) {
-    return { exito: false, mensaje: "No se pudo enviar el email. Revisá cuotas y permisos de MailApp." };
+    const emRaw = email == null ? "" : String(email).trim();
+    const em = emRaw.toLowerCase();
+    if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return mensajeGenerico;
+
+    const permitido = obtenerEmailRecuperacionAdmin();
+    if (!permitido || normalizarEmailParaMatch(emRaw) !== normalizarEmailParaMatch(permitido)) return mensajeGenerico;
+
+    const token = Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, "");
+    CacheService.getScriptCache().put(CACHE_ADMIN_RESET + token, "1", ADMIN_RESET_SEGUNDOS);
+
+    const base = obtenerUrlWebApp();
+    if (!base) {
+      return {
+        exito: false,
+        mensaje:
+          "Falta la URL del despliegue. En Apps Script: Implementar → URL de la aplicación web, o configurá la propiedad WEB_APP_URL en Propiedades del proyecto."
+      };
+    }
+    const sep = base.indexOf("?") >= 0 ? "&" : "?";
+    const link = base + sep + "page=adminReset&token=" + encodeURIComponent(token);
+
+    const html =
+      "<div style=\"font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;\">" +
+      "<p style=\"color:#2C2420;\">Recibimos una solicitud para <strong>cambiar la contraseña de administración</strong> de María Emilia Estética.</p>" +
+      "<p style=\"color:#666;font-size:14px;\">Si no fuiste vos, ignorá este mensaje. El enlace vence en 15 minutos.</p>" +
+      "<p style=\"margin:28px 0;\"><a href=\"" +
+      link +
+      "\" style=\"background:#d46b6b;color:#fff;padding:14px 24px;border-radius:10px;text-decoration:none;font-weight:bold;display:inline-block;\">Elegir nueva contraseña</a></p>" +
+      "<p style=\"color:#aaa;font-size:12px;word-break:break-all;\">" +
+      link +
+      "</p></div>";
+
+    try {
+      MailApp.sendEmail({
+        to: em,
+        subject: "Recuperar contraseña de administración — María Emilia Estética",
+        htmlBody: html
+      });
+    } catch (e) {
+      return { exito: false, mensaje: "No se pudo enviar el email. Revisá cuotas y permisos de MailApp." };
+    }
+    return mensajeGenerico;
+  } catch (err) {
+    return { exito: false, mensaje: "Error en el servidor: " + (err && err.message ? err.message : String(err)) };
   }
-  return mensajeGenerico;
 }
 
 /**

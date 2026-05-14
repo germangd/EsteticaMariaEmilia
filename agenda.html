@@ -128,7 +128,7 @@
       <p style="color:#666; font-size:0.85rem; text-align:left;">Email de recuperación (el de avisos o <code>ADMIN_RECOVERY_EMAIL</code> en Apps Script).</p>
       <input type="email" id="recoveryEmailInput" placeholder="correo@ejemplo.com" style="width:100%; padding:10px; margin-top:8px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box;">
       <div id="recoveryMensaje" style="min-height:1.2em; margin-top:8px; font-size:0.85rem;"></div>
-      <button type="button" onclick="enviarRecuperacionAdmin()" style="margin-top:10px;">Enviar enlace</button>
+      <button type="button" id="btnEnviarRecuperacion" onclick="enviarRecuperacionAdmin()" style="margin-top:10px;">Enviar enlace</button>
       <button type="button" class="btn-secundario" onclick="mostrarPanelLoginAdmin()" style="margin-top:8px;">Volver al login</button>
     </div>
   </div>
@@ -440,20 +440,50 @@
   }
 
   function enviarRecuperacionAdmin() {
-    var email = document.getElementById("recoveryEmailInput").value.trim();
     var box = document.getElementById("recoveryMensaje");
+    var btn = document.getElementById("btnEnviarRecuperacion");
+    if (typeof google === "undefined" || !google.script || typeof google.script.run !== "function") {
+      box.style.color = "#721c24";
+      box.textContent =
+        "Usá la URL de la app publicada en Apps Script. Una copia estática (p. ej. otro hosting) no puede enviar el correo.";
+      return;
+    }
+    var email = document.getElementById("recoveryEmailInput").value.trim();
     box.style.color = "#155724";
+    box.textContent = "Enviando…";
+    if (btn) btn.disabled = true;
+    var finished = false;
+    var t = setTimeout(function() {
+      if (finished) return;
+      finished = true;
+      if (btn) btn.disabled = false;
+      if (box.textContent === "Enviando…") {
+        box.style.color = "#721c24";
+        box.textContent = "Sin respuesta del servidor. Reimplementá la app y revisá WEB_APP_URL / MailApp.";
+      }
+    }, 55000);
     google.script.run
       .withSuccessHandler(function(resp) {
-        if (resp && resp.exito) box.textContent = resp.mensaje || "Listo.";
-        else {
+        if (finished) return;
+        finished = true;
+        clearTimeout(t);
+        if (btn) btn.disabled = false;
+        var ok = resp && (resp.exito === true || resp.exito === "true");
+        if (ok) {
+          box.style.color = "#155724";
+          box.textContent = resp.mensaje || "Listo.";
+        } else {
           box.style.color = "#721c24";
-          box.textContent = (resp && resp.mensaje) ? resp.mensaje : "Error.";
+          box.textContent = resp && resp.mensaje ? resp.mensaje : "No se pudo completar.";
         }
       })
       .withFailureHandler(function(e) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(t);
+        if (btn) btn.disabled = false;
         box.style.color = "#721c24";
-        box.textContent = e && e.message ? e.message : "Error.";
+        box.textContent = e && e.message ? e.message : "Error al llamar al servidor.";
       })
       .solicitarRecuperacionAdmin(email);
   }

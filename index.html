@@ -445,7 +445,7 @@
             <p style="color:#666; font-size:0.82rem; margin-bottom:14px; line-height:1.5;">Ingresá el <strong>email de recuperación</strong> (el configurado en el sistema: por defecto el mismo que recibe avisos de turnos, o el definido en la propiedad <code style="font-size:0.75rem;">ADMIN_RECOVERY_EMAIL</code> en Apps Script).</p>
             <input type="email" id="recoveryEmailInput" placeholder="correo@ejemplo.com" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; font-size:1rem; margin-bottom:10px; box-sizing:border-box;">
             <div id="recoveryMensaje" style="font-size:0.85rem; margin-bottom:10px; min-height:1.2em; color:#155724;"></div>
-            <button type="button" onclick="enviarRecuperacionAdmin()" style="width:100%; padding:11px; background:#d46b6b; color:white; border:none; border-radius:10px; font-size:1rem; font-weight:bold; cursor:pointer; margin-bottom:8px;">Enviar enlace por email</button>
+            <button type="button" id="btnEnviarRecuperacion" onclick="enviarRecuperacionAdmin()" style="width:100%; padding:11px; background:#d46b6b; color:white; border:none; border-radius:10px; font-size:1rem; font-weight:bold; cursor:pointer; margin-bottom:8px;">Enviar enlace por email</button>
             <button type="button" onclick="mostrarPanelLoginAdmin()" style="width:100%; padding:10px; background:#e9ecef; color:#444; border:none; border-radius:10px; font-size:0.92rem; cursor:pointer;">Volver al inicio de sesión</button>
           </div>
         </div>
@@ -709,21 +709,52 @@
   }
 
   function enviarRecuperacionAdmin() {
-    var email = document.getElementById('recoveryEmailInput').value.trim();
     var box = document.getElementById('recoveryMensaje');
+    var btn = document.getElementById('btnEnviarRecuperacion');
+    if (typeof google === 'undefined' || !google.script || typeof google.script.run !== 'function') {
+      box.style.color = '#721c24';
+      box.textContent =
+        'La recuperación solo funciona desde la URL publicada de Google Apps Script (Implementar → abrir web). Si estás viendo una copia del sitio en otro servidor, no hay conexión con el script.';
+      return;
+    }
+    var email = document.getElementById('recoveryEmailInput').value.trim();
+    box.style.display = 'block';
     box.style.color = '#155724';
+    box.textContent = 'Enviando…';
+    if (btn) btn.disabled = true;
+    var finished = false;
+    var t = setTimeout(function() {
+      if (finished) return;
+      finished = true;
+      if (btn) btn.disabled = false;
+      if (box.textContent === 'Enviando…') {
+        box.style.color = '#721c24';
+        box.textContent =
+          'El servidor no respondió a tiempo. Volvé a implementar la app web, revisá la propiedad WEB_APP_URL y las cuotas de MailApp.';
+      }
+    }, 55000);
     google.script.run
       .withSuccessHandler(function(resp) {
-        if (resp && resp.exito) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(t);
+        if (btn) btn.disabled = false;
+        var ok = resp && (resp.exito === true || resp.exito === 'true');
+        if (ok) {
+          box.style.color = '#155724';
           box.textContent = resp.mensaje || 'Listo.';
         } else {
           box.style.color = '#721c24';
-          box.textContent = (resp && resp.mensaje) ? resp.mensaje : 'No se pudo enviar.';
+          box.textContent = resp && resp.mensaje ? resp.mensaje : 'No se pudo completar. Revisá la consola del proyecto (Ver → Registros de ejecución).';
         }
       })
       .withFailureHandler(function(e) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(t);
+        if (btn) btn.disabled = false;
         box.style.color = '#721c24';
-        box.textContent = e && e.message ? e.message : 'Error de conexión.';
+        box.textContent = e && e.message ? e.message : 'Error al llamar al servidor. ¿Publicaste una nueva versión de la app?';
       })
       .solicitarRecuperacionAdmin(email);
   }
