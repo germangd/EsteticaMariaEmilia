@@ -1,4 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
+import { HeroCarousel } from "@/components/landing/hero-carousel";
 import { MeLogo } from "@/components/landing/me-logo";
 
 const MAPS_URL =
@@ -13,36 +15,48 @@ const SERVICIOS = [
     icon: "✨",
     name: "Depilación Láser",
     desc: "Tecnología de última generación para una depilación definitiva, segura y sin dolor. Resultados duraderos desde la primera sesión.",
+    image:
+      "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "02",
     icon: "🌸",
     name: "Faciales",
     desc: "Tratamientos personalizados para limpiar, hidratar y rejuvenecer tu piel. Protocolos adaptados a cada tipo de cutis.",
+    image:
+      "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "03",
     icon: "💅",
     name: "Uñas & Esculpidas",
     desc: "Manicuría, esmaltado semipermanente y uñas esculpidas en acrílico o gel. Diseños únicos para cada ocasión.",
+    image:
+      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "04",
     icon: "🦶",
     name: "Podología",
     desc: "Cuidado profesional de pies para tu salud y bienestar. Tratamientos preventivos y estéticos a cargo de especialistas.",
+    image:
+      "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "05",
     icon: "🎨",
     name: "Coloración",
     desc: "Tintura, mechas, balayage y técnicas de color actuales. Transformá tu look con los mejores productos del mercado.",
+    image:
+      "https://images.unsplash.com/photo-1560869713-da86a43ec442?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "06",
     icon: "💫",
     name: "Alisado",
     desc: "Alisado progresivo y keratinas para un cabello liso, brillante y sin frizz. Resultados que duran meses.",
+    image:
+      "https://images.unsplash.com/photo-1522338242992-e2a54887f5f0?w=900&h=675&fit=crop&q=80",
   },
 ];
 
@@ -122,7 +136,7 @@ export default function Home() {
       </nav>
 
       <main id="inicio">
-        <section className="relative grid min-h-screen overflow-hidden md:grid-cols-2">
+        <section className="relative grid min-h-screen overflow-hidden md:grid-cols-2 md:items-stretch">
           <div className="relative z-[2] flex flex-col justify-center px-8 pb-16 pt-28 md:pl-20 md:pr-12 md:pt-32">
             <p className="mb-6 text-[0.68rem] font-medium uppercase tracking-[0.3em] text-gold motion-safe:animate-[fadeUp_0.8s_ease_both] motion-reduce:opacity-100">
               Estética profesional
@@ -156,23 +170,12 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="relative min-h-[320px] overflow-hidden md:min-h-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-rose via-lilac to-[#edd9f5]" />
-            <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(201,168,76,0.15)_0%,transparent_70%)] motion-reduce:animate-none" />
-            <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/30 motion-safe:animate-[spinRing_22s_linear_infinite] motion-reduce:animate-none" />
-            <div className="absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-gold/15 motion-safe:animate-[spinRingRev_32s_linear_infinite] motion-reduce:animate-none" />
-            <span className="absolute left-[15%] top-[20%] text-gold motion-safe:animate-pulse">✦</span>
-            <span className="absolute right-[20%] top-[30%] text-gold motion-safe:animate-pulse motion-safe:[animation-delay:0.8s]">
-              ✦
-            </span>
-            <span className="absolute bottom-[25%] left-[25%] text-gold motion-safe:animate-pulse motion-safe:[animation-delay:1.6s]">
-              ✧
-            </span>
-            <span className="absolute bottom-[35%] right-[15%] text-gold motion-safe:animate-pulse motion-safe:[animation-delay:2.4s]">
-              ✦
-            </span>
-            <div className="absolute left-1/2 top-1/2 flex h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-cream/90 shadow-[0_20px_60px_rgba(160,120,48,0.2)] motion-safe:animate-[fadeIn_1s_ease_0.5s_both] motion-reduce:opacity-100">
-              <MeLogo gradientId="meHeroGrad" className="w-[180px]" />
+          <div className="relative min-h-[380px] md:h-full md:min-h-0">
+            <div className="md:absolute md:inset-0 md:min-h-0">
+              <HeroCarousel />
+            </div>
+            <div className="pointer-events-none absolute bottom-20 left-1/2 z-20 hidden -translate-x-1/2 rounded-full border border-white/30 bg-cream/80 p-3 shadow-lg backdrop-blur-sm md:block">
+              <MeLogo gradientId="meHeroCarousel" className="h-10 w-[4.5rem]" />
             </div>
           </div>
         </section>
@@ -188,14 +191,28 @@ export default function Home() {
             {SERVICIOS.map((s) => (
               <article
                 key={s.n}
-                className="group relative cursor-default overflow-hidden bg-cream p-10 transition-transform duration-300 hover:-translate-y-1"
+                className="group relative cursor-default overflow-hidden bg-cream transition-transform duration-300 hover:-translate-y-1"
               >
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-rose to-lilac opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                <span className="pointer-events-none absolute right-8 top-8 font-serif text-[4rem] font-light leading-none text-gold/[0.08]">
-                  {s.n}
-                </span>
-                <div className="relative z-[1]">
-                  <span className="mb-5 block text-2xl">{s.icon}</span>
+                <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-br from-rose to-lilac opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="relative aspect-[4/3] w-full overflow-hidden">
+                  <Image
+                    src={s.image}
+                    alt={s.name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                  />
+                  <span
+                    className="absolute left-3 top-3 text-2xl drop-shadow-md"
+                    aria-hidden
+                  >
+                    {s.icon}
+                  </span>
+                  <span className="pointer-events-none absolute right-3 top-2 font-serif text-[3rem] font-light leading-none text-white/25 drop-shadow-sm">
+                    {s.n}
+                  </span>
+                </div>
+                <div className="relative z-[3] p-8 md:p-10">
                   <h3 className="mb-3 font-serif text-2xl font-normal text-ink-dark">
                     {s.name}
                   </h3>

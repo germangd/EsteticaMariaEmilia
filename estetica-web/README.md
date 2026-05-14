@@ -16,7 +16,7 @@ npm run dev
 
 Desde la **raíz del repo** también podés: `npm run dev`, `npm run db:push`, etc. Variables en **`estetica-web/.env.local`** (o `.env.local` en la raíz; ver `drizzle.config.ts`). El script `dev` libera **3000/3001** antes de arrancar para evitar EPERM en `.next/trace` en Windows; si necesitás Next sin eso: `npm run dev:raw`.
 
-Abrí [http://localhost:3000](http://localhost:3000) y probá [http://localhost:3000/api/health](http://localhost:3000/api/health). La **home** replica la landing del `index.html` del repo (hero, servicios, zonas, CTA). **`/reservar`** carga servicios desde **`GET /api/servicios`**, horarios con **`GET /api/horarios`**, reserva con **`POST /api/turnos`** y cancelación con **`POST /api/turnos/cancelar`**.
+Abrí [http://localhost:3000](http://localhost:3000) y probá [http://localhost:3000/api/health](http://localhost:3000/api/health). La **home** replica la landing del `index.html` del repo (hero con **carrusel** de fotos/video configurable en `src/lib/landing-media.ts`, tarjetas de servicio con **foto** + ícono). **`/reservar`** carga servicios desde **`GET /api/servicios`**, horarios con **`GET /api/horarios`**, reserva con **`POST /api/turnos`** y cancelación con **`POST /api/turnos/cancelar`**.
 
 ## Base de datos (Neon)
 
