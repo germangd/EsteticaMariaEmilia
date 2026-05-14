@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nueva contraseña — Admin</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f9f0f0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+    .card { background: #fff; border-radius: 20px; padding: 28px 24px; max-width: 400px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+    h1 { color: #d46b6b; font-size: 1.25rem; text-align: center; margin: 0 0 8px; }
+    p.sub { color: #666; font-size: 0.88rem; text-align: center; margin: 0 0 20px; line-height: 1.5; }
+    label { font-weight: bold; display: block; margin-top: 14px; font-size: 0.9rem; color: #444; }
+    input { width: 100%; padding: 10px; margin-top: 6px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1rem; }
+    button { width: 100%; margin-top: 20px; padding: 12px; border: none; border-radius: 10px; background: #d46b6b; color: #fff; font-weight: bold; font-size: 1rem; cursor: pointer; }
+    button:hover { background: #b55555; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .msg { margin-top: 16px; padding: 10px; border-radius: 10px; text-align: center; font-size: 0.9rem; display: none; }
+    .msg.exito { display: block; background: #d4edda; color: #155724; }
+    .msg.error { display: block; background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Nueva contraseña de administración</h1>
+    <p class="sub">Elegí una contraseña segura. El enlace solo puede usarse una vez.</p>
+    <label for="nueva1">Nueva contraseña</label>
+    <input type="password" id="nueva1" autocomplete="new-password" minlength="6">
+    <label for="nueva2">Repetir contraseña</label>
+    <input type="password" id="nueva2" autocomplete="new-password" minlength="6">
+    <button type="button" id="btnGuardar">Guardar contraseña</button>
+    <div id="msg" class="msg"></div>
+  </div>
+  <script>
+    var RESET_TOKEN = <?!= JSON.stringify(token) ?>;
+    (function() {
+      var btn = document.getElementById('btnGuardar');
+      var msg = document.getElementById('msg');
+      function show(tipo, texto) {
+        msg.className = 'msg ' + tipo;
+        msg.textContent = texto;
+      }
+      if (!RESET_TOKEN) {
+        show('error', 'Enlace inválido. Solicitá recuperación de nuevo desde la web.');
+        btn.disabled = true;
+        return;
+      }
+      btn.addEventListener('click', function() {
+        var a = document.getElementById('nueva1').value;
+        var b = document.getElementById('nueva2').value;
+        if (!a || a.length < 6) { show('error', 'La contraseña debe tener al menos 6 caracteres.'); return; }
+        if (a !== b) { show('error', 'Las contraseñas no coinciden.'); return; }
+        btn.disabled = true;
+        google.script.run
+          .withSuccessHandler(function(resp) {
+            btn.disabled = false;
+            if (resp && resp.exito) {
+              show('exito', resp.mensaje || 'Listo. Ya podés cerrar esta pestaña e iniciar sesión.');
+            } else {
+              show('error', (resp && resp.mensaje) ? resp.mensaje : 'No se pudo guardar.');
+            }
+          })
+          .withFailureHandler(function(e) {
+            btn.disabled = false;
+            show('error', e && e.message ? e.message : 'Error de conexión.');
+          })
+          .restablecerPasswordAdmin(RESET_TOKEN, a);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+
+# Editores / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Google Apps Script (clasp) — credenciales locales; el JSON del proyecto a veces se versiona a propósito
+.clasprc.json
+
+# Entornos y secretos (por si el proyecto crece)
+.env
+.env.*
+*.local
