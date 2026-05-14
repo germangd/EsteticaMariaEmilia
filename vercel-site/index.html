@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="María Emilia Estética — belleza y bienestar. Reservá tu turno online. Ensenada y zona.">
+  <title>María Emilia Estética</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Raleway:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root { --gold:#C9A84C; --gold-dark:#A07830; --cream:#FAF7F4; --dark:#2C2420; --text:#4A3F3A; --muted:#8A7A74; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Raleway, sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; text-align: center; }
+    .eyebrow { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; }
+    h1 { font-family: "Cormorant Garamond", serif; font-weight: 300; font-size: clamp(2.4rem, 7vw, 3.6rem); color: var(--dark); line-height: 1.1; margin-bottom: 12px; }
+    h1 em { font-style: italic; color: var(--gold); }
+    .sub { font-family: "Cormorant Garamond", serif; font-style: italic; font-size: 1.2rem; color: var(--muted); margin-bottom: 40px; font-weight: 300; }
+    .zona { font-size: 0.7rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 36px; }
+    .actions { display: flex; flex-direction: column; gap: 14px; align-items: center; }
+    .btn { display: inline-block; text-decoration: none; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; padding: 16px 36px; border-radius: 2px; transition: transform 0.2s, background 0.2s; cursor: pointer; border: none; width: 100%; max-width: 320px; text-align: center; }
+    .btn-primary { background: var(--gold); color: #fff; }
+    .btn-primary:hover { background: var(--gold-dark); transform: translateY(-2px); }
+    .btn-wa { background: #25D366; color: #fff; }
+    .btn-wa:hover { background: #1da851; transform: translateY(-2px); }
+    .note { margin-top: 48px; font-size: 0.78rem; color: var(--muted); line-height: 1.7; max-width: 480px; margin-left: auto; margin-right: auto; }
+    .alert { display: none; margin-top: 24px; padding: 14px; background: #f8d7da; color: #721c24; border-radius: 8px; font-size: 0.85rem; max-width: 420px; margin-left: auto; margin-right: auto; }
+    .alert.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Estética profesional</p>
+    <h1>María <em>Emilia</em><br>Estética</h1>
+    <p class="sub">Tu espacio de belleza y bienestar</p>
+    <p class="zona">Ensenada · Bartolomé Bavio · Magdalena</p>
+    <div class="actions">
+      <a id="btnReservas" class="btn btn-primary" href="#">Reservar turno online</a>
+      <a class="btn btn-wa" href="https://wa.me/5492215918286?text=Hola!%20Quiero%20consultar%20sobre%20María%20Emilia%20Estética" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+    </div>
+    <p class="note">Los turnos se gestionan de forma segura en nuestra aplicación de reservas. Si aún no configuraste la URL, editá <code>vercel-site/index.html</code> y pegá tu enlace de Google Apps Script (termina en <code>/exec</code>).</p>
+    <div id="configAlert" class="alert">Falta configurar la URL de reservas: abrí este archivo y reemplazá <code>APP_SCRIPT_EXEC_URL</code> por tu publicación de Apps Script.</div>
+  </div>
+  <script>
+    (function () {
+      var APP_SCRIPT_EXEC_URL = "https://script.google.com/macros/s/AKfycbympHpJjG3HnzL76jBi9CHjAZQysxRpGsGwe1WZICGdV7NkJ0wc68xDBeiQFCQv-fjk/exec";
+      var a = document.getElementById("btnReservas");
+      var alertEl = document.getElementById("configAlert");
+      if (!APP_SCRIPT_EXEC_URL || APP_SCRIPT_EXEC_URL.indexOf("PEGAR_AQUI") !== -1 || APP_SCRIPT_EXEC_URL.indexOf("http") !== 0) {
+        alertEl.classList.add("visible");
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+        });
+        return;
+      }
+      a.href = APP_SCRIPT_EXEC_URL;
+    })();
+  </script>
+</body>
+</html>

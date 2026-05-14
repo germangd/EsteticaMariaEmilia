@@ -51,6 +51,15 @@ Revisá también en `Código.gs` la constante `EMAIL_DUENIO` (avisos de nuevos t
 
 Este repo sirve como **fuente de verdad** del código frente a lo que pegás en el editor web.
 
+## Landing en Vercel (dominio público)
+
+Los turnos **no pueden ejecutarse en Vercel** con el código actual (dependen de `google.script.run` y Sheets). Lo habitual es:
+
+1. Publicar la agenda en **Apps Script** (URL `/exec`).
+2. Publicar una **landing estática** en Vercel que derive a esa URL.
+
+En este repo tenés la carpeta **`vercel-site/`**: landing mínima lista para Vercel. Configurá ahí `APP_SCRIPT_EXEC_URL` y en Vercel poné **Root Directory = `vercel-site`**. Los pasos detallados están en [`vercel-site/README.md`](vercel-site/README.md).
+
 ## Licencia
 
 Propiedad del titular del negocio / desarrollador. Ajustá esta sección si publicás bajo una licencia abierta concreta.

@@ -714,7 +714,7 @@
     if (typeof google === 'undefined' || !google.script || typeof google.script.run !== 'function') {
       box.style.color = '#721c24';
       box.textContent =
-        'La recuperación solo funciona desde la URL publicada de Google Apps Script (Implementar → abrir web). Si estás viendo una copia del sitio en otro servidor, no hay conexión con el script.';
+        'El “Olvidé mi contraseña” solo puede enviar el correo desde la app que publicaste en Google Apps Script (la dirección suele terminar en /exec). Si abrís el sitio desde Vercel, GitHub Pages u otro hosting, ese botón no tiene conexión con el script: abrí la reserva oficial con el enlace de Implementar → Aplicación web.';
       return;
     }
     var email = document.getElementById('recoveryEmailInput').value.trim();

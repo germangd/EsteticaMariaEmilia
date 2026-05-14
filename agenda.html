@@ -445,7 +445,7 @@
     if (typeof google === "undefined" || !google.script || typeof google.script.run !== "function") {
       box.style.color = "#721c24";
       box.textContent =
-        "Usá la URL de la app publicada en Apps Script. Una copia estática (p. ej. otro hosting) no puede enviar el correo.";
+        "El correo de recuperación solo se puede pedir desde la app publicada en Google (URL que termina en /exec). Si estás en Vercel u otra copia del sitio, abrí la reserva oficial con el enlace de Apps Script: Implementar → Aplicación web.";
       return;
     }
     var email = document.getElementById("recoveryEmailInput").value.trim();
