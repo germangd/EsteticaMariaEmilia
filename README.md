@@ -9,7 +9,12 @@ Sitio y agenda de turnos para **María Emilia Estética**: landing en `index.htm
 | `index.html` | Landing + vista de agenda embebida (reservar, cancelar, admin con sesión). |
 | `agenda.html` | Solo agenda (despliegue `?page=agenda`). |
 | `adminReset.html` | Página de nueva contraseña tras el enlace de recuperación (`?page=adminReset&token=…`). |
-| `Código.gs` | Backend: servicios, horarios, turnos, emails, sesión admin, recuperación de contraseña. |
+| `vercel-site/` | Landing estática para Vercel que enlaza a la app de Apps Script. |
+| `estetica-web/` | Next.js 15 (stack propio futuro): API + front en Vercel. Ver `docs/migracion-stack-propio.md`. |
+
+**Next.js / Drizzle:** desde la raíz podés `npm run dev`, `npm run db:push`, etc. (los scripts hacen `cd estetica-web`). La primera vez: `cd estetica-web && npm install` o `npm install --prefix estetica-web`. **`DATABASE_URL`** (pooled) en `estetica-web/.env.local` para la API; para **`db:push`** en Windows, Neon recomienda también **`DATABASE_URL_DIRECT`** (conexión directa, sin pooler). Detalle en `estetica-web/.env.example`.
+
+| `Código.gs` | Backend actual (Apps Script): servicios, horarios, turnos, mails, admin. |
 
 ## Requisitos en Google
 
@@ -59,6 +64,10 @@ Los turnos **no pueden ejecutarse en Vercel** con el código actual (dependen de
 2. Publicar una **landing estática** en Vercel que derive a esa URL.
 
 En este repo tenés la carpeta **`vercel-site/`**: landing mínima lista para Vercel. Configurá ahí `APP_SCRIPT_EXEC_URL` y en Vercel poné **Root Directory = `vercel-site`**. Los pasos detallados están en [`vercel-site/README.md`](vercel-site/README.md).
+
+## Stack propio (futuro): Next.js en Vercel
+
+Para **reemplazar** Apps Script por API + base de datos en el mismo dominio, existe la carpeta **`estetica-web/`** (Next.js 15). Guía de arquitectura y fases: [`docs/migracion-stack-propio.md`](docs/migracion-stack-propio.md). En Vercel usá **Root Directory = `estetica-web`**.
 
 ## Licencia
 

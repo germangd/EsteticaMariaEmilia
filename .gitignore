@@ -20,3 +20,6 @@ $RECYCLE.BIN/
 .env
 .env.*
 *.local
+
+# Node (package.json en la raíz delega en estetica-web)
+node_modules/

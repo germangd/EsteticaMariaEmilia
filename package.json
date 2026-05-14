@@ -1,0 +1,15 @@
+{
+  "name": "estetica-maria-emilia",
+  "private": true,
+  "description": "Raíz del repo: scripts con cd estetica-web/. API: DATABASE_URL (pooled). Drizzle Kit: si hace falta, DATABASE_URL_DIRECT (Neon, conexión directa).",
+  "scripts": {
+    "dev": "cd estetica-web && npm run dev",
+    "build": "cd estetica-web && npm run build",
+    "start": "cd estetica-web && npm run start",
+    "lint": "cd estetica-web && npm run lint",
+    "db:generate": "cd estetica-web && npm run db:generate",
+    "db:push": "cd estetica-web && npm run db:push",
+    "db:migrate": "cd estetica-web && npm run db:migrate",
+    "db:studio": "cd estetica-web && npm run db:studio"
+  }
+}

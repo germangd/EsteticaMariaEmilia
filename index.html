@@ -714,7 +714,7 @@
     if (typeof google === 'undefined' || !google.script || typeof google.script.run !== 'function') {
       box.style.color = '#721c24';
       box.textContent =
-        'El “Olvidé mi contraseña” solo puede enviar el correo desde la app que publicaste en Google Apps Script (la dirección suele terminar en /exec). Si abrís el sitio desde Vercel, GitHub Pages u otro hosting, ese botón no tiene conexión con el script: abrí la reserva oficial con el enlace de Implementar → Aplicación web.';
+        'Solo funciona dentro de la web publicada en Google Apps Script (URL que termina en /exec). Si abriste el sitio desde Vercel u otro hosting, entrá antes a esa dirección: Apps Script → Implementar → Aplicación web.';
       return;
     }
     var email = document.getElementById('recoveryEmailInput').value.trim();

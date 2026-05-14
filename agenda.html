@@ -445,7 +445,7 @@
     if (typeof google === "undefined" || !google.script || typeof google.script.run !== "function") {
       box.style.color = "#721c24";
       box.textContent =
-        "El correo de recuperación solo se puede pedir desde la app publicada en Google (URL que termina en /exec). Si estás en Vercel u otra copia del sitio, abrí la reserva oficial con el enlace de Apps Script: Implementar → Aplicación web.";
+        "Solo funciona dentro de la web publicada en Google Apps Script (URL que termina en /exec). Si abriste el sitio desde Vercel u otro hosting, entrá antes a esa dirección: Apps Script → Implementar → Aplicación web.";
       return;
     }
     var email = document.getElementById("recoveryEmailInput").value.trim();
