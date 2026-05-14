@@ -58,10 +58,11 @@ El cliente está en `src/lib/db.ts` (`@neondatabase/serverless`). El ORM y el es
 ## Deploy en Vercel
 
 1. Importá el repo en Vercel.
-2. **Root Directory**: `estetica-web` (recomendado). Si dejás la raíz del repo, el repo incluye **`vercel.json`** en la raíz para forzar **Framework = Next.js** y anular un **Output Directory** tipo `public` del preset *Other* (si no, podés ver el error *“No Output Directory named 'public' found”* aunque el build de Next haya terminado bien).
-3. En **Settings → Build & Deployment**: si aparece *Output Directory* sobrescrito con `public`, borrálo o dejalo vacío cuando el framework sea Next.js.
-4. Build: `npm run build` (por defecto si el root del proyecto es `estetica-web`; desde la raíz del repo ya está cableado en el `package.json` de la raíz).
-5. Variables de entorno: `DATABASE_URL`, `EMAIL_FROM`, `RESEND_API_KEY`, `OWNER_EMAIL` (y las opcionales de `.env.example`).
+2. **Root Directory**: `estetica-web` (obligatorio para que Vercel lea este `package.json` con `next`). Si ves *“No Next.js version detected”*, el Root Directory no apunta a esta carpeta.
+3. **Framework Preset**: **Next.js** (no “Other”). Si el proyecto se creó como estático, en la raíz del repo existe **`vercel.json`** que fuerza Next cuando el root del proyecto es el repo entero; igual lo más estable es root **`estetica-web`**.
+4. **Output Directory**: sin override (vacío). Si quedó `public` del preset *Other*, borralo.
+5. Build: `npm run build` (por defecto si el root del proyecto es `estetica-web`; desde la raíz del repo ya está cableado en el `package.json` de la raíz).
+6. Variables de entorno: `DATABASE_URL`, `EMAIL_FROM`, `RESEND_API_KEY`, `OWNER_EMAIL` (y las opcionales de `.env.example`).
 
 ### Resend (mails al reservar)
 

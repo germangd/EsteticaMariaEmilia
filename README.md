@@ -67,7 +67,9 @@ En este repo tenés la carpeta **`vercel-site/`**: landing mínima lista para Ve
 
 ## Stack propio (futuro): Next.js en Vercel
 
-Para **reemplazar** Apps Script por API + base de datos en el mismo dominio, existe la carpeta **`estetica-web/`** (Next.js 15). Guía de arquitectura y fases: [`docs/migracion-stack-propio.md`](docs/migracion-stack-propio.md). En Vercel, lo más claro es **Root Directory = `estetica-web`**. Si el proyecto en Vercel apunta a la **raíz del repo** (p. ej. framework *Other*), el `postinstall` de la raíz evita el error **`next: command not found`** al instalar dependencias dentro de `estetica-web/` antes del build.
+Para **reemplazar** Apps Script por API + base de datos en el mismo dominio, existe la carpeta **`estetica-web/`** (Next.js 15). Guía de arquitectura y fases: [`docs/migracion-stack-propio.md`](docs/migracion-stack-propio.md).
+
+En Vercel, **Root Directory tiene que ser `estetica-web`** (Settings → Build and Deployment → Root Directory → Edit → escribí exactamente `estetica-web` → Save). Ahí está el `package.json` con `next`. Si queda vacío o en la raíz del repo, Vercel lee el `package.json` de la raíz (sin `next`) y aparece *“No Next.js version detected”*. El `postinstall` de la raíz instala dependencias dentro de `estetica-web/` cuando el install corre desde el repo raíz (p. ej. algunos CI).
 
 ## Licencia
 
