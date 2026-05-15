@@ -6,6 +6,7 @@ import { resendFromDiagnostics, resendKeyDiagnostics } from "@/lib/mail-turno";
 export async function GET() {
   const fromDiag = resendFromDiagnostics();
   const mail = {
+    healthVersion: 2,
     onVercel: Boolean(process.env.VERCEL),
     resend: resendKeyDiagnostics(),
     emailFrom: fromDiag,
