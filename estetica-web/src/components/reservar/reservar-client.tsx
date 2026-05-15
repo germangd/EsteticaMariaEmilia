@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MeLogo } from "@/components/landing/me-logo";
 import { dedupeServiciosPorNombre } from "@/lib/servicio-format";
+import { buildWhatsAppTurnoUrl } from "@/lib/whatsapp";
 
 type ServicioApi = {
   nombre: string;
@@ -37,6 +38,13 @@ export function ReservarClient() {
   const [reservaMsg, setReservaMsg] = useState<{
     type: "ok" | "err";
     text: string;
+  } | null>(null);
+  const [ultimaReserva, setUltimaReserva] = useState<{
+    codigo: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+    nombre: string;
   } | null>(null);
   const [reservando, setReservando] = useState(false);
 
@@ -134,6 +142,7 @@ export function ReservarClient() {
   async function enviarReserva(e: React.FormEvent) {
     e.preventDefault();
     setReservaMsg(null);
+    setUltimaReserva(null);
     if (!servicio || !fecha || !hora || !nombre.trim() || !telefono.trim()) {
       setReservaMsg({
         type: "err",
@@ -161,14 +170,25 @@ export function ReservarClient() {
         codigo?: string;
       };
       if (data.exito) {
-        setReservaMsg({
-          type: "ok",
-          text:
-            data.mensaje ??
-            (data.codigo
-              ? `Turno confirmado. Guardá tu código: ${data.codigo}`
-              : "Turno confirmado."),
-        });
+        const nombreGuardado = nombre.trim();
+        if (data.codigo) {
+          setUltimaReserva({
+            codigo: data.codigo,
+            servicio,
+            fecha,
+            hora,
+            nombre: nombreGuardado,
+          });
+          setReservaMsg({
+            type: "ok",
+            text: "Turno confirmado. Guardá el código de abajo.",
+          });
+        } else {
+          setReservaMsg({
+            type: "ok",
+            text: data.mensaje ?? "Turno confirmado.",
+          });
+        }
         setNombre("");
         setTelefono("");
         setEmail("");
@@ -243,8 +263,9 @@ export function ReservarClient() {
           Turnos online
         </h1>
         <p className="mb-8 text-center text-sm font-light text-ink-muted">
-          Elegí servicio, fecha y horario. El código de cancelación te llega por
-          mail si configuraste email.
+          Elegí servicio, fecha y horario. Al confirmar verás un{" "}
+          <strong className="font-medium text-ink">código en pantalla</strong>:
+          guardalo para cancelar o para consultarnos.
         </p>
 
         <div className="mb-8 flex rounded border border-gold/25 bg-white/80 p-1 shadow-sm">
@@ -385,8 +406,15 @@ export function ReservarClient() {
                 />
 
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Email (opcional, para confirmación)
+                  Email (opcional)
                 </label>
+                <p className="mb-2 text-xs leading-relaxed text-ink-muted">
+                  Si lo dejás, podemos enviarte confirmación cuando el correo del
+                  salón esté activo.{" "}
+                  <strong className="font-medium text-ink">
+                    El código oficial aparece siempre al confirmar abajo.
+                  </strong>
+                </p>
                 <input
                   type="email"
                   value={email}
@@ -412,6 +440,33 @@ export function ReservarClient() {
                   </p>
                 )}
 
+                {ultimaReserva && reservaMsg?.type === "ok" ? (
+                  <div className="mb-4 rounded border border-gold/30 bg-cream/90 p-4 text-center">
+                    <p className="text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+                      Tu código de cancelación
+                    </p>
+                    <p className="my-2 font-mono text-2xl font-semibold tracking-[0.2em] text-gold-dark">
+                      {ultimaReserva.codigo}
+                    </p>
+                    <p className="mb-4 text-xs text-ink-muted">
+                      {ultimaReserva.servicio} · {ultimaReserva.fecha}{" "}
+                      {ultimaReserva.hora}
+                    </p>
+                    <a
+                      href={buildWhatsAppTurnoUrl(ultimaReserva)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded bg-[#25D366] py-3 text-xs font-semibold uppercase tracking-widest text-white transition-opacity hover:opacity-90"
+                    >
+                      Consultar por WhatsApp
+                    </a>
+                    <p className="mt-2 text-[0.65rem] text-ink-muted">
+                      Abrís el chat con el mensaje listo; tocá Enviar en
+                      WhatsApp.
+                    </p>
+                  </div>
+                ) : null}
+
                 <button
                   type="submit"
                   disabled={reservando || !hora}
@@ -430,8 +485,8 @@ export function ReservarClient() {
             className="rounded border border-gold/20 bg-white/90 p-6 shadow-sm"
           >
             <p className="mb-4 text-sm leading-relaxed text-ink-muted">
-              El código te lo enviamos por mail al reservar. Podés cancelar sin
-              cargo hasta <strong>24 h antes</strong> del horario.
+              El código aparece en pantalla al reservar (anotalo). Podés
+              cancelar sin cargo hasta <strong>24 h antes</strong> del horario.
             </p>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
               Código de cancelación
