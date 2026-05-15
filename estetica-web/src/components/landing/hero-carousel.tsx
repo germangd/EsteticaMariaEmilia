@@ -32,7 +32,7 @@ function SlideVideo({
   return (
     <video
       ref={ref}
-      className="h-full w-full object-cover"
+      className="h-full w-full object-cover object-[center_22%] md:object-center"
       src={slide.src}
       poster={slide.poster || undefined}
       muted
@@ -48,7 +48,12 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   const list = slides.length > 0 ? slides : HERO_SLIDES;
   const slideKey = list.map((s) => `${s.kind}:${s.src}`).join("|");
 
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    align: "start",
+    skipSnaps: false,
+    dragFree: false,
+  });
   const [selected, setSelected] = useState(0);
 
   const onSelect = useCallback(() => {
@@ -89,14 +94,17 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
   );
 
   return (
-    <div className="relative h-full min-h-[380px] w-full md:min-h-full">
+    <div className="relative h-full w-full min-h-0 md:min-h-full">
       <div className="absolute inset-0 bg-gradient-to-br from-rose/40 via-lilac/35 to-[#edd9f5]/50" />
 
-      <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex h-full">
+      <div
+        className="h-full min-h-0 overflow-hidden [-webkit-tap-highlight-color:transparent]"
+        ref={emblaRef}
+      >
+        <div className="flex h-full min-h-0">
           {list.map((slide, i) => (
             <div
-              className="relative min-h-[380px] w-0 flex-[0_0_100%] md:min-h-full"
+              className="relative h-full min-h-0 w-0 flex-[0_0_100%]"
               key={`${slide.kind}-${slide.src}-${i}`}
             >
               {slide.kind === "image" ? (
@@ -105,8 +113,8 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
                   alt={slide.alt}
                   fill
                   priority={i === 0}
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 64vw, 58vw"
+                  className="object-cover object-[center_22%] md:object-center"
                 />
               ) : (
                 <SlideVideo active={selected === i} slide={slide} />
@@ -120,7 +128,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
       <button
         type="button"
         onClick={scrollPrev}
-        className="absolute left-1 top-1/2 z-10 -translate-y-1/2 rounded border border-white/40 bg-black/25 px-2 py-2.5 text-base text-white backdrop-blur-sm transition hover:bg-black/40 sm:py-3 sm:text-lg md:left-2"
+        className="absolute left-1 top-1/2 z-10 flex h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-md border border-white/40 bg-black/30 px-0 text-lg leading-none text-white shadow-sm backdrop-blur-sm transition active:scale-95 hover:bg-black/45 sm:h-12 sm:min-w-12 sm:text-xl md:left-2"
         aria-label="Anterior"
       >
         ‹
@@ -128,32 +136,34 @@ export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
       <button
         type="button"
         onClick={scrollNext}
-        className="absolute right-1 top-1/2 z-10 -translate-y-1/2 rounded border border-white/40 bg-black/25 px-2 py-2.5 text-base text-white backdrop-blur-sm transition hover:bg-black/40 sm:py-3 sm:text-lg md:right-2"
+        className="absolute right-1 top-1/2 z-10 flex h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-md border border-white/40 bg-black/30 px-0 text-lg leading-none text-white shadow-sm backdrop-blur-sm transition active:scale-95 hover:bg-black/45 sm:h-12 sm:min-w-12 sm:text-xl md:right-2"
         aria-label="Siguiente"
       >
         ›
       </button>
 
       <div
-        className="absolute bottom-4 left-0 right-0 z-10 flex justify-center gap-2"
+        className="absolute bottom-0 left-0 right-0 z-10 flex justify-center px-12 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 md:bottom-1 md:px-14 md:pb-4"
         role="tablist"
         aria-label="Indicadores del carrusel"
       >
-        {list.map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            role="tab"
-            aria-selected={selected === i}
-            aria-label={`Ir a la diapositiva ${i + 1}`}
-            onClick={() => scrollTo(i)}
-            className={`h-2 rounded-full transition-all ${
-              selected === i
-                ? "w-8 bg-white"
-                : "w-2 bg-white/50 hover:bg-white/75"
-            }`}
-          />
-        ))}
+        <div className="flex max-w-full gap-1.5 overflow-x-auto overflow-y-visible py-2 [-ms-overflow-style:none] [scrollbar-width:none] md:gap-2 [&::-webkit-scrollbar]:hidden">
+          {list.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              role="tab"
+              aria-selected={selected === i}
+              aria-label={`Ir a la diapositiva ${i + 1}`}
+              onClick={() => scrollTo(i)}
+              className={`shrink-0 rounded-full transition-all ${
+                selected === i
+                  ? "h-2 w-7 bg-white md:w-8"
+                  : "h-2 w-2 bg-white/50 hover:bg-white/75 active:bg-white/90"
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { readdir, stat } from "fs/promises";
 import path from "path";
 import { HERO_SLIDES, type HeroSlide } from "@/lib/landing-media";
 import landingManifest from "./landing-media-manifest.json";
+import type { ServicioMediaFolder } from "./servicio-media-folders";
 
 const MAX_HERO_SLIDES = 16;
 
@@ -20,6 +21,10 @@ function shuffle<T>(items: T[]): T[] {
 
 function publicUrl(sub: "hero" | "servicios", file: string): string {
   return `/landing/${sub}/${encodeURIComponent(file)}`;
+}
+
+function servicioSubdirPublicUrl(folder: string, file: string): string {
+  return `/landing/servicios/${encodeURIComponent(folder)}/${encodeURIComponent(file)}`;
 }
 
 /** Raíz del proyecto Next o monorepo (cuando `cwd` es la carpeta padre). */
@@ -42,12 +47,44 @@ function landingAbs(...parts: string[]): string {
   return path.join(resolveLandingRoot(), ...parts);
 }
 
-function manifestLists(): { hero: string[]; servicios: string[] } {
-  const m = landingManifest as { hero?: unknown; servicios?: unknown };
-  return {
-    hero: Array.isArray(m.hero) ? (m.hero as string[]) : [],
-    servicios: Array.isArray(m.servicios) ? (m.servicios as string[]) : [],
+type ManifestServicios =
+  | string[]
+  | Partial<Record<ServicioMediaFolder, string[]>>;
+
+function manifestData(): {
+  hero: string[];
+  serviciosPorCarpeta: Partial<Record<ServicioMediaFolder, string[]>>;
+  serviciosLegacyRoot: string[];
+} {
+  const m = landingManifest as {
+    hero?: unknown;
+    servicios?: unknown;
+    serviciosLegacyRoot?: unknown;
   };
+  const hero = Array.isArray(m.hero) ? (m.hero as string[]) : [];
+
+  let serviciosPorCarpeta: Partial<Record<ServicioMediaFolder, string[]>> =
+    {};
+  let serviciosLegacyRoot: string[] = [];
+
+  const rawServ = m.servicios as ManifestServicios | undefined;
+  if (Array.isArray(rawServ)) {
+    serviciosLegacyRoot = rawServ.filter(
+      (n): n is string => typeof n === "string" && IMAGE_RE.test(n)
+    );
+  } else if (rawServ && typeof rawServ === "object") {
+    serviciosPorCarpeta = rawServ as Partial<
+      Record<ServicioMediaFolder, string[]>
+    >;
+  }
+
+  if (Array.isArray(m.serviciosLegacyRoot)) {
+    serviciosLegacyRoot = m.serviciosLegacyRoot.filter(
+      (n): n is string => typeof n === "string" && IMAGE_RE.test(n)
+    );
+  }
+
+  return { hero, serviciosPorCarpeta, serviciosLegacyRoot };
 }
 
 async function listBasenames(dir: string): Promise<string[]> {
@@ -65,6 +102,11 @@ async function listBasenames(dir: string): Promise<string[]> {
     }
   }
   return files;
+}
+
+async function listServicioRootImageFiles(): Promise<string[]> {
+  const dir = landingAbs("servicios");
+  return (await listBasenames(dir)).filter((n) => IMAGE_RE.test(n));
 }
 
 function posterForVideo(heroDir: string, videoBasename: string): string {
@@ -111,7 +153,7 @@ export async function loadHeroSlidesFromPublic(): Promise<HeroSlide[]> {
     return shuffle(fromDisk).slice(0, MAX_HERO_SLIDES);
   }
 
-  const mf = manifestLists();
+  const mf = manifestData();
   const fromManifest = buildHeroSlides(heroDir, mf.hero);
   if (fromManifest.length > 0) {
     return shuffle(fromManifest).slice(0, MAX_HERO_SLIDES);
@@ -129,33 +171,57 @@ const DEFAULT_CARD_IMAGES: string[] = [
   "https://images.unsplash.com/photo-1522338242992-e2a54887f5f0?w=900&h=675&fit=crop&q=80",
 ];
 
-/**
- * Lista imágenes en `public/landing/servicios`, mezcla y devuelve `count` URLs
- * (con repetición si hay menos archivos que `count`). Si no hay en disco ni en
- * manifiesto, devuelve `DEFAULT_CARD_IMAGES` (recortado a `count`).
- */
-export async function pickRandomServicioCardImages(
-  count: number
+async function listImagesInServicioFolder(
+  folder: ServicioMediaFolder
 ): Promise<string[]> {
-  const dir = landingAbs("servicios");
-  let names = shuffle(
-    (await listBasenames(dir)).filter((n) => IMAGE_RE.test(n))
-  );
+  const dir = landingAbs("servicios", folder);
+  return (await listBasenames(dir)).filter((n) => IMAGE_RE.test(n));
+}
 
-  if (names.length === 0) {
-    names = shuffle(
-      manifestLists().servicios.filter((n) => IMAGE_RE.test(n))
-    );
-  }
+function pickRandom<T>(items: T[]): T | undefined {
+  if (items.length === 0) return undefined;
+  return items[Math.floor(Math.random() * items.length)]!;
+}
 
-  if (names.length === 0) {
-    return shuffle([...DEFAULT_CARD_IMAGES]).slice(0, count);
-  }
+/**
+ * Una URL por servicio: imagen aleatoria dentro de
+ * `public/landing/servicios/<carpeta>/`. Si la carpeta está vacía, intenta
+ * imágenes sueltas en la raíz de `servicios/` (legacy) o el manifiesto; si no
+ * hay nada, usa `DEFAULT_CARD_IMAGES` por índice.
+ */
+export async function pickServicioCardImagesByFolder(
+  folders: readonly ServicioMediaFolder[]
+): Promise<string[]> {
+  const mf = manifestData();
+  const legacyDisk = shuffle(await listServicioRootImageFiles());
+  const legacyManifest = shuffle([...mf.serviciosLegacyRoot]);
 
-  const urls = names.map((n) => publicUrl("servicios", n));
   const out: string[] = [];
-  for (let i = 0; i < count; i++) {
-    out.push(urls[i % urls.length]!);
+  for (let i = 0; i < folders.length; i++) {
+    const folder = folders[i]!;
+    let pool = shuffle(await listImagesInServicioFolder(folder));
+    if (pool.length === 0) {
+      const fromMf = mf.serviciosPorCarpeta[folder];
+      pool = shuffle(
+        Array.isArray(fromMf)
+          ? fromMf.filter((n) => typeof n === "string" && IMAGE_RE.test(n))
+          : []
+      );
+    }
+    const file = pickRandom(pool);
+    if (file) {
+      out.push(servicioSubdirPublicUrl(folder, file));
+      continue;
+    }
+
+    const legacyFile =
+      pickRandom(legacyDisk.length > 0 ? legacyDisk : legacyManifest);
+    if (legacyFile) {
+      out.push(publicUrl("servicios", legacyFile));
+      continue;
+    }
+
+    out.push(DEFAULT_CARD_IMAGES[i % DEFAULT_CARD_IMAGES.length]!);
   }
-  return shuffle(out);
+  return out;
 }

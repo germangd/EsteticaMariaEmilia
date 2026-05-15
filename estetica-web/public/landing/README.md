@@ -1,19 +1,28 @@
 # Medios para la landing
 
-Colocá archivos en estas carpetas (se listan en **cada request** de la home y se elige un orden **aleatorio**):
+Colocá archivos en estas carpetas (la home las lee en cada request; el orden del carrusel es **aleatorio**):
 
 - **`hero/`** — fotos y videos del carrusel principal.  
   - Imágenes: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`  
   - Video: `.mp4`, `.webm` (opcional: mismo nombre + `.jpg`/`.png` como *poster*, p. ej. `promo.mp4` + `promo.jpg`)
 
-- **`servicios/`** — solo imágenes para las tarjetas de servicios (se asignan al azar a cada card).
+- **`servicios/`** — **una subcarpeta por servicio** (solo imágenes). Cada tarjeta toma **al azar** una foto de **su** carpeta; así no se mezclan con otros servicios.
 
-Si una carpeta está **vacía**, la app usa los **valores por defecto** del código (Unsplash / ejemplo).
+  | Carpeta | Tarjeta en la web |
+  |---------|-------------------|
+  | `servicios/depilacion-laser/` | Depilación Láser |
+  | `servicios/faciales/` | Faciales |
+  | `servicios/unas-esculpidas/` | Uñas & Esculpidas |
+  | `servicios/podologia/` | Podología |
+  | `servicios/coloracion/` | Coloración |
+  | `servicios/alisado/` | Alisado |
 
-## Si ves siempre las fotos de ejemplo
+  Los nombres de carpeta tienen que coincidir **exactamente** con la tabla (kebab-case). Los nombres de archivo pueden ser los que quieras (`.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`).
 
-1. Los archivos tienen que estar en **`estetica-web/public/landing/hero/`** y **`estetica-web/public/landing/servicios/`** (no en la raíz del repo ni solo en `index.html` estático).
-2. Abrí la app con **Next.js** (`npm run dev` desde la raíz del repo o desde `estetica-web`). Al arrancar se actualiza `src/lib/landing-media-manifest.json`; si agregás fotos con el dev server ya abierto, **reiniciá** `npm run dev` una vez (o ejecutá `node scripts/landing-sync-manifest.cjs` y reiniciá).
-3. En **Vercel**, las imágenes tienen que estar **commiteadas** y redeploy tras cambiar la carpeta `public/landing`.
+**Respaldo (migración):** si una subcarpeta está vacía pero todavía tenés imágenes **sueltas** en `servicios/` (raíz, sin subcarpeta), la app puede usarlas como pool compartido hasta que las repartas en las carpetas. Cuando podás, mové todo a la subcarpeta que corresponda.
+
+Si no hay ninguna imagen usable, se usan los **valores por defecto** del código (Unsplash).
+
+Al arrancar `npm run dev` o `npm run build` se actualiza `src/lib/landing-media-manifest.json` (útil en algunos deploys).
 
 No subas archivos enormes sin optimizar: afectan el peso del deploy y la carga.

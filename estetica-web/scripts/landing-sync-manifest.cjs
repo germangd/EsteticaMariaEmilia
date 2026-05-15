@@ -1,9 +1,9 @@
 /**
  * Genera `src/lib/landing-media-manifest.json` listando archivos en
- * `public/landing/hero` y `public/landing/servicios` para que la home pueda
- * usar esos nombres cuando `fs.readdir` no ve la carpeta (p. ej. algunos runtimes).
+ * `public/landing/hero` y `public/landing/servicios/<carpeta>/` (+ opcional
+ * imágenes sueltas en la raíz de `servicios/` como respaldo legacy).
  *
- * Se ejecuta en `prebuild` y al arrancar `npm run dev` (vía scripts/dev.cjs).
+ * Mantener alineado con `src/lib/servicio-media-folders.ts`.
  */
 "use strict";
 
@@ -12,6 +12,16 @@ const path = require("path");
 
 const IMAGE_RE = /\.(jpe?g|png|webp|gif)$/i;
 const VIDEO_RE = /\.(mp4|webm)$/i;
+
+/** @type {readonly string[]} */
+const SERVICIO_FOLDERS = [
+  "depilacion-laser",
+  "faciales",
+  "unas-esculpidas",
+  "podologia",
+  "coloracion",
+  "alisado",
+];
 
 function landingRootCandidates(cwd) {
   return [
@@ -49,7 +59,23 @@ function main() {
   const hero = listFiles(heroDir).filter(
     (n) => IMAGE_RE.test(n) || VIDEO_RE.test(n)
   );
-  const servicios = listFiles(servDir).filter((n) => IMAGE_RE.test(n));
+
+  /** @type {Record<string, string[]>} */
+  const servicios = {};
+  for (const folder of SERVICIO_FOLDERS) {
+    const sub = path.join(servDir, folder);
+    servicios[folder] = listFiles(sub).filter((n) => IMAGE_RE.test(n));
+  }
+
+  const serviciosLegacyRoot = listFiles(servDir).filter((n) => {
+    if (!IMAGE_RE.test(n)) return false;
+    const abs = path.join(servDir, n);
+    try {
+      return fs.statSync(abs).isFile();
+    } catch {
+      return false;
+    }
+  });
 
   const outPath = path.join(
     __dirname,
@@ -59,13 +85,15 @@ function main() {
     "landing-media-manifest.json"
   );
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(
-    outPath,
-    `${JSON.stringify({ hero, servicios }, null, 2)}\n`,
-    "utf8"
+  const payload = { hero, servicios, serviciosLegacyRoot };
+  fs.writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+
+  const subTotal = SERVICIO_FOLDERS.reduce(
+    (acc, f) => acc + (servicios[f]?.length ?? 0),
+    0
   );
   console.log(
-    `[landing-sync-manifest] hero: ${hero.length}, servicios: ${servicios.length} -> ${path.relative(cwd, outPath)}`
+    `[landing-sync-manifest] hero: ${hero.length}, servicios (subcarpetas): ${subTotal}, legacy raíz: ${serviciosLegacyRoot.length} -> ${path.relative(cwd, outPath)}`
   );
 }
 

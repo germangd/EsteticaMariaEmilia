@@ -4,8 +4,12 @@ import { HeroCarousel } from "@/components/landing/hero-carousel";
 import { MeLogo } from "@/components/landing/me-logo";
 import {
   loadHeroSlidesFromPublic,
-  pickRandomServicioCardImages,
+  pickServicioCardImagesByFolder,
 } from "@/lib/landing-media-scan";
+import {
+  SERVICIO_MEDIA_FOLDERS,
+  type ServicioMediaFolder,
+} from "@/lib/servicio-media-folders";
 
 export const dynamic = "force-dynamic";
 
@@ -15,42 +19,54 @@ const MAPS_URL =
 const WA_URL =
   "https://wa.me/5492215918286?text=Hola!%20Quiero%20consultar%20sobre%20los%20servicios%20de%20Mar%C3%ADa%20Emilia%20Est%C3%A9tica";
 
-const SERVICIOS_BASE = [
+const SERVICIOS_BASE: Array<{
+  n: string;
+  icon: string;
+  name: string;
+  desc: string;
+  mediaFolder: ServicioMediaFolder;
+}> = [
   {
     n: "01",
     icon: "✨",
     name: "Depilación Láser",
     desc: "Tecnología de última generación para una depilación definitiva, segura y sin dolor. Resultados duraderos desde la primera sesión.",
+    mediaFolder: SERVICIO_MEDIA_FOLDERS[0],
   },
   {
     n: "02",
     icon: "🌸",
     name: "Faciales",
     desc: "Tratamientos personalizados para limpiar, hidratar y rejuvenecer tu piel. Protocolos adaptados a cada tipo de cutis.",
+    mediaFolder: SERVICIO_MEDIA_FOLDERS[1],
   },
   {
     n: "03",
     icon: "💅",
     name: "Uñas & Esculpidas",
     desc: "Manicuría, esmaltado semipermanente y uñas esculpidas en acrílico o gel. Diseños únicos para cada ocasión.",
+    mediaFolder: SERVICIO_MEDIA_FOLDERS[2],
   },
   {
     n: "04",
     icon: "🦶",
     name: "Podología",
     desc: "Cuidado profesional de pies para tu salud y bienestar. Tratamientos preventivos y estéticos a cargo de especialistas.",
+    mediaFolder: SERVICIO_MEDIA_FOLDERS[3],
   },
   {
     n: "05",
     icon: "🎨",
     name: "Coloración",
     desc: "Tintura, mechas, balayage y técnicas de color actuales. Transformá tu look con los mejores productos del mercado.",
+    mediaFolder: SERVICIO_MEDIA_FOLDERS[4],
   },
   {
     n: "06",
     icon: "💫",
     name: "Alisado",
     desc: "Alisado progresivo y keratinas para un cabello liso, brillante y sin frizz. Resultados que duran meses.",
+    mediaFolder: SERVICIO_MEDIA_FOLDERS[5],
   },
 ];
 
@@ -72,10 +88,15 @@ function WaIcon({ className }: { className?: string }) {
 export default async function Home() {
   const [heroSlides, cardImages] = await Promise.all([
     loadHeroSlidesFromPublic(),
-    pickRandomServicioCardImages(SERVICIOS_BASE.length),
+    pickServicioCardImagesByFolder(
+      SERVICIOS_BASE.map((s) => s.mediaFolder)
+    ),
   ]);
   const servicios = SERVICIOS_BASE.map((s, i) => ({
-    ...s,
+    n: s.n,
+    icon: s.icon,
+    name: s.name,
+    desc: s.desc,
     image: cardImages[i]!,
   }));
   return (
@@ -138,8 +159,8 @@ export default async function Home() {
       </nav>
 
       <main id="inicio">
-        <section className="relative grid min-h-screen overflow-hidden md:grid-cols-2 md:items-stretch">
-          <div className="relative z-[2] flex flex-col justify-center px-8 pb-16 pt-28 md:pl-20 md:pr-12 md:pt-32">
+        <section className="relative grid min-h-screen grid-cols-1 overflow-hidden md:grid-cols-12 md:items-stretch">
+          <div className="relative z-[2] flex flex-col justify-center px-8 pb-12 pt-28 md:col-span-5 md:px-10 md:pb-16 md:pt-32 lg:col-span-4 lg:px-12 xl:pl-20 xl:pr-10">
             <p className="mb-6 text-[0.68rem] font-medium uppercase tracking-[0.3em] text-gold motion-safe:animate-[fadeUp_0.8s_ease_both] motion-reduce:opacity-100">
               Estética profesional
             </p>
@@ -172,8 +193,8 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="relative min-h-[380px] md:h-full md:min-h-0">
-            <div className="md:absolute md:inset-0 md:min-h-0">
+          <div className="relative h-[min(50dvh,500px)] min-h-[260px] w-full sm:min-h-[280px] md:col-span-7 md:h-full md:max-h-none md:min-h-0 lg:col-span-8">
+            <div className="h-full w-full md:absolute md:inset-0 md:min-h-0">
               <HeroCarousel slides={heroSlides} />
             </div>
             <div className="pointer-events-none absolute bottom-20 left-1/2 z-20 hidden -translate-x-1/2 rounded-full border border-white/30 bg-cream/80 p-3 shadow-lg backdrop-blur-sm md:block">
