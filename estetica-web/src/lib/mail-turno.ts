@@ -308,7 +308,12 @@ export async function enviarMailsTurnoConfirmado(p: TurnoMailPayload): Promise<v
         html: htmlCliente(p),
       });
     } catch (err) {
-      console.error(`[mail:${via}] cliente:`, err);
+      console.error(`[mail:${via}] cliente (${p.emailCliente}):`, err);
+      if (via === "resend" && envVar("EMAIL_FROM")?.includes("onboarding@resend.dev")) {
+        logMail(
+          "Con onboarding@resend.dev no se envía a correos arbitrarios del cliente. Verificá un dominio en resend.com/domains y usá EMAIL_FROM tipo turnos@tudominio.com."
+        );
+      }
     }
   }
 

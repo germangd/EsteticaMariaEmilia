@@ -1,7 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
 import { getAppTimeZone, hoyIsoEnZona } from "@/lib/agenda";
+import { AdminCargarTurnoForm } from "@/components/admin/admin-cargar-turno-form";
 import { AdminTurnosTable } from "@/components/admin/admin-turnos-table";
+import { rowToServicioApi } from "@/lib/servicio-format";
+import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import {
   listarNombresServiciosCatalogo,
   listarTurnosActivosFiltrados,
@@ -71,6 +74,10 @@ export default async function AdminTurnosPage({
 
   const servicio = sp.servicio?.trim() || null;
   const catalogo = await listarNombresServiciosCatalogo();
+  const rowsServ = await listarServiciosAdmin();
+  const serviciosAdmin = Array.isArray(rowsServ)
+    ? rowsServ.map((r) => ({ id: r.id, ...rowToServicioApi(r) }))
+    : [];
 
   const todos = await listarTurnosActivosFiltrados({
     fechaDesde: desde,
@@ -102,6 +109,20 @@ export default async function AdminTurnosPage({
             <span className="font-medium text-ink">{fmtFechaEtiqueta(hoy, tz)}</span>
           </p>
         </div>
+
+        <section className="mb-10 rounded-sm border border-gold/20 bg-white p-5 shadow-sm md:p-6">
+          <h2 className="mb-2 font-serif text-lg font-normal text-ink-dark">
+            Cargar turno manual
+          </h2>
+          <p className="mb-4 text-sm text-ink-muted">
+            Para reservas por teléfono o WhatsApp. Respeta el cupo configurado en
+            cada servicio.
+          </p>
+          <AdminCargarTurnoForm
+            servicios={serviciosAdmin}
+            fechaDefault={hoy}
+          />
+        </section>
 
         <section className="mb-10 rounded-sm border border-gold/20 bg-white p-5 shadow-sm md:p-6">
           <h2 className="mb-4 font-serif text-lg font-normal text-ink-dark">
