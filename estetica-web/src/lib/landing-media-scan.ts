@@ -47,44 +47,26 @@ function landingAbs(...parts: string[]): string {
   return path.join(resolveLandingRoot(), ...parts);
 }
 
-type ManifestServicios =
-  | string[]
-  | Partial<Record<ServicioMediaFolder, string[]>>;
-
 function manifestData(): {
   hero: string[];
   serviciosPorCarpeta: Partial<Record<ServicioMediaFolder, string[]>>;
-  serviciosLegacyRoot: string[];
 } {
   const m = landingManifest as {
     hero?: unknown;
     servicios?: unknown;
-    serviciosLegacyRoot?: unknown;
   };
   const hero = Array.isArray(m.hero) ? (m.hero as string[]) : [];
 
   let serviciosPorCarpeta: Partial<Record<ServicioMediaFolder, string[]>> =
     {};
-  let serviciosLegacyRoot: string[] = [];
-
-  const rawServ = m.servicios as ManifestServicios | undefined;
-  if (Array.isArray(rawServ)) {
-    serviciosLegacyRoot = rawServ.filter(
-      (n): n is string => typeof n === "string" && IMAGE_RE.test(n)
-    );
-  } else if (rawServ && typeof rawServ === "object") {
+  const rawServ = m.servicios;
+  if (rawServ && typeof rawServ === "object" && !Array.isArray(rawServ)) {
     serviciosPorCarpeta = rawServ as Partial<
       Record<ServicioMediaFolder, string[]>
     >;
   }
 
-  if (Array.isArray(m.serviciosLegacyRoot)) {
-    serviciosLegacyRoot = m.serviciosLegacyRoot.filter(
-      (n): n is string => typeof n === "string" && IMAGE_RE.test(n)
-    );
-  }
-
-  return { hero, serviciosPorCarpeta, serviciosLegacyRoot };
+  return { hero, serviciosPorCarpeta };
 }
 
 async function listBasenames(dir: string): Promise<string[]> {
@@ -102,11 +84,6 @@ async function listBasenames(dir: string): Promise<string[]> {
     }
   }
   return files;
-}
-
-async function listServicioRootImageFiles(): Promise<string[]> {
-  const dir = landingAbs("servicios");
-  return (await listBasenames(dir)).filter((n) => IMAGE_RE.test(n));
 }
 
 function posterForVideo(heroDir: string, videoBasename: string): string {
@@ -185,17 +162,15 @@ function pickRandom<T>(items: T[]): T | undefined {
 
 /**
  * Una URL por servicio: imagen aleatoria dentro de
- * `public/landing/servicios/<carpeta>/`. Si la carpeta está vacía, intenta
- * imágenes sueltas en la raíz de `servicios/` (legacy) o el manifiesto; si no
- * hay nada, usa `DEFAULT_CARD_IMAGES` por índice.
+ * `public/landing/servicios/<carpeta>/` (o el manifiesto si el disco no lista
+ * archivos). Si esa carpeta está vacía, **no** se usan fotos de otras carpetas
+ * ni de la raíz de `servicios/`: solo la imagen por defecto (Unsplash) de ese
+ * índice.
  */
 export async function pickServicioCardImagesByFolder(
   folders: readonly ServicioMediaFolder[]
 ): Promise<string[]> {
   const mf = manifestData();
-  const legacyDisk = shuffle(await listServicioRootImageFiles());
-  const legacyManifest = shuffle([...mf.serviciosLegacyRoot]);
-
   const out: string[] = [];
   for (let i = 0; i < folders.length; i++) {
     const folder = folders[i]!;
@@ -211,17 +186,9 @@ export async function pickServicioCardImagesByFolder(
     const file = pickRandom(pool);
     if (file) {
       out.push(servicioSubdirPublicUrl(folder, file));
-      continue;
+    } else {
+      out.push(DEFAULT_CARD_IMAGES[i % DEFAULT_CARD_IMAGES.length]!);
     }
-
-    const legacyFile =
-      pickRandom(legacyDisk.length > 0 ? legacyDisk : legacyManifest);
-    if (legacyFile) {
-      out.push(publicUrl("servicios", legacyFile));
-      continue;
-    }
-
-    out.push(DEFAULT_CARD_IMAGES[i % DEFAULT_CARD_IMAGES.length]!);
   }
   return out;
 }

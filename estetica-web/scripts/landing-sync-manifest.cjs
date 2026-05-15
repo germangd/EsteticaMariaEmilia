@@ -1,7 +1,6 @@
 /**
  * Genera `src/lib/landing-media-manifest.json` listando archivos en
- * `public/landing/hero` y `public/landing/servicios/<carpeta>/` (+ opcional
- * imágenes sueltas en la raíz de `servicios/` como respaldo legacy).
+ * `public/landing/hero` y `public/landing/servicios/<carpeta>/`.
  *
  * Mantener alineado con `src/lib/servicio-media-folders.ts`.
  */
@@ -67,16 +66,6 @@ function main() {
     servicios[folder] = listFiles(sub).filter((n) => IMAGE_RE.test(n));
   }
 
-  const serviciosLegacyRoot = listFiles(servDir).filter((n) => {
-    if (!IMAGE_RE.test(n)) return false;
-    const abs = path.join(servDir, n);
-    try {
-      return fs.statSync(abs).isFile();
-    } catch {
-      return false;
-    }
-  });
-
   const outPath = path.join(
     __dirname,
     "..",
@@ -85,7 +74,7 @@ function main() {
     "landing-media-manifest.json"
   );
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  const payload = { hero, servicios, serviciosLegacyRoot };
+  const payload = { hero, servicios };
   fs.writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 
   const subTotal = SERVICIO_FOLDERS.reduce(
@@ -93,7 +82,7 @@ function main() {
     0
   );
   console.log(
-    `[landing-sync-manifest] hero: ${hero.length}, servicios (subcarpetas): ${subTotal}, legacy raíz: ${serviciosLegacyRoot.length} -> ${path.relative(cwd, outPath)}`
+    `[landing-sync-manifest] hero: ${hero.length}, servicios (subcarpetas): ${subTotal} -> ${path.relative(cwd, outPath)}`
   );
 }
 

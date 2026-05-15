@@ -19,9 +19,9 @@ Colocá archivos en estas carpetas (la home las lee en cada request; el orden de
 
   Los nombres de carpeta tienen que coincidir **exactamente** con la tabla (kebab-case). Los nombres de archivo pueden ser los que quieras (`.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`).
 
-**Respaldo (migración):** si una subcarpeta está vacía pero todavía tenés imágenes **sueltas** en `servicios/` (raíz, sin subcarpeta), la app puede usarlas como pool compartido hasta que las repartas en las carpetas. Cuando podás, mové todo a la subcarpeta que corresponda.
+Si una subcarpeta está **vacía**, esa tarjeta muestra la **foto de ejemplo** (Unsplash) de ese índice; no se reutilizan fotos de otras carpetas ni imágenes sueltas en la raíz de `servicios/` (evita mezclar servicios).
 
-Si no hay ninguna imagen usable, se usan los **valores por defecto** del código (Unsplash).
+Las imágenes en la **raíz** de `servicios/` no se usan para las tarjetas: colocá todo dentro de la subcarpeta que corresponda.
 
 Al arrancar `npm run dev` o `npm run build` se actualiza `src/lib/landing-media-manifest.json` (útil en algunos deploys).
 
