@@ -2,6 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { HeroCarousel } from "@/components/landing/hero-carousel";
 import { MeLogo } from "@/components/landing/me-logo";
+import {
+  loadHeroSlidesFromPublic,
+  pickRandomServicioCardImages,
+} from "@/lib/landing-media-scan";
+
+export const dynamic = "force-dynamic";
 
 const MAPS_URL =
   "https://www.google.com/maps/search/?api=1&query=Ensenada%2C+Provincia+de+Buenos+Aires%2C+Argentina";
@@ -9,54 +15,42 @@ const MAPS_URL =
 const WA_URL =
   "https://wa.me/5492215918286?text=Hola!%20Quiero%20consultar%20sobre%20los%20servicios%20de%20Mar%C3%ADa%20Emilia%20Est%C3%A9tica";
 
-const SERVICIOS = [
+const SERVICIOS_BASE = [
   {
     n: "01",
     icon: "✨",
     name: "Depilación Láser",
     desc: "Tecnología de última generación para una depilación definitiva, segura y sin dolor. Resultados duraderos desde la primera sesión.",
-    image:
-      "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "02",
     icon: "🌸",
     name: "Faciales",
     desc: "Tratamientos personalizados para limpiar, hidratar y rejuvenecer tu piel. Protocolos adaptados a cada tipo de cutis.",
-    image:
-      "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "03",
     icon: "💅",
     name: "Uñas & Esculpidas",
     desc: "Manicuría, esmaltado semipermanente y uñas esculpidas en acrílico o gel. Diseños únicos para cada ocasión.",
-    image:
-      "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "04",
     icon: "🦶",
     name: "Podología",
     desc: "Cuidado profesional de pies para tu salud y bienestar. Tratamientos preventivos y estéticos a cargo de especialistas.",
-    image:
-      "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "05",
     icon: "🎨",
     name: "Coloración",
     desc: "Tintura, mechas, balayage y técnicas de color actuales. Transformá tu look con los mejores productos del mercado.",
-    image:
-      "https://images.unsplash.com/photo-1560869713-da86a43ec442?w=900&h=675&fit=crop&q=80",
   },
   {
     n: "06",
     icon: "💫",
     name: "Alisado",
     desc: "Alisado progresivo y keratinas para un cabello liso, brillante y sin frizz. Resultados que duran meses.",
-    image:
-      "https://images.unsplash.com/photo-1522338242992-e2a54887f5f0?w=900&h=675&fit=crop&q=80",
   },
 ];
 
@@ -75,7 +69,15 @@ function WaIcon({ className }: { className?: string }) {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const [heroSlides, cardImages] = await Promise.all([
+    loadHeroSlidesFromPublic(),
+    pickRandomServicioCardImages(SERVICIOS_BASE.length),
+  ]);
+  const servicios = SERVICIOS_BASE.map((s, i) => ({
+    ...s,
+    image: cardImages[i]!,
+  }));
   return (
     <>
       <div
@@ -172,7 +174,7 @@ export default function Home() {
 
           <div className="relative min-h-[380px] md:h-full md:min-h-0">
             <div className="md:absolute md:inset-0 md:min-h-0">
-              <HeroCarousel />
+              <HeroCarousel slides={heroSlides} />
             </div>
             <div className="pointer-events-none absolute bottom-20 left-1/2 z-20 hidden -translate-x-1/2 rounded-full border border-white/30 bg-cream/80 p-3 shadow-lg backdrop-blur-sm md:block">
               <MeLogo gradientId="meHeroCarousel" className="h-10 w-[4.5rem]" />
@@ -188,7 +190,7 @@ export default function Home() {
             Nuestros <em className="font-serif not-italic text-gold">Servicios</em>
           </h2>
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-px bg-gold/20 sm:grid-cols-2 lg:grid-cols-3">
-            {SERVICIOS.map((s) => (
+            {servicios.map((s) => (
               <article
                 key={s.n}
                 className="group relative cursor-default overflow-hidden bg-cream transition-transform duration-300 hover:-translate-y-1"

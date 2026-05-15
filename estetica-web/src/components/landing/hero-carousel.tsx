@@ -34,7 +34,7 @@ function SlideVideo({
       ref={ref}
       className="h-full w-full object-cover"
       src={slide.src}
-      poster={slide.poster}
+      poster={slide.poster || undefined}
       muted
       playsInline
       loop
@@ -44,7 +44,10 @@ function SlideVideo({
   );
 }
 
-export function HeroCarousel() {
+export function HeroCarousel({ slides }: { slides: HeroSlide[] }) {
+  const list = slides.length > 0 ? slides : HERO_SLIDES;
+  const slideKey = list.map((s) => `${s.kind}:${s.src}`).join("|");
+
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
   const [selected, setSelected] = useState(0);
 
@@ -63,6 +66,10 @@ export function HeroCarousel() {
       emblaApi.off("reInit", onSelect);
     };
   }, [emblaApi, onSelect]);
+
+  useEffect(() => {
+    emblaApi?.reInit();
+  }, [emblaApi, slideKey]);
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -87,10 +94,10 @@ export function HeroCarousel() {
 
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="flex h-full">
-          {HERO_SLIDES.map((slide, i) => (
+          {list.map((slide, i) => (
             <div
               className="relative min-h-[380px] w-0 flex-[0_0_100%] md:min-h-full"
-              key={`${slide.kind}-${i}`}
+              key={`${slide.kind}-${slide.src}-${i}`}
             >
               {slide.kind === "image" ? (
                 <Image
@@ -132,7 +139,7 @@ export function HeroCarousel() {
         role="tablist"
         aria-label="Indicadores del carrusel"
       >
-        {HERO_SLIDES.map((_, i) => (
+        {list.map((_, i) => (
           <button
             key={i}
             type="button"

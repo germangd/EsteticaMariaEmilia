@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "node ./scripts/landing-sync-manifest.cjs",
+    "predev": "node ./scripts/landing-sync-manifest.cjs",
     "dev": "node ./scripts/dev.cjs",
     "dev:raw": "next dev",
     "build": "next build",
