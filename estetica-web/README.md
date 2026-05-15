@@ -42,6 +42,15 @@ Luego:
    - **`POST /api/turnos`** con JSON `{ "servicio", "fecha", "hora", "nombre", "telefono", "email"? }` → `{ exito, mensaje, codigo }`
    - **`POST /api/turnos/cancelar`** con `{ "codigo": "..." }` → `{ exito, mensaje }`
 
+### Panel admin — turnos
+
+1. **Variables** en `estetica-web/.env.local` (y en Vercel):
+   - **`ADMIN_SESSION_SECRET`** — cadena larga y aleatoria (solo servidor; firma la cookie de sesión). Si ya usabas **`ADMIN_SECRET`**, puede servir como respaldo si no definís `ADMIN_SESSION_SECRET`.
+   - **`ADMIN_PASSWORD`** — contraseña que escribís en el formulario de ingreso.
+2. Abrí **`/admin/login`**, ingresá la contraseña y entrás a **`/admin/turnos`** (sesión por cookie **httpOnly**, sin clave en la URL).
+3. En **Turnos**: filtros por **servicio**, **desde** / **hasta** (fechas ISO), **exportar CSV**, **cancelar** turno (mismo efecto que cancelar por código en la web pública).
+4. **Cerrar sesión** borra la cookie. La ruta no está enlazada desde la home.
+
 Si todavía no tenés proyecto en Neon: creá uno en [neon.tech](https://neon.tech); en **Connect** verás **Pooled** y **Direct**.
 
 ### Scripts de base de datos

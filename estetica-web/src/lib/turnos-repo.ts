@@ -1,8 +1,9 @@
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lte, ne, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { appointments } from "@/db/schema";
+import { appointments, services, type AppointmentRow } from "@/db/schema";
 import { generarCodigo, normalizarHora } from "@/lib/agenda";
 import { getNeonSql } from "@/lib/db";
+import { dedupeNombresServicio } from "@/lib/servicio-format";
 
 function isUniqueViolation(e: unknown): boolean {
   const msg = String(e);
@@ -132,4 +133,41 @@ export async function contarActivosPorHora(
     map.set(normalizarHora(r.hora), Number(r.n));
   }
   return map;
+}
+
+/** Nombres de servicio del catálogo (para filtros en admin). */
+export async function listarNombresServiciosCatalogo(): Promise<string[]> {
+  const db = getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ n: services.nombre })
+    .from(services)
+    .orderBy(asc(services.nombre));
+  return dedupeNombresServicio(rows.map((r) => r.n.trim()).filter(Boolean));
+}
+
+/**
+ * Turnos activos con filtros opcionales; orden por fecha y hora.
+ * `fechaDesde` / `fechaHasta`: ISO `yyyy-MM-dd`.
+ */
+export async function listarTurnosActivosFiltrados(params: {
+  fechaDesde: string;
+  fechaHasta?: string | null;
+  servicioNombre?: string | null;
+}): Promise<AppointmentRow[]> {
+  const db = getDb();
+  if (!db) return [];
+  const parts = [
+    eq(appointments.estado, "activo"),
+    gte(appointments.fecha, params.fechaDesde),
+  ];
+  const hasta = params.fechaHasta?.trim();
+  if (hasta) parts.push(lte(appointments.fecha, hasta));
+  const svc = params.servicioNombre?.trim();
+  if (svc) parts.push(eq(appointments.servicioNombre, svc));
+  return db
+    .select()
+    .from(appointments)
+    .where(and(...parts))
+    .orderBy(asc(appointments.fecha), asc(appointments.hora));
 }

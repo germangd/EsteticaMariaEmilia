@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MeLogo } from "@/components/landing/me-logo";
+import { dedupeServiciosPorNombre } from "@/lib/servicio-format";
 
 type ServicioApi = {
   nombre: string;
@@ -76,7 +78,7 @@ export function ReservarClient() {
           setServicios([]);
           return;
         }
-        setServicios(data.servicios);
+        setServicios(dedupeServiciosPorNombre(data.servicios));
       } catch {
         if (!cancelled) setServiciosError("Error de red al cargar servicios.");
       } finally {
@@ -223,9 +225,20 @@ export function ReservarClient() {
   return (
     <div className="min-h-screen bg-cream pb-16 pt-24 text-ink">
       <div className="mx-auto max-w-lg px-4">
-        <p className="mb-1 text-center text-xs font-medium uppercase tracking-[0.25em] text-gold">
-          María Emilia Estética
-        </p>
+        <header className="mb-8 text-center">
+          <Link
+            href="/"
+            className="group inline-flex flex-col items-center gap-3 rounded-sm px-2 py-1 transition-opacity hover:opacity-85"
+            aria-label="Volver a la página principal"
+          >
+            <span className="rounded-full border border-gold/25 bg-white/80 p-3 shadow-sm transition group-hover:border-gold/45">
+              <MeLogo gradientId="meReservarNav" className="h-11 w-[4.75rem]" />
+            </span>
+            <span className="text-xs font-medium uppercase tracking-[0.25em] text-gold-dark">
+              María Emilia Estética
+            </span>
+          </Link>
+        </header>
         <h1 className="mb-2 text-center font-serif text-2xl font-light text-ink-dark md:text-3xl">
           Turnos online
         </h1>
@@ -450,14 +463,22 @@ export function ReservarClient() {
           </form>
         )}
 
-        <p className="mt-10 text-center">
+        <footer className="mt-10 border-t border-gold/15 pt-6 text-center">
           <Link
             href="/"
             className="text-sm font-medium text-gold-dark underline-offset-4 hover:underline"
           >
             ← Volver al inicio
           </Link>
-        </p>
+          <p className="mt-4">
+            <Link
+              href="/admin/login"
+              className="text-[0.65rem] font-normal uppercase tracking-[0.12em] text-ink-muted/55 transition-colors hover:text-ink-muted"
+            >
+              Acceso staff
+            </Link>
+          </p>
+        </footer>
       </div>
     </div>
   );

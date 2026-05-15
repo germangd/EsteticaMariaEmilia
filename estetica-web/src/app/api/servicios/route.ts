@@ -2,7 +2,10 @@ import { asc } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
 import { services } from "@/db/schema";
-import { rowToServicioApi } from "@/lib/servicio-format";
+import {
+  dedupeServiciosPorNombre,
+  rowToServicioApi,
+} from "@/lib/servicio-format";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +29,9 @@ export async function GET() {
       .from(services)
       .orderBy(asc(services.id));
 
-    const list = rows
-      .filter((r) => r.nombre?.trim())
-      .map((r) => rowToServicioApi(r));
+    const list = dedupeServiciosPorNombre(
+      rows.filter((r) => r.nombre?.trim()).map((r) => rowToServicioApi(r))
+    );
 
     return NextResponse.json({ ok: true, servicios: list });
   } catch {

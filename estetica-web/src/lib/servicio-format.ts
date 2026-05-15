@@ -7,6 +7,34 @@ export function padHoraHHmm(hora: string): string {
   return t;
 }
 
+/** Quita duplicados por `nombre` (sin distinguir mayúsculas); conserva el primero. */
+export function dedupeServiciosPorNombre<T extends { nombre: string }>(
+  list: T[]
+): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of list) {
+    const k = item.nombre.trim().toLowerCase();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(item);
+  }
+  return out;
+}
+
+/** Lista de nombres únicos (mismo criterio que `dedupeServiciosPorNombre`). */
+export function dedupeNombresServicio(list: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const n of list) {
+    const k = n.trim().toLowerCase();
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(n.trim());
+  }
+  return out;
+}
+
 /** Formato JSON compatible con `obtenerServicios()` del Apps Script. */
 export function rowToServicioApi(row: {
   nombre: string;
