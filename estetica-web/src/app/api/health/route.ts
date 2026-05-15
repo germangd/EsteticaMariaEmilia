@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { getNeonSql } from "@/lib/db";
-import { resendKeyDiagnostics } from "@/lib/mail-turno";
+import { resendFromDiagnostics, resendKeyDiagnostics } from "@/lib/mail-turno";
 
 /** Comprueba que las rutas API en Vercel respondan; si hay `DATABASE_URL`, prueba Neon. */
 export async function GET() {
+  const fromDiag = resendFromDiagnostics();
   const mail = {
     onVercel: Boolean(process.env.VERCEL),
     resend: resendKeyDiagnostics(),
-    emailFromSet: Boolean(process.env.EMAIL_FROM?.trim()),
+    emailFrom: fromDiag,
   };
 
   const sql = getNeonSql();

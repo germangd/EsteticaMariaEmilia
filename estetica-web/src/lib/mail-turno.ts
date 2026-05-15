@@ -150,6 +150,27 @@ export function resendKeyDiagnostics(): {
   };
 }
 
+export function resendFromDiagnostics(): {
+  set: boolean;
+  fromOk: boolean;
+  hint: string | null;
+} {
+  const from = envVar("EMAIL_FROM");
+  if (!from) {
+    return {
+      set: false,
+      fromOk: false,
+      hint: "Definí EMAIL_FROM (ej. María Emilia Estética <onboarding@resend.dev>).",
+    };
+  }
+  const invalid = resendFromAddressInvalid(from);
+  return {
+    set: true,
+    fromOk: !invalid,
+    hint: invalid,
+  };
+}
+
 function logResendKeyHint(): void {
   const d = resendKeyDiagnostics();
   console.error(
@@ -185,7 +206,33 @@ async function sendViaSmtp(opts: MailSendOpts): Promise<void> {
   });
 }
 
+const RESEND_BLOCKED_FROM_DOMAINS = [
+  "gmail.com",
+  "googlemail.com",
+  "hotmail.com",
+  "outlook.com",
+  "yahoo.com",
+  "live.com",
+];
+
+function resendFromAddressInvalid(from: string): string | null {
+  const match = from.match(/<([^>]+)>/);
+  const email = (match ? match[1] : from).trim().toLowerCase();
+  const domain = email.split("@")[1];
+  if (!domain) return "EMAIL_FROM debe incluir un correo válido.";
+  if (RESEND_BLOCKED_FROM_DOMAINS.includes(domain)) {
+    return `EMAIL_FROM no puede ser @${domain} con Resend. Usá onboarding@resend.dev (prueba) o un dominio verificado en resend.com/domains. OWNER_EMAIL puede seguir siendo tu Gmail.`;
+  }
+  return null;
+}
+
 async function sendViaResend(opts: MailSendOpts): Promise<void> {
+  const fromError = resendFromAddressInvalid(opts.from);
+  if (fromError) {
+    logMail(fromError);
+    throw new Error(fromError);
+  }
+
   const apiKey = envVar("RESEND_API_KEY");
   if (!apiKey?.startsWith("re_")) {
     throw new Error(
