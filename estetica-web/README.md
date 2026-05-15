@@ -71,11 +71,29 @@ El cliente está en `src/lib/db.ts` (`@neondatabase/serverless`). El ORM y el es
 3. **Framework Preset**: **Next.js** (no “Other”). Si el proyecto se creó como estático, en la raíz del repo existe **`vercel.json`** que fuerza Next cuando el root del proyecto es el repo entero; igual lo más estable es root **`estetica-web`**.
 4. **Output Directory**: sin override (vacío). Si quedó `public` del preset *Other*, borralo.
 5. Build: `npm run build` (por defecto si el root del proyecto es `estetica-web`; desde la raíz del repo ya está cableado en el `package.json` de la raíz).
-6. Variables de entorno: `DATABASE_URL`, `EMAIL_FROM`, `RESEND_API_KEY`, `OWNER_EMAIL` (y las opcionales de `.env.example`).
+6. Variables de entorno: `DATABASE_URL`, correo (Gmail SMTP o Resend), admin (ver [`.env.example`](.env.example)).
 
-### Resend (mails al reservar)
+### Correo al reservar
 
-Tras crear un turno con **`POST /api/turnos`**, si hay **`RESEND_API_KEY`** y **`EMAIL_FROM`**, se envía mail al cliente (si mandó `email`) y al dueño si definís **`OWNER_EMAIL`**. Dominio del remitente: [Resend → Domains](https://resend.com/domains).
+Tras **`POST /api/turnos`**, se envían mails si hay configuración válida (no bloquea la reserva si falla el envío).
+
+**Local:** **`SMTP_USER`** + **`SMTP_PASS`** → Gmail SMTP.
+
+**Vercel (producción):** Gmail SMTP **no funciona** (Vercel bloquea SMTP saliente). Usá **`RESEND_API_KEY`** + **`EMAIL_FROM`** (API HTTP). Podés dejar las variables SMTP en Vercel para documentación, pero el envío en producción usa Resend.
+
+| Variable | Gmail | Resend |
+|----------|-------|--------|
+| `SMTP_USER` / `SMTP_PASS` | Sí (contraseña de aplicación) | — |
+| `EMAIL_FROM` | Recomendado: `María Emilia Estética <tu@gmail.com>` | Remitente verificado |
+| `OWNER_EMAIL` | Opcional: aviso al salón | Igual |
+| `RESEND_API_KEY` | — | Sí |
+
+- Cliente con **email** en el formulario → confirmación con **código de cancelación**.
+- Con **`OWNER_EMAIL`** → aviso al salón.
+
+**Gmail (“enviado desde” tu @gmail.com):** activá verificación en 2 pasos, creá una [contraseña de aplicación](https://myaccount.google.com/apppasswords) y usá `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USER` y `SMTP_PASS` en Vercel / `.env.local`. Redeploy después de cambiar variables.
+
+**Resend (alternativa):** `EMAIL_FROM=María Emilia Estética <onboarding@resend.dev>` solo envía a la cuenta con la que te registraste hasta verificar dominio en [Domains](https://resend.com/domains).
 
 ## Seguridad
 

@@ -118,16 +118,20 @@ export async function POST(request: Request) {
       });
     }
 
-    void enviarMailsTurnoConfirmado({
-      nombre,
-      telefono,
-      emailCliente: email || null,
-      servicio: servicioNombre,
-      responsable: servicio.responsable,
-      fecha,
-      hora,
-      codigoCancelacion: ins.codigo,
-    }).catch((err) => console.error("[mail] turno:", err));
+    try {
+      await enviarMailsTurnoConfirmado({
+        nombre,
+        telefono,
+        emailCliente: email || null,
+        servicio: servicioNombre,
+        responsable: servicio.responsable,
+        fecha,
+        hora,
+        codigoCancelacion: ins.codigo,
+      });
+    } catch (err) {
+      console.error("[mail] turno:", err);
+    }
 
     return NextResponse.json({
       exito: true,

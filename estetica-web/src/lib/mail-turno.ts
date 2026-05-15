@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import { Resend } from "resend";
 
 export type TurnoMailPayload = {
@@ -9,6 +10,13 @@ export type TurnoMailPayload = {
   fecha: string;
   hora: string;
   codigoCancelacion: string;
+};
+
+type MailSendOpts = {
+  from: string;
+  to: string;
+  subject: string;
+  html: string;
 };
 
 function escapeHtml(s: string): string {
@@ -86,44 +94,188 @@ function htmlDuenio(p: TurnoMailPayload): string {
       </div>`;
 }
 
+function envVar(name: string): string | undefined {
+  const raw = process.env[name];
+  if (raw == null) return undefined;
+  const v = raw.trim().replace(/^["']|["']$/g, "");
+  return v || undefined;
+}
+
+function isVercelRuntime(): boolean {
+  return Boolean(process.env.VERCEL);
+}
+
+function smtpConfigured(): boolean {
+  return Boolean(
+    process.env.SMTP_USER?.trim() && process.env.SMTP_PASS?.trim()
+  );
+}
+
+/** Gmail SMTP solo en local; Vercel bloquea puertos SMTP salientes. */
+function canUseSmtp(): boolean {
+  return smtpConfigured() && !isVercelRuntime();
+}
+
+function resendConfigured(): boolean {
+  return Boolean(envVar("RESEND_API_KEY") && envVar("EMAIL_FROM"));
+}
+
+function mailProvider(): "smtp" | "resend" | null {
+  if (canUseSmtp()) return "smtp";
+  if (resendConfigured()) return "resend";
+  return null;
+}
+
+function logMail(msg: string): void {
+  if (process.env.NODE_ENV === "development" || isVercelRuntime()) {
+    console.warn(`[mail] ${msg}`);
+  }
+}
+
+/** Diagnóstico seguro (sin exponer la clave) para logs y /api/health. */
+export function resendKeyDiagnostics(): {
+  present: boolean;
+  formatOk: boolean;
+  length: number;
+  hasInnerWhitespace: boolean;
+} {
+  const key = envVar("RESEND_API_KEY");
+  return {
+    present: Boolean(key),
+    formatOk: Boolean(key?.startsWith("re_") && key.length >= 24),
+    length: key?.length ?? 0,
+    hasInnerWhitespace: Boolean(
+      key && (key.includes(" ") || key.includes("\n") || key.includes("\r"))
+    ),
+  };
+}
+
+function logResendKeyHint(): void {
+  const d = resendKeyDiagnostics();
+  console.error(
+    `[mail] Resend rechazó la API key. Diagnóstico: presente=${d.present}, formatoOk=${d.formatOk}, largo=${d.length}, espaciosInternos=${d.hasInnerWhitespace}. Creá una key nueva en resend.com/api-keys, pegala en Vercel como RESEND_API_KEY (Production), redeploy.`
+  );
+}
+
+/** Remitente visible (Gmail u otro SMTP). */
+function resolveFromAddress(): string | null {
+  const from = envVar("EMAIL_FROM");
+  if (from) return from;
+  const user = envVar("SMTP_USER");
+  if (user) return `María Emilia Estética <${user}>`;
+  return null;
+}
+
+async function sendViaSmtp(opts: MailSendOpts): Promise<void> {
+  const port = Number(process.env.SMTP_PORT) || 587;
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST?.trim() || "smtp.gmail.com",
+    port,
+    secure: port === 465,
+    auth: {
+      user: process.env.SMTP_USER!.trim(),
+      pass: process.env.SMTP_PASS!.trim(),
+    },
+  });
+  await transporter.sendMail({
+    from: opts.from,
+    to: opts.to,
+    subject: opts.subject,
+    html: opts.html,
+  });
+}
+
+async function sendViaResend(opts: MailSendOpts): Promise<void> {
+  const apiKey = envVar("RESEND_API_KEY");
+  if (!apiKey?.startsWith("re_")) {
+    throw new Error(
+      "RESEND_API_KEY inválida: debe empezar con re_ (copiala desde resend.com → API Keys)"
+    );
+  }
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: opts.from,
+    to: opts.to,
+    subject: opts.subject,
+    html: opts.html,
+  });
+  if (error) {
+    const msg =
+      typeof error === "object" &&
+      error !== null &&
+      "message" in error &&
+      String((error as { message: unknown }).message).includes("invalid");
+    if (msg) logResendKeyHint();
+    throw error;
+  }
+}
+
+async function sendMail(opts: MailSendOpts): Promise<void> {
+  const provider = mailProvider();
+  if (provider === "smtp") {
+    await sendViaSmtp(opts);
+    return;
+  }
+  if (provider === "resend") {
+    await sendViaResend(opts);
+    return;
+  }
+  throw new Error("mail_not_configured");
+}
+
 /**
- * Envía los mismos correos que `guardarTurno` en `Código.gs` (errores solo en consola; no falla la reserva).
+ * Mails al reservar. Prioridad: SMTP (Gmail) si hay SMTP_USER+SMTP_PASS; si no, Resend.
+ * Errores solo en consola; no falla la reserva.
  */
 export async function enviarMailsTurnoConfirmado(p: TurnoMailPayload): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.EMAIL_FROM?.trim();
-  const ownerEmail = process.env.OWNER_EMAIL?.trim();
+  const from = resolveFromAddress();
+  const ownerEmail = envVar("OWNER_EMAIL");
+  const provider = mailProvider();
 
-  if (!apiKey || !from) {
-    if (process.env.NODE_ENV === "development") {
-      console.warn(
-        "[mail] Sin RESEND_API_KEY o EMAIL_FROM: no se envían mails de turno."
-      );
-    }
+  if (!from) {
+    logMail("Falta EMAIL_FROM o SMTP_USER para el remitente.");
     return;
   }
 
-  const resend = new Resend(apiKey);
+  if (isVercelRuntime() && smtpConfigured() && !resendConfigured()) {
+    logMail(
+      "En Vercel no funciona SMTP/Gmail. Agregá RESEND_API_KEY y un EMAIL_FROM de Resend (ej. onboarding@resend.dev), redeploy."
+    );
+    return;
+  }
+
+  if (!provider) {
+    logMail("Configurá SMTP (local) o RESEND_API_KEY + EMAIL_FROM (Vercel).");
+    return;
+  }
+
   const fechaL = fechaLegible(p.fecha);
+  const via = provider;
 
   if (p.emailCliente) {
-    const { error } = await resend.emails.send({
-      from,
-      to: p.emailCliente,
-      subject: `✅ Turno confirmado — ${p.servicio} el ${fechaL}`,
-      html: htmlCliente(p),
-    });
-    if (error) console.error("[mail] cliente:", error);
+    try {
+      await sendMail({
+        from,
+        to: p.emailCliente,
+        subject: `✅ Turno confirmado — ${p.servicio} el ${fechaL}`,
+        html: htmlCliente(p),
+      });
+    } catch (err) {
+      console.error(`[mail:${via}] cliente:`, err);
+    }
   }
 
   if (ownerEmail) {
-    const { error } = await resend.emails.send({
-      from,
-      to: ownerEmail,
-      subject: `📅 Nuevo turno — ${p.nombre} · ${fechaL} ${p.hora}`,
-      html: htmlDuenio(p),
-    });
-    if (error) console.error("[mail] dueño:", error);
+    try {
+      await sendMail({
+        from,
+        to: ownerEmail,
+        subject: `📅 Nuevo turno — ${p.nombre} · ${fechaL} ${p.hora}`,
+        html: htmlDuenio(p),
+      });
+    } catch (err) {
+      console.error(`[mail:${via}] dueño:`, err);
+    }
   } else if (process.env.NODE_ENV === "development") {
     console.warn("[mail] Sin OWNER_EMAIL: no se notifica al dueño.");
   }

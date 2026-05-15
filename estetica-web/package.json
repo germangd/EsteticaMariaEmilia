@@ -21,6 +21,7 @@
     "embla-carousel-react": "^8.5.2",
     "luxon": "^3.7.2",
     "next": "15.5.18",
+    "nodemailer": "^8.0.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^6.12.3"
@@ -29,6 +30,7 @@
     "@eslint/eslintrc": "^3",
     "@types/luxon": "^3.7.1",
     "@types/node": "^20",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/ws": "^8.18.1",
