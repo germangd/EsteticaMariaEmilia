@@ -92,5 +92,17 @@ export const clientPackages = pgTable("client_packages", {
 
 export type ServiceRow = typeof services.$inferSelect;
 export type AppointmentRow = typeof appointments.$inferSelect;
+/** Datos extra del cliente (clave: teléfono normalizado). */
+export const clientProfiles = pgTable("client_profiles", {
+  telefono: text("telefono").primaryKey(),
+  nombre: text("nombre"),
+  email: text("email"),
+  notas: text("notas"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export type ServicePackageRow = typeof servicePackages.$inferSelect;
 export type ClientPackageRow = typeof clientPackages.$inferSelect;
+export type ClientProfileRow = typeof clientProfiles.$inferSelect;
