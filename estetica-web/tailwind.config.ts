@@ -14,8 +14,10 @@ export default {
         foreground: "var(--foreground)",
         ink: { DEFAULT: "#4A3F3A", muted: "#8A7A74", dark: "#2C2420" },
         cream: { DEFAULT: "#FAF7F4", dark: "#F0E8E0" },
-        /** Contenedores de formulario (reservas + staff), visible frente al fondo cream-dark */
-        panel: { DEFAULT: "#EDE4D6", head: "#E5D9C8" },
+        /** Fondo amplio de reservas + staff (más oscuro) */
+        surface: { DEFAULT: "#D4C4B0", muted: "#CEC0AD" },
+        /** Tarjetas y formularios (más claro que surface) */
+        panel: { DEFAULT: "#E8DDD0", head: "#DFDBD0" },
         gold: { DEFAULT: "#C9A84C", light: "#E8C97A", dark: "#A07830" },
         rose: { DEFAULT: "#F2D9DF", mid: "#E8B8C4" },
         lilac: { DEFAULT: "#E8D9F0", mid: "#C9A8D8" },

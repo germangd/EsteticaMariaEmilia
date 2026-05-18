@@ -257,7 +257,7 @@ export function ReservarClient() {
   }
 
   return (
-    <div className="min-h-screen bg-cream-dark pb-16 pt-24 text-ink">
+    <div className="min-h-screen bg-surface pb-16 pt-24 text-ink">
       <div className="mx-auto max-w-lg px-4">
         <header className="mb-8 text-center">
           <Link

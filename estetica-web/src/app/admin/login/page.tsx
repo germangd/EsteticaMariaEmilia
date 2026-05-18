@@ -55,7 +55,7 @@ export default async function AdminLoginPage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-lg bg-cream-dark px-5 py-16">
+    <main className="mx-auto min-h-screen max-w-lg bg-surface px-5 py-16">
       <h1 className="mb-2 font-serif text-2xl font-medium text-ink-dark">
         Ingreso — Administración
       </h1>

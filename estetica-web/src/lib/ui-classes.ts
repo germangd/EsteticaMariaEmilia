@@ -11,9 +11,9 @@ export const uiInput =
 
 export const uiSelect = `${uiInput} cursor-pointer`;
 
-/** Panel cálido (usa token `panel` de tailwind — no color arbitrario). */
+/** Tarjetas/formularios: tono claro sobre fondo `surface` (más oscuro). */
 const uiWarmPanel =
-  "rounded-sm border border-gold/60 bg-panel shadow-md ring-1 ring-gold/25";
+  "rounded-sm border border-gold/65 bg-panel shadow-md ring-1 ring-gold/30";
 
 export const uiCard = `${uiWarmPanel} p-5 md:p-6`;
 
