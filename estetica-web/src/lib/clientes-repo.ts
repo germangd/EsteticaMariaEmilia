@@ -1,4 +1,5 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql, type SQL } from "drizzle-orm";
+import type { AnyColumn } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   appointments,
@@ -12,6 +13,10 @@ import type { AsignacionPaquete } from "@/lib/paquetes-repo";
 
 export function normalizarTelefono(raw: string): string {
   return raw.trim().replace(/\s+/g, "");
+}
+
+function telefonoCoincide(column: AnyColumn, telefono: string): SQL {
+  return sql`regexp_replace(trim(${column}), '\\s', '', 'g') = ${telefono}`;
 }
 
 export type ClienteResumen = {
@@ -127,21 +132,17 @@ export async function obtenerClienteDetalle(
   const telefono = normalizarTelefono(telefonoRaw);
   if (!telefono) return { ok: false, reason: "not_found" };
 
-  const telMatch = sql`regexp_replace(trim(${appointments.telefono}), '\\s', '', 'g') = ${telefono}`;
-
   const turnos = await db
     .select()
     .from(appointments)
-    .where(telMatch)
+    .where(telefonoCoincide(appointments.telefono, telefono))
     .orderBy(desc(appointments.fecha), desc(appointments.hora));
 
   if (turnos.length === 0) {
     const [soloPaquete] = await db
       .select({ telefono: clientPackages.telefono })
       .from(clientPackages)
-      .where(
-        sql`regexp_replace(trim(${clientPackages.telefono}), '\\s', '', 'g') = ${telefono}`
-      )
+      .where(telefonoCoincide(clientPackages.telefono, telefono))
       .limit(1);
     if (!soloPaquete) return { ok: false, reason: "not_found" };
   }
@@ -168,9 +169,7 @@ export async function obtenerClienteDetalle(
     })
     .from(clientPackages)
     .innerJoin(servicePackages, eq(clientPackages.packageId, servicePackages.id))
-    .where(
-      sql`regexp_replace(trim(${clientPackages.telefono}), '\\s', '', 'g') = ${telefono}`
-    );
+    .where(telefonoCoincide(clientPackages.telefono, telefono));
 
   const paquetes = paquetesRows
     .map((p) => ({
@@ -201,30 +200,146 @@ export async function guardarPerfilCliente(params: {
   nombre?: string | null;
   email?: string | null;
   notas?: string | null;
-}): Promise<{ ok: true } | { ok: false; reason: "no_db" | "invalido" }> {
+}): Promise<{ ok: true; telefono: string } | { ok: false; reason: "no_db" | "invalido" }> {
+  const res = await actualizarCliente({
+    telefono: params.telefono,
+    nombre: params.nombre,
+    email: params.email,
+    notas: params.notas,
+  });
+  if (!res.ok) {
+    if (res.reason === "no_db") return { ok: false, reason: "no_db" };
+    return { ok: false, reason: "invalido" };
+  }
+  return { ok: true, telefono: res.telefono };
+}
+
+export async function actualizarCliente(params: {
+  telefono: string;
+  telefonoNuevo?: string | null;
+  nombre?: string | null;
+  email?: string | null;
+  notas?: string | null;
+}): Promise<
+  | { ok: true; telefono: string }
+  | {
+      ok: false;
+      reason: "no_db" | "invalido" | "not_found" | "telefono_ocupado";
+    }
+> {
   const db = getDb();
   if (!db) return { ok: false, reason: "no_db" };
 
-  const telefono = normalizarTelefono(params.telefono);
-  if (!telefono) return { ok: false, reason: "invalido" };
+  const telefonoViejo = normalizarTelefono(params.telefono);
+  const telefonoNuevo = normalizarTelefono(
+    params.telefonoNuevo?.trim() ? params.telefonoNuevo : telefonoViejo
+  );
+  if (!telefonoViejo || !telefonoNuevo) return { ok: false, reason: "invalido" };
+
+  const detalle = await obtenerClienteDetalle(telefonoViejo);
+  if ("reason" in detalle) {
+    return {
+      ok: false,
+      reason: detalle.reason === "not_found" ? "not_found" : "no_db",
+    };
+  }
+
+  if (telefonoNuevo !== telefonoViejo) {
+    const otro = await obtenerClienteDetalle(telefonoNuevo);
+    if (!("reason" in otro)) {
+      return { ok: false, reason: "telefono_ocupado" };
+    }
+  }
+
+  const nombreTrim = params.nombre?.trim() ?? "";
+  const nombreTurno =
+    nombreTrim || detalle.perfil.nombre?.trim() || "Sin nombre";
+  const emailVal = params.email?.trim() || null;
+  const notasVal = params.notas?.trim() || null;
+
+  await db
+    .update(appointments)
+    .set({
+      telefono: telefonoNuevo,
+      nombreCliente: nombreTurno,
+      email: emailVal,
+    })
+    .where(telefonoCoincide(appointments.telefono, telefonoViejo));
+
+  await db
+    .update(clientPackages)
+    .set({
+      telefono: telefonoNuevo,
+      nombreCliente: nombreTurno,
+    })
+    .where(telefonoCoincide(clientPackages.telefono, telefonoViejo));
+
+  if (telefonoNuevo !== telefonoViejo) {
+    await db
+      .delete(clientProfiles)
+      .where(eq(clientProfiles.telefono, telefonoViejo));
+  }
 
   await db
     .insert(clientProfiles)
     .values({
-      telefono,
-      nombre: params.nombre?.trim() || null,
-      email: params.email?.trim() || null,
-      notas: params.notas?.trim() || null,
+      telefono: telefonoNuevo,
+      nombre: nombreTrim || null,
+      email: emailVal,
+      notas: notasVal,
     })
     .onConflictDoUpdate({
       target: clientProfiles.telefono,
       set: {
-        nombre: params.nombre?.trim() || null,
-        email: params.email?.trim() || null,
-        notas: params.notas?.trim() || null,
+        nombre: nombreTrim || null,
+        email: emailVal,
+        notas: notasVal,
         updatedAt: new Date(),
       },
     });
 
-  return { ok: true };
+  return { ok: true, telefono: telefonoNuevo };
+}
+
+export async function eliminarCliente(
+  telefonoRaw: string
+): Promise<
+  | { ok: true; eliminados: { turnos: number; paquetes: number } }
+  | { ok: false; reason: "no_db" | "not_found" | "invalido" }
+> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+
+  const telefono = normalizarTelefono(telefonoRaw);
+  if (!telefono) return { ok: false, reason: "invalido" };
+
+  const detalle = await obtenerClienteDetalle(telefono);
+  if ("reason" in detalle) {
+    return {
+      ok: false,
+      reason: detalle.reason === "not_found" ? "not_found" : "no_db",
+    };
+  }
+
+  const turnosEliminados = await db
+    .delete(appointments)
+    .where(telefonoCoincide(appointments.telefono, telefono))
+    .returning({ id: appointments.id });
+
+  const paquetesEliminados = await db
+    .delete(clientPackages)
+    .where(telefonoCoincide(clientPackages.telefono, telefono))
+    .returning({ id: clientPackages.id });
+
+  await db
+    .delete(clientProfiles)
+    .where(eq(clientProfiles.telefono, telefono));
+
+  return {
+    ok: true,
+    eliminados: {
+      turnos: turnosEliminados.length,
+      paquetes: paquetesEliminados.length,
+    },
+  };
 }

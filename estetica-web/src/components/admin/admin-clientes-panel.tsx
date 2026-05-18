@@ -37,6 +37,9 @@ export function AdminClientesPanel({
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
+  const [telefonoEdit, setTelefonoEdit] = useState(
+    initialDetalle?.telefono ?? telefonoSeleccionado ?? ""
+  );
   const [nombre, setNombre] = useState(initialDetalle?.perfil.nombre ?? "");
   const [email, setEmail] = useState(initialDetalle?.perfil.email ?? "");
   const [notas, setNotas] = useState(initialDetalle?.perfil.notas ?? "");
@@ -46,10 +49,11 @@ export function AdminClientesPanel({
   useEffect(() => {
     setClientes(initialClientes);
     setDetalle(initialDetalle);
+    setTelefonoEdit(initialDetalle?.telefono ?? telefonoSeleccionado ?? "");
     setNombre(initialDetalle?.perfil.nombre ?? "");
     setEmail(initialDetalle?.perfil.email ?? "");
     setNotas(initialDetalle?.perfil.notas ?? "");
-  }, [initialClientes, initialDetalle]);
+  }, [initialClientes, initialDetalle, telefonoSeleccionado]);
 
   const irCliente = useCallback(
     (telefono: string | null, busqueda?: string) => {
@@ -74,19 +78,60 @@ export function AdminClientesPanel({
     setPending(true);
     setMsg(null);
     try {
+      const telefonoNuevo = telefonoEdit.trim().replace(/\s+/g, "");
       const r = await fetch(`/api/admin/clientes/${encodeURIComponent(tel)}`, {
         method: "PATCH",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, email, notas }),
+        body: JSON.stringify({
+          telefonoNuevo:
+            telefonoNuevo && telefonoNuevo !== tel ? telefonoNuevo : undefined,
+          nombre,
+          email,
+          notas,
+        }),
       });
-      const data = (await r.json()) as { ok?: boolean; mensaje?: string };
+      const data = (await r.json()) as {
+        ok?: boolean;
+        mensaje?: string;
+        telefono?: string;
+      };
       if (!r.ok || !data.ok) {
         setMsg(data.mensaje ?? "No se pudo guardar.");
         return;
       }
-      setMsg("Datos del cliente guardados.");
-      irCliente(tel, q);
+      setMsg("Cliente actualizado.");
+      irCliente(data.telefono ?? (telefonoNuevo || tel), q);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function eliminarClienteActual() {
+    if (!tel || !detalle) return;
+    const nTurnos = detalle.turnos.length;
+    const nPaquetes = detalle.paquetes.length;
+    const texto =
+      `¿Eliminar a "${detalle.perfil.nombre ?? tel}"?\n\n` +
+      `Se borrarán ${nTurnos} turno${nTurnos === 1 ? "" : "s"} y ` +
+      `${nPaquetes} paquete${nPaquetes === 1 ? "" : "s"}. ` +
+      `Esta acción no se puede deshacer.`;
+    if (!window.confirm(texto)) return;
+
+    setPending(true);
+    setMsg(null);
+    try {
+      const r = await fetch(`/api/admin/clientes/${encodeURIComponent(tel)}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      const data = (await r.json()) as { ok?: boolean; mensaje?: string };
+      if (!r.ok || !data.ok) {
+        setMsg(data.mensaje ?? "No se pudo eliminar.");
+        return;
+      }
+      router.push(q.trim() ? `/admin/clientes?q=${encodeURIComponent(q.trim())}` : "/admin/clientes");
+      router.refresh();
     } finally {
       setPending(false);
     }
@@ -164,9 +209,8 @@ export function AdminClientesPanel({
           <>
             <div className="mb-6 border-b border-gold/15 pb-4">
               <h2 className="font-serif text-xl font-normal text-ink-dark">
-                {detalle.perfil.nombre ?? "Cliente"}
+                {nombre.trim() || detalle.perfil.nombre || "Cliente"}
               </h2>
-              <p className="text-sm text-ink-muted">{detalle.telefono}</p>
             </div>
 
             <form
@@ -176,6 +220,19 @@ export function AdminClientesPanel({
               <h3 className="text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
                 Ficha del cliente
               </h3>
+              <div>
+                <label className="mb-1 block text-xs text-ink-muted">Teléfono</label>
+                <input
+                  type="tel"
+                  required
+                  className={inputClass}
+                  value={telefonoEdit}
+                  onChange={(e) => setTelefonoEdit(e.target.value)}
+                />
+                <p className="mt-1 text-[0.65rem] text-ink-muted">
+                  Si lo cambiás, se actualiza en todos sus turnos y paquetes.
+                </p>
+              </div>
               <div>
                 <label className="mb-1 block text-xs text-ink-muted">Nombre</label>
                 <input
@@ -202,13 +259,23 @@ export function AdminClientesPanel({
                   onChange={(e) => setNotas(e.target.value)}
                 />
               </div>
-              <button
-                type="submit"
-                disabled={pending}
-                className="rounded-sm border border-gold/40 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-gold-dark hover:bg-cream disabled:opacity-50"
-              >
-                Guardar ficha
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="rounded-sm border border-gold/40 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-gold-dark hover:bg-cream disabled:opacity-50"
+                >
+                  Guardar cambios
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => void eliminarClienteActual()}
+                  className="rounded-sm border border-red-300 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-red-800 hover:bg-red-50 disabled:opacity-50"
+                >
+                  Eliminar cliente
+                </button>
+              </div>
             </form>
 
             <h3 className="mb-3 text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
