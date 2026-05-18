@@ -23,6 +23,12 @@ function parseBody(body: unknown) {
   const horarioInicio =
     typeof b.horarioInicio === "string" ? b.horarioInicio : "09:00";
   const horarioFin = typeof b.horarioFin === "string" ? b.horarioFin : "18:00";
+  const precioPesos =
+    b.precioPesos != null
+      ? Number(b.precioPesos)
+      : b.precio != null
+        ? Number(b.precio)
+        : 0;
   if (!nombre.trim() || !Number.isFinite(duracionMin) || !Number.isFinite(capacidad)) {
     return null;
   }
@@ -33,6 +39,7 @@ function parseBody(body: unknown) {
     capacidad,
     horarioInicio,
     horarioFin,
+    precioPesos: Number.isFinite(precioPesos) ? precioPesos : 0,
   };
 }
 

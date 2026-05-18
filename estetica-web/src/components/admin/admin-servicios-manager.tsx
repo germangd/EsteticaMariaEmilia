@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { fmtPesos } from "@/lib/fmt-pesos";
 import {
   uiBtnPrimary,
   uiBtnSecondary,
@@ -20,15 +21,17 @@ export type ServicioAdmin = {
   capacidad: number;
   horarioInicio: string;
   horarioFin: string;
+  precioPesos: number;
 };
 
 const emptyForm = (): Omit<ServicioAdmin, "id"> => ({
   nombre: "",
   duracion: 30,
-  responsable: "María Emilia",
+  responsable: "Mar\u00eda Emilia",
   capacidad: 1,
   horarioInicio: "09:00",
   horarioFin: "18:00",
+  precioPesos: 0,
 });
 
 export function AdminServiciosManager({
@@ -71,6 +74,7 @@ export function AdminServiciosManager({
       capacidad: form.capacidad,
       horarioInicio: form.horarioInicio,
       horarioFin: form.horarioFin,
+      precioPesos: form.precioPesos,
     };
 
     try {
@@ -106,6 +110,7 @@ export function AdminServiciosManager({
       capacidad: s.capacidad,
       horarioInicio: s.horarioInicio,
       horarioFin: s.horarioFin,
+      precioPesos: s.precioPesos ?? 0,
     });
     setMsg(null);
   }
@@ -223,9 +228,25 @@ export function AdminServiciosManager({
               onChange={(e) => setForm({ ...form, horarioFin: e.target.value })}
             />
           </div>
+          <div>
+            <label className={uiLabel}>Precio sugerido (ARS)</label>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              className={inputClass}
+              value={form.precioPesos}
+              onChange={(e) =>
+                setForm({ ...form, precioPesos: Number(e.target.value) || 0 })
+              }
+            />
+            <p className="mt-1 text-xs text-ink-muted">
+              Se usa en caja al cobrar; 0 = cargar manual.
+            </p>
+          </div>
           <div className="flex flex-wrap gap-2 md:col-span-2">
             <button type="submit" disabled={pending} className={uiBtnPrimary}>
-              {pending ? "Guardando…" : editingId ? "Actualizar" : "Agregar"}
+              {pending ? "Guardando\u2026" : editingId ? "Actualizar" : "Agregar"}
             </button>
             {editingId ? (
               <button
@@ -260,6 +281,7 @@ export function AdminServiciosManager({
                 <tr>
                   <th className="px-3 py-3 pl-4">Servicio</th>
                   <th className="px-3 py-3">Duración</th>
+                  <th className="px-3 py-3">Precio</th>
                   <th className="px-3 py-3">Cupo</th>
                   <th className="px-3 py-3">Responsable</th>
                   <th className="px-3 py-3">Horario</th>
@@ -273,6 +295,9 @@ export function AdminServiciosManager({
                       {s.nombre}
                     </td>
                     <td className="px-3 py-2.5 text-ink-muted">{s.duracion} min</td>
+                    <td className="px-3 py-2.5 tabular-nums text-ink-muted">
+                      {(s.precioPesos ?? 0) > 0 ? fmtPesos(s.precioPesos) : "—"}
+                    </td>
                     <td className="px-3 py-2.5 text-ink-muted">{s.capacidad}</td>
                     <td className="px-3 py-2.5 text-ink-muted">{s.responsable}</td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">

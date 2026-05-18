@@ -38,7 +38,8 @@ export default async function AdminCajaPage({
         <div className="mx-auto max-w-6xl px-5 md:px-8">
           <p className="text-sm text-red-700">
             {"Base de datos no disponible. Si es la primera vez, aplic\u00e1 la migraci\u00f3n "}
-            <code className="text-xs">drizzle/0004_caja.sql</code> en Neon.
+            <code className="text-xs">drizzle/0004_caja.sql</code> y{" "}
+            <code className="text-xs">0005_services_precio.sql</code> en Neon.
           </p>
         </div>
       </main>

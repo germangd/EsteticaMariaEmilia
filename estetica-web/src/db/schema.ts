@@ -18,6 +18,8 @@ export const services = pgTable("services", {
   capacidad: integer("capacidad").notNull().default(1),
   horarioInicio: text("horario_inicio").notNull().default("09:00"),
   horarioFin: text("horario_fin").notNull().default("18:00"),
+  /** Precio de referencia en ARS (caja; 0 = sin precio fijo). */
+  precioPesos: integer("precio_pesos").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

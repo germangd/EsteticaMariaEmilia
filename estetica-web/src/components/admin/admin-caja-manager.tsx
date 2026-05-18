@@ -85,6 +85,9 @@ export function AdminCajaManager({
   const [linkAppointmentId, setLinkAppointmentId] = useState<number | undefined>(
     undefined
   );
+  const [ultimaSesionCerradaId, setUltimaSesionCerradaId] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     if (!initialPrefill) return;
@@ -99,12 +102,14 @@ export function AdminCajaManager({
         tipo: "servicio",
         descripcion: `${initialPrefill.servicioNombre} (${initialPrefill.fecha} ${initialPrefill.hora})`,
         cantidad: 1,
-        precioUnitarioPesos: 0,
+        precioUnitarioPesos: initialPrefill.precioSugeridoPesos,
         serviceId: initialPrefill.serviceId ?? undefined,
       },
     ]);
     setMsg(
-      `Cobro del turno #${initialPrefill.appointmentId}: indic\u00e1 el importe y confirm\u00e1.`
+      initialPrefill.precioSugeridoPesos > 0
+        ? `Cobro del turno #${initialPrefill.appointmentId}: revis\u00e1 el importe sugerido y confirm\u00e1.`
+        : `Cobro del turno #${initialPrefill.appointmentId}: indic\u00e1 el importe y confirm\u00e1.`
     );
   }, [initialPrefill]);
 
@@ -189,13 +194,20 @@ export function AdminCajaManager({
           closingAmountPesos: Number(cierreMonto) || 0,
         }),
       });
-      const data = (await r.json()) as { ok?: boolean; mensaje?: string };
+      const data = (await r.json()) as {
+        ok?: boolean;
+        mensaje?: string;
+        sesion?: SesionCaja;
+      };
       if (!r.ok || !data.ok) {
         setMsg(data.mensaje ?? "No se pudo cerrar la caja.");
         return;
       }
       await refreshSesion();
-      setMsg("Caja cerrada.");
+      if (data.sesion?.id) {
+        setUltimaSesionCerradaId(data.sesion.id);
+      }
+      setMsg("Caja cerrada. Pod\u00e9s descargar el reporte de cierre.");
     } finally {
       setPending(false);
     }
@@ -230,7 +242,7 @@ export function AdminCajaManager({
       serviceId,
       servicePackageId: undefined,
       descripcion: s.nombre,
-      precioUnitarioPesos: 0,
+      precioUnitarioPesos: s.precioPesos,
     });
   }
 
@@ -461,10 +473,28 @@ export function AdminCajaManager({
               <button type="submit" disabled={pending} className={uiBtnSecondary}>
                 Cerrar caja
               </button>
+              <a
+                href={`/api/admin/caja/cierre/export?sessionId=${sesion.id}`}
+                className={uiBtnSecondary}
+              >
+                CSV cierre
+              </a>
             </form>
           </div>
         )}
       </section>
+
+      {ultimaSesionCerradaId && !sesion ? (
+        <p className="text-sm font-medium text-ink">
+          <a
+            href={`/api/admin/caja/cierre/export?sessionId=${ultimaSesionCerradaId}`}
+            className="font-semibold text-gold-dark underline"
+          >
+            Descargar reporte CSV
+          </a>{" "}
+          del turno reci\u00e9n cerrado (sesi\u00f3n #{ultimaSesionCerradaId}).
+        </p>
+      ) : null}
 
       {sesion ? (
         <>
@@ -532,6 +562,9 @@ export function AdminCajaManager({
                             {catalogo.servicios.map((s) => (
                               <option key={s.id} value={s.id}>
                                 {s.nombre}
+                                {s.precioPesos > 0
+                                  ? ` (${fmtPesos(s.precioPesos)})`
+                                  : ""}
                               </option>
                             ))}
                           </select>

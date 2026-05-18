@@ -10,6 +10,7 @@ export type ServicioInput = {
   capacidad: number;
   horarioInicio: string;
   horarioFin: string;
+  precioPesos?: number;
 };
 
 function normalizeInput(input: ServicioInput): ServicioInput {
@@ -20,6 +21,7 @@ function normalizeInput(input: ServicioInput): ServicioInput {
     capacidad: Math.max(1, Math.round(input.capacidad)),
     horarioInicio: padHoraHHmm(input.horarioInicio || "09:00"),
     horarioFin: padHoraHHmm(input.horarioFin || "18:00"),
+    precioPesos: Math.max(0, Math.round(input.precioPesos ?? 0)),
   };
 }
 
@@ -61,6 +63,7 @@ export async function crearServicio(
       capacidad: data.capacidad,
       horarioInicio: data.horarioInicio,
       horarioFin: data.horarioFin,
+      precioPesos: data.precioPesos ?? 0,
     })
     .returning({ id: services.id });
 
@@ -96,6 +99,7 @@ export async function actualizarServicio(
       capacidad: data.capacidad,
       horarioInicio: data.horarioInicio,
       horarioFin: data.horarioFin,
+      precioPesos: data.precioPesos ?? 0,
     })
     .where(eq(services.id, id))
     .returning({ id: services.id });

@@ -43,6 +43,7 @@ export function rowToServicioApi(row: {
   capacidad: number;
   horarioInicio: string;
   horarioFin: string;
+  precioPesos?: number;
 }) {
   return {
     nombre: row.nombre.trim(),
@@ -51,5 +52,6 @@ export function rowToServicioApi(row: {
     capacidad: row.capacidad,
     horarioInicio: padHoraHHmm(row.horarioInicio || "09:00"),
     horarioFin: padHoraHHmm(row.horarioFin || "18:00"),
+    precioPesos: Math.max(0, Math.round(row.precioPesos ?? 0)),
   };
 }

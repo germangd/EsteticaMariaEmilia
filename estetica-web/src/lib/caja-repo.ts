@@ -50,6 +50,7 @@ export type PrefillCobroTurno = {
   fecha: string;
   hora: string;
   serviceId: number | null;
+  precioSugeridoPesos: number;
   yaCobrado: boolean;
   ventaId: number | null;
 };
@@ -506,7 +507,7 @@ export async function anularVenta(
 }
 
 export type CatalogoCaja = {
-  servicios: { id: number; nombre: string }[];
+  servicios: { id: number; nombre: string; precioPesos: number }[];
   paquetes: { id: number; nombre: string; precioPesos: number }[];
 };
 
@@ -517,7 +518,11 @@ export async function obtenerCatalogoCaja(): Promise<
   if (!db) return { ok: false, reason: "no_db" };
 
   const servs = await db
-    .select({ id: services.id, nombre: services.nombre })
+    .select({
+      id: services.id,
+      nombre: services.nombre,
+      precioPesos: services.precioPesos,
+    })
     .from(services)
     .orderBy(services.nombre);
 
@@ -591,7 +596,7 @@ export async function obtenerPrefillCobroTurno(
   if (!turno || turno.estado !== "activo") return null;
 
   const [svc] = await db
-    .select({ id: services.id })
+    .select({ id: services.id, precioPesos: services.precioPesos })
     .from(services)
     .where(eq(services.nombre, turno.servicioNombre))
     .limit(1);
@@ -606,6 +611,7 @@ export async function obtenerPrefillCobroTurno(
     fecha: turno.fecha,
     hora: turno.hora,
     serviceId: svc?.id ?? null,
+    precioSugeridoPesos: svc?.precioPesos ?? 0,
     yaCobrado: Boolean(venta),
     ventaId: venta?.id ?? null,
   };
@@ -686,6 +692,120 @@ export async function crearVentaDesdePaquete(params: {
     return { ok: false, reason: venta.reason };
   }
   return { ok: false, reason: "sin_monto" };
+}
+
+function csvEscape(s: string): string {
+  if (/[",\r\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function csvRow(cells: (string | number)[]): string {
+  return cells.map((c) => csvEscape(String(c))).join(",");
+}
+
+export type DatosCierreSesion = {
+  sesion: SesionCaja;
+  ventas: VentaResumen[];
+};
+
+export async function obtenerDatosCierreSesion(
+  sessionId: number
+): Promise<DatosCierreSesion | null | { ok: false; reason: "no_db" }> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+  if (!Number.isFinite(sessionId) || sessionId < 1) return null;
+
+  const [row] = await db
+    .select()
+    .from(cashSessions)
+    .where(eq(cashSessions.id, sessionId))
+    .limit(1);
+
+  if (!row) return null;
+
+  const ventasRaw = await listarVentasSesion(sessionId);
+  if (!Array.isArray(ventasRaw)) return { ok: false, reason: "no_db" };
+
+  const sesion = await buildSesionStats(row);
+  return { sesion, ventas: ventasRaw };
+}
+
+export function generarCsvCierreSesion(data: DatosCierreSesion): string {
+  const { sesion, ventas } = data;
+  const lines: string[] = [];
+
+  lines.push("REPORTE DE CIERRE DE CAJA");
+  lines.push(csvRow(["Sesion ID", sesion.id]));
+  lines.push(csvRow(["Apertura", sesion.openedAt]));
+  lines.push(csvRow(["Cierre", sesion.closedAt ?? "-"]));
+  lines.push(csvRow(["Estado", sesion.status]));
+  lines.push(csvRow(["Fondo inicial ARS", sesion.openingAmountPesos]));
+  lines.push(
+    csvRow([
+      "Monto contado al cerrar ARS",
+      sesion.closingAmountPesos ?? "",
+    ])
+  );
+  lines.push(csvRow(["Total ventas ARS", sesion.totalVentasPesos]));
+  lines.push(csvRow(["Cantidad ventas", sesion.cantidadVentas]));
+  lines.push(
+    csvRow(["Efectivo esperado en cajon ARS", sesion.efectivoEsperadoEnCajon])
+  );
+
+  if (sesion.closingAmountPesos != null) {
+    const diff = sesion.closingAmountPesos - sesion.efectivoEsperadoEnCajon;
+    lines.push(csvRow(["Diferencia efectivo ARS", diff]));
+  }
+
+  lines.push("");
+  lines.push("ARQUEO POR FORMA DE PAGO");
+  lines.push(csvRow(["Metodo", "Operaciones", "Total ARS"]));
+  for (const a of sesion.arqueoPorMetodo) {
+    lines.push(csvRow([a.metodoPago, a.cantidad, a.totalPesos]));
+  }
+  lines.push(
+    csvRow([
+      "TOTAL",
+      sesion.cantidadVentas,
+      sesion.totalVentasPesos,
+    ])
+  );
+
+  lines.push("");
+  lines.push("DETALLE DE VENTAS");
+  lines.push(
+    csvRow([
+      "Numero",
+      "Fecha hora",
+      "Estado",
+      "Cliente",
+      "Telefono",
+      "Metodo pago",
+      "Subtotal",
+      "Descuento",
+      "Total",
+      "Notas",
+    ])
+  );
+
+  for (const v of [...ventas].reverse()) {
+    lines.push(
+      csvRow([
+        v.numero,
+        v.createdAt,
+        v.estado,
+        v.clienteNombre ?? "",
+        v.clienteTelefono ?? "",
+        v.metodoPago,
+        v.subtotalPesos,
+        v.descuentoPesos,
+        v.totalPesos,
+        v.notas ?? "",
+      ])
+    );
+  }
+
+  return `\uFEFF${lines.join("\r\n")}\r\n`;
 }
 
 export async function crearVentaDesdeTurno(params: {
