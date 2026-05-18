@@ -1,6 +1,12 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getAppTimeZone, hoyIsoEnZona } from "@/lib/agenda";
+import {
+  buildTurnosQuery,
+  parseVistaAgenda,
+  rangoAgenda,
+  type VistaAgenda,
+} from "@/lib/agenda-rango";
 import { AdminCargarTurnoForm } from "@/components/admin/admin-cargar-turno-form";
 import { AdminTurnosTable } from "@/components/admin/admin-turnos-table";
 import { rowToServicioApi } from "@/lib/servicio-format";
@@ -25,7 +31,7 @@ import {
 } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
-  title: "Admin — Turnos | María Emilia Estética",
+  title: "Admin ? Turnos | Mar?a Emilia Est?tica",
   robots: { index: false, follow: false },
 };
 
@@ -41,23 +47,27 @@ function isIsoDate(s: string | undefined): s is string {
   return Boolean(s && /^\d{4}-\d{2}-\d{2}$/.test(s));
 }
 
-function buildExportQuery(q: {
-  servicio?: string;
-  desde?: string;
-  hasta?: string;
-}): string {
-  const u = new URLSearchParams();
-  if (q.servicio?.trim()) u.set("servicio", q.servicio.trim());
-  if (q.desde?.trim()) u.set("desde", q.desde.trim());
-  if (q.hasta?.trim()) u.set("hasta", q.hasta.trim());
-  const s = u.toString();
-  return s ? `?${s}` : "";
+const VISTAS: { id: VistaAgenda; label: string }[] = [
+  { id: "dia", label: "D?a" },
+  { id: "semana", label: "Semana" },
+  { id: "mes", label: "Mes" },
+  { id: "fecha", label: "Fecha" },
+];
+
+function tabClass(active: boolean): string {
+  return `rounded-sm px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-wider transition ${
+    active
+      ? "bg-gold text-white shadow-sm"
+      : "border border-gold/55 bg-white/90 text-gold-dark hover:bg-cream"
+  }`;
 }
 
 export default async function AdminTurnosPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    vista?: string;
+    ref?: string;
     servicio?: string;
     desde?: string;
     hasta?: string;
@@ -67,45 +77,55 @@ export default async function AdminTurnosPage({
   const tz = getAppTimeZone();
   const hoy = hoyIsoEnZona(tz);
 
-  let desde = sp.desde?.trim() ?? hoy;
-  if (!isIsoDate(desde)) desde = hoy;
+  const vista = parseVistaAgenda(sp.vista);
+  let ref = sp.ref?.trim() ?? hoy;
+  if (!isIsoDate(ref)) ref = hoy;
 
-  const hastaRaw = sp.hasta?.trim();
-  const hasta = isIsoDate(hastaRaw) ? hastaRaw : null;
-  if (hasta && hasta < desde) {
+  const servicio = sp.servicio?.trim() || null;
+
+  let { desde, hasta, etiqueta } = rangoAgenda({
+    vista,
+    refIso: ref,
+    tz,
+    hoyIso: hoy,
+  });
+
+  if (isIsoDate(sp.desde) && !sp.vista) {
+    desde = sp.desde;
+    hasta = isIsoDate(sp.hasta) ? sp.hasta : sp.desde;
+    etiqueta =
+      desde === hasta
+        ? fmtFechaEtiqueta(desde, tz)
+        : `${fmtFechaEtiqueta(desde, tz)} ? ${fmtFechaEtiqueta(hasta, tz)}`;
+  }
+
+  if (hasta < desde) {
     return (
       <main className="mx-auto max-w-6xl px-5 py-12 md:px-8">
-        <p className="text-sm text-red-700">
-          La fecha &quot;hasta&quot; no puede ser anterior a &quot;desde&quot;.
-        </p>
-        <Link href="/admin/turnos" className="mt-4 inline-block text-gold-dark underline">
-          Quitar filtros
+        <p className="text-sm text-red-700">Rango de fechas inv?lido.</p>
+        <Link
+          href="/admin/turnos"
+          className="mt-4 inline-block text-gold-dark underline"
+        >
+          Volver a la agenda
         </Link>
       </main>
     );
   }
 
-  const servicio = sp.servicio?.trim() || null;
   const catalogo = await listarNombresServiciosCatalogo();
   const rowsServ = await listarServiciosAdmin();
   const serviciosAdmin = Array.isArray(rowsServ)
     ? rowsServ.map((r) => ({ id: r.id, ...rowToServicioApi(r) }))
     : [];
 
-  const todos = await listarTurnosActivosFiltrados({
+  const turnos = await listarTurnosActivosFiltrados({
     fechaDesde: desde,
     fechaHasta: hasta,
     servicioNombre: servicio,
   });
 
-  const turnosHoy = todos.filter((r) => r.fecha === hoy);
-  const turnosFuturos = todos.filter((r) => r.fecha > hoy);
-
-  const exportHref = `/api/admin/turnos/export${buildExportQuery({
-    servicio: servicio ?? undefined,
-    desde,
-    hasta: hasta ?? undefined,
-  })}`;
+  const exportHref = `/api/admin/turnos/export?servicio=${encodeURIComponent(servicio ?? "")}&desde=${desde}&hasta=${hasta}`;
 
   return (
     <main className="pb-16 pt-8">
@@ -114,15 +134,17 @@ export default async function AdminTurnosPage({
           <p className={uiPanelKicker}>Turnos</p>
           <h1 className={uiPanelTitle}>Agenda</h1>
           <p className={uiPanelDesc}>
-            Zona horaria: {tz} · Hoy calendario:{" "}
-            <span className="font-semibold text-ink-dark">{fmtFechaEtiqueta(hoy, tz)}</span>
+            Zona horaria: {tz} ? Hoy:{" "}
+            <span className="font-semibold text-ink-dark">
+              {fmtFechaEtiqueta(hoy, tz)}
+            </span>
           </p>
         </div>
 
         <section className={`mb-10 ${uiCard}`}>
           <h2 className={uiSubsectionTitle}>Cargar turno manual</h2>
           <p className="mb-4 text-sm font-medium text-ink">
-            Para reservas por teléfono o WhatsApp. Respeta el cupo configurado en
+            Para reservas por tel?fono o WhatsApp. Respeta el cupo configurado en
             cada servicio.
           </p>
           <AdminCargarTurnoForm
@@ -132,11 +154,47 @@ export default async function AdminTurnosPage({
         </section>
 
         <section className={`mb-10 ${uiCard}`}>
-          <h2 className={uiSubsectionTitle}>Filtros y exportación</h2>
+          <h2 className={uiSubsectionTitle}>Turnos asignados</h2>
+          <p className="mb-4 text-sm font-medium text-ink">
+            Un solo listado seg?n el per?odo elegido. Pod?s filtrar por servicio.
+          </p>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            {VISTAS.map((v) => (
+              <Link
+                key={v.id}
+                href={`/admin/turnos${buildTurnosQuery({
+                  vista: v.id,
+                  ref,
+                  servicio: servicio ?? undefined,
+                })}`}
+                className={tabClass(vista === v.id)}
+              >
+                {v.id === "dia" && ref === hoy ? "Hoy" : v.label}
+              </Link>
+            ))}
+          </div>
+
           <form
             method="get"
-            className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-end"
+            className="flex flex-col gap-4 border-t border-gold/20 pt-4 md:flex-row md:flex-wrap md:items-end"
           >
+            <input type="hidden" name="vista" value={vista} />
+            <div>
+              <label className={uiLabel}>
+                {vista === "semana"
+                  ? "D?a de referencia (semana)"
+                  : vista === "mes"
+                    ? "D?a de referencia (mes)"
+                    : "Fecha"}
+              </label>
+              <input
+                type="date"
+                name="ref"
+                defaultValue={ref}
+                className={`md:w-auto ${uiInput}`}
+              />
+            </div>
             <div className="min-w-[200px] flex-1">
               <label className={uiLabel}>Servicio</label>
               <select
@@ -152,56 +210,39 @@ export default async function AdminTurnosPage({
                 ))}
               </select>
             </div>
-            <div>
-              <label className={uiLabel}>Desde</label>
-              <input
-                type="date"
-                name="desde"
-                defaultValue={desde}
-                className={`md:w-auto ${uiInput}`}
-              />
-            </div>
-            <div>
-              <label className={uiLabel}>Hasta (opcional)</label>
-              <input
-                type="date"
-                name="hasta"
-                defaultValue={hasta ?? ""}
-                className={`md:w-auto ${uiInput}`}
-              />
-            </div>
             <div className="flex flex-wrap gap-2">
               <button type="submit" className={uiBtnPrimary}>
                 Aplicar
               </button>
+              <Link
+                href={`/admin/turnos${buildTurnosQuery({ vista: "dia", ref: hoy })}`}
+                className={uiBtnSecondary}
+              >
+                Hoy
+              </Link>
               <Link href="/admin/turnos" className={uiBtnSecondary}>
                 Limpiar
               </Link>
             </div>
           </form>
+
           <p className="mt-4 text-sm font-medium text-ink">
             <a
               href={exportHref}
-              className="font-medium text-gold-dark underline hover:text-gold"
+              className="font-semibold text-gold-dark underline hover:text-gold"
             >
               Descargar CSV
             </a>{" "}
-            con los mismos filtros (requiere sesión iniciada en este navegador).
+            del per�odo mostrado.
           </p>
-        </section>
-
-        <section className="mb-14">
-          <h2 className={uiSectionTitle}>Hoy en calendario ({turnosHoy.length})</h2>
-          <AdminTurnosTable rows={turnosHoy} tz={tz} showActions />
         </section>
 
         <section>
-          <h2 className={uiSectionTitle}>Después de hoy ({turnosFuturos.length})</h2>
-          <p className="mb-4 text-sm font-medium text-ink">
-            Turnos activos con fecha posterior a hoy dentro del filtro aplicado,
-            ordenados por fecha y hora.
-          </p>
-          <AdminTurnosTable rows={turnosFuturos} tz={tz} showActions />
+          <h2 className={uiSectionTitle}>
+            {turnos.length} turno{turnos.length === 1 ? "" : "s"}
+          </h2>
+          <p className="mb-4 text-sm font-medium text-ink-muted">{etiqueta}</p>
+          <AdminTurnosTable rows={turnos} tz={tz} showActions />
         </section>
       </div>
     </main>
