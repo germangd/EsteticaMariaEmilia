@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AdminServicioFechas } from "@/components/admin/admin-servicio-fechas";
 import { PrecioInlineEditor } from "@/components/admin/precio-inline-editor";
 import { ordenarServiciosArbol } from "@/lib/servicio-tree";
 import {
@@ -353,6 +354,17 @@ export function AdminServiciosManager({
             ) : null}
           </div>
         </form>
+        {editingId && form.tipo !== "grupo" ? (
+          <div className="mt-8 border-t border-gold/25 pt-8">
+            <h3 className={uiSubsectionTitle}>Fechas habilitadas</h3>
+            <p className="mb-4 text-sm text-ink-muted">
+              {
+                "Si agreg\u00e1s fechas, solo esos d\u00edas aceptan reservas de este servicio. Sin fechas, rige el horario habitual (lun\u2013s\u00e1b, sin domingo)."
+              }
+            </p>
+            <AdminServicioFechas serviceId={editingId} esGrupo={false} />
+          </div>
+        ) : null}
         {msg ? (
           <p className="mt-3 text-sm font-medium text-ink">{msg}</p>
         ) : null}

@@ -30,6 +30,49 @@ export const services = pgTable("services", {
     .defaultNow(),
 });
 
+/** Si hay filas para un servicio, solo esas fechas admiten reserva (modo calendario). */
+export const serviceAvailabilityDates = pgTable(
+  "service_availability_dates",
+  {
+    serviceId: integer("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "cascade" }),
+    fecha: date("fecha", { mode: "string" }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.serviceId, t.fecha] })]
+);
+
+/** Evento especial: en `fecha` solo se reservan los servicios vinculados. */
+export const agendaEvents = pgTable("agenda_events", {
+  id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  descripcion: text("descripcion"),
+  fecha: date("fecha", { mode: "string" }).notNull(),
+  horarioInicio: text("horario_inicio").notNull().default("09:00"),
+  horarioFin: text("horario_fin").notNull().default("18:00"),
+  /** Precio acordado del evento en ARS (0 = sin precio fijo). */
+  precioPesos: integer("precio_pesos").notNull().default(0),
+  clienteTelefono: text("cliente_telefono"),
+  clienteNombre: text("cliente_nombre"),
+  activo: boolean("activo").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const agendaEventServices = pgTable(
+  "agenda_event_services",
+  {
+    eventId: integer("event_id")
+      .notNull()
+      .references(() => agendaEvents.id, { onDelete: "cascade" }),
+    serviceId: integer("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "cascade" }),
+  },
+  (t) => [primaryKey({ columns: [t.eventId, t.serviceId] })]
+);
+
 /**
  * Paridad con hoja `Turnos` (fila `appendRow` en `Código.gs`):
  * id, fecha, hora, nombre, teléfono, servicio, responsable, código, estado.
@@ -173,6 +216,7 @@ export const saleLines = pgTable("sale_lines", {
   ),
 });
 
+export type AgendaEventRow = typeof agendaEvents.$inferSelect;
 export type CashSessionRow = typeof cashSessions.$inferSelect;
 export type SaleRow = typeof sales.$inferSelect;
 export type SaleLineRow = typeof saleLines.$inferSelect;

@@ -10,6 +10,11 @@ import {
   horaActualEnZona,
   horaAMinutos,
 } from "@/lib/agenda";
+import {
+  evaluarReservaEnEvento,
+  listarEventosActivosEnFecha,
+  resolverVentanaReserva,
+} from "@/lib/disponibilidad-repo";
 import { listarActivosConDuracion } from "@/lib/turnos-repo";
 
 export const dynamic = "force-dynamic";
@@ -54,14 +59,42 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, horarios: [] });
     }
 
+    const ventana = await resolverVentanaReserva(servicio.id, servicio, fecha);
+    if (!ventana || ventana.bloqueado) {
+      return NextResponse.json({
+        ok: true,
+        horarios: [],
+        mensaje: ventana?.bloqueado ?? "Fecha no disponible.",
+      });
+    }
+
+    const eventos = await listarEventosActivosEnFecha(fecha);
     const duracionMin = Math.max(5, servicio.duracionMin);
     let horariosPosibles = generarHorarios(
-      servicio.horarioInicio,
-      servicio.horarioFin,
+      ventana.horarioInicio,
+      ventana.horarioFin,
       duracionMin
     );
+
+    if (eventos.length > 0) {
+      horariosPosibles = horariosPosibles.filter((h) => {
+        const ev = evaluarReservaEnEvento(servicio.id, h, eventos);
+        if (!ev.permitido) return false;
+        if (ev.ventana) {
+          const finEv = horaAMinutos(ev.ventana.horarioFin);
+          const inicio = horaAMinutos(h);
+          return inicio >= 0 && inicio + duracionMin <= finEv;
+        }
+        return true;
+      });
+    }
+
     if (horariosPosibles.length === 0) {
-      return NextResponse.json({ ok: true, horarios: [] });
+      const mensaje =
+        eventos.length > 0
+          ? "No hay horarios disponibles para este servicio en esa fecha (revisá franjas de eventos)."
+          : undefined;
+      return NextResponse.json({ ok: true, horarios: [], mensaje });
     }
 
     const tz = getAppTimeZone();

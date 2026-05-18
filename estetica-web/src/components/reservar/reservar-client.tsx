@@ -159,7 +159,11 @@ export function ReservarClient() {
         setHorariosError(data.mensaje ?? "No se pudieron obtener horarios.");
         return;
       }
-      setHorarios(Array.isArray(data.horarios) ? data.horarios : []);
+      const lista = Array.isArray(data.horarios) ? data.horarios : [];
+      setHorarios(lista);
+      if (lista.length === 0 && data.mensaje) {
+        setHorariosError(data.mensaje);
+      }
     } catch {
       setHorarios([]);
       setHorariosError("Error de red al cargar horarios.");

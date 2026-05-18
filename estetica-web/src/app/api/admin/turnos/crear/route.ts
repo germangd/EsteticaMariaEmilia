@@ -13,6 +13,7 @@ import {
   turnoCabeEnHorario,
 } from "@/lib/agenda";
 import { enviarMailsTurnoConfirmado } from "@/lib/mail-turno";
+import { resolverVentanaReserva } from "@/lib/disponibilidad-repo";
 import { insertarTurnoSiHayCupo } from "@/lib/turnos-repo";
 
 export const dynamic = "force-dynamic";
@@ -102,8 +103,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const ventana = await resolverVentanaReserva(
+    servicioRow.id,
+    servicioRow,
+    fecha,
+    hora
+  );
+  if (!ventana || ventana.bloqueado) {
+    return NextResponse.json({
+      ok: false,
+      mensaje:
+        ventana?.bloqueado ??
+        "Esta fecha no está habilitada para este servicio.",
+    });
+  }
+
   if (
-    !turnoCabeEnHorario(hora, servicioRow.duracionMin, servicioRow.horarioFin)
+    !turnoCabeEnHorario(hora, servicioRow.duracionMin, ventana.horarioFin)
   ) {
     return NextResponse.json({
       ok: false,
