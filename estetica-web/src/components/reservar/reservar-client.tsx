@@ -80,6 +80,20 @@ export function ReservarClient() {
     return d.toISOString().slice(0, 10);
   }, []);
 
+  const servicioSel = useMemo(
+    () => servicios.find((s) => s.nombre === servicio),
+    [servicios, servicio]
+  );
+
+  const duracionEtiqueta = useMemo(() => {
+    const min = servicioSel?.duracion;
+    if (!min) return null;
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return m > 0 ? `${h} h ${m} min` : `${h} h`;
+  }, [servicioSel]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -344,6 +358,12 @@ export function ReservarClient() {
                 />
 
                 <label className={uiLabel}>Horario</label>
+                {duracionEtiqueta ? (
+                  <p className={`mb-2 ${uiHint}`}>
+                    Duración del servicio: <strong>{duracionEtiqueta}</strong>.
+                    Los turnos se ofrecen cada ese intervalo.
+                  </p>
+                ) : null}
                 {loadingHorarios ? (
                   <p className="mb-4 text-sm text-ink-muted">
                     Buscando horarios…

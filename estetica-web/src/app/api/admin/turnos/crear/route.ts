@@ -6,7 +6,12 @@ import {
   adminUnauthorizedResponse,
   isAdminRequest,
 } from "@/lib/admin-api-auth";
-import { esFechaHoraValida, getAppTimeZone, normalizarHora } from "@/lib/agenda";
+import {
+  esFechaHoraValida,
+  getAppTimeZone,
+  normalizarHora,
+  turnoCabeEnHorario,
+} from "@/lib/agenda";
 import { enviarMailsTurnoConfirmado } from "@/lib/mail-turno";
 import { insertarTurnoSiHayCupo } from "@/lib/turnos-repo";
 
@@ -97,6 +102,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (
+    !turnoCabeEnHorario(hora, servicioRow.duracionMin, servicioRow.horarioFin)
+  ) {
+    return NextResponse.json({
+      ok: false,
+      mensaje:
+        "Ese horario no alcanza para la duración del servicio antes del cierre.",
+    });
+  }
+
   const ins = await insertarTurnoSiHayCupo({
     fecha,
     hora,
@@ -106,6 +121,7 @@ export async function POST(request: NextRequest) {
     servicioNombre: servicioRow.nombre,
     responsable: servicioRow.responsable,
     capacidad: servicioRow.capacidad,
+    duracionMin: servicioRow.duracionMin,
   });
 
   if (ins.ok === false) {

@@ -3,12 +3,14 @@ import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
 import { services } from "@/db/schema";
 import {
+  contarSolapamiento,
   generarHorarios,
   getAppTimeZone,
   hoyIsoEnZona,
   horaActualEnZona,
+  horaAMinutos,
 } from "@/lib/agenda";
-import { contarActivosPorHora } from "@/lib/turnos-repo";
+import { listarActivosConDuracion } from "@/lib/turnos-repo";
 
 export const dynamic = "force-dynamic";
 
@@ -52,9 +54,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, horarios: [] });
     }
 
+    const duracionMin = Math.max(5, servicio.duracionMin);
     let horariosPosibles = generarHorarios(
       servicio.horarioInicio,
-      servicio.horarioFin
+      servicio.horarioFin,
+      duracionMin
     );
     if (horariosPosibles.length === 0) {
       return NextResponse.json({ ok: true, horarios: [] });
@@ -67,16 +71,18 @@ export async function GET(request: Request) {
       horariosPosibles = horariosPosibles.filter((h) => h >= horaActual);
     }
 
-    const ocupados = await contarActivosPorHora(
+    const ocupados = await listarActivosConDuracion(
       fecha,
       servicioNombre,
       servicio.responsable
     );
 
     const capacidad = servicio.capacidad;
-    const disponibles = horariosPosibles.filter(
-      (hora) => (ocupados.get(hora) ?? 0) < capacidad
-    );
+    const disponibles = horariosPosibles.filter((hora) => {
+      const inicio = horaAMinutos(hora);
+      if (inicio < 0) return false;
+      return contarSolapamiento(inicio, duracionMin, ocupados) < capacidad;
+    });
 
     return NextResponse.json({ ok: true, horarios: disponibles });
   } catch {

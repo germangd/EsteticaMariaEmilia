@@ -1,8 +1,13 @@
-import { and, asc, eq, gte, lte, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gte, lte, ne } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { appointments, services, type AppointmentRow } from "@/db/schema";
-import { generarCodigo, normalizarHora } from "@/lib/agenda";
-import { getNeonSql } from "@/lib/db";
+import {
+  contarSolapamiento,
+  generarCodigo,
+  horaAMinutos,
+  normalizarHora,
+  type TurnoOcupado,
+} from "@/lib/agenda";
 import { dedupeNombresServicio } from "@/lib/servicio-format";
 
 function isUniqueViolation(e: unknown): boolean {
@@ -14,7 +19,38 @@ function isUniqueViolation(e: unknown): boolean {
   );
 }
 
-/** Inserta turno solo si cupo < capacidad (una sentencia en DB). */
+/** Turnos activos del día con duración del catálogo (para cupo por solapamiento). */
+export async function listarActivosConDuracion(
+  fecha: string,
+  servicioNombre: string,
+  responsable: string
+): Promise<TurnoOcupado[]> {
+  const db = getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      hora: appointments.hora,
+      duracionMin: services.duracionMin,
+    })
+    .from(appointments)
+    .innerJoin(services, eq(appointments.servicioNombre, services.nombre))
+    .where(
+      and(
+        eq(appointments.fecha, fecha),
+        eq(appointments.servicioNombre, servicioNombre),
+        eq(appointments.responsable, responsable),
+        eq(appointments.estado, "activo")
+      )
+    );
+
+  return rows.map((r) => ({
+    hora: normalizarHora(r.hora),
+    duracionMin: Math.max(5, r.duracionMin),
+  }));
+}
+
+/** Inserta turno si hay cupo considerando la duración del servicio. */
 export async function insertarTurnoSiHayCupo(params: {
   fecha: string;
   hora: string;
@@ -24,53 +60,48 @@ export async function insertarTurnoSiHayCupo(params: {
   servicioNombre: string;
   responsable: string;
   capacidad: number;
+  duracionMin: number;
 }): Promise<
   | { ok: true; id: number; codigo: string }
   | { ok: false; reason: "no_db" | "cupo" | "codigo_duplicado" }
 > {
-  const neonSql = getNeonSql();
-  if (!neonSql) return { ok: false, reason: "no_db" };
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+
+  const hora = normalizarHora(params.hora);
+  const inicio = horaAMinutos(hora);
+  if (inicio < 0) return { ok: false, reason: "cupo" };
+
+  const duracion = Math.max(5, Math.round(params.duracionMin));
+  const ocupados = await listarActivosConDuracion(
+    params.fecha,
+    params.servicioNombre,
+    params.responsable
+  );
+  if (contarSolapamiento(inicio, duracion, ocupados) >= params.capacidad) {
+    return { ok: false, reason: "cupo" };
+  }
 
   const email = params.email?.trim() || null;
 
   for (let intento = 0; intento < 8; intento++) {
     const codigo = generarCodigo();
     try {
-      const rows = await neonSql`
-        WITH ocupacion AS (
-          SELECT COUNT(*)::int AS c
-          FROM appointments
-          WHERE fecha = ${params.fecha}::date
-            AND hora = ${params.hora}
-            AND servicio_nombre = ${params.servicioNombre}
-            AND responsable = ${params.responsable}
-            AND estado = 'activo'
-        )
-        INSERT INTO appointments (
-          fecha, hora, nombre_cliente, telefono, email,
-          servicio_nombre, responsable, codigo_cancelacion, estado
-        )
-        SELECT
-          ${params.fecha}::date,
-          ${params.hora},
-          ${params.nombre},
-          ${params.telefono},
-          ${email},
-          ${params.servicioNombre},
-          ${params.responsable},
-          ${codigo},
-          'activo'
-        FROM ocupacion
-        WHERE ocupacion.c < ${params.capacidad}
-        RETURNING id, codigo_cancelacion
-      `;
-      const list = rows as unknown as {
-        id: number;
-        codigo_cancelacion: string;
-      }[];
-      const row = list[0];
-      if (row) return { ok: true, id: row.id, codigo: row.codigo_cancelacion };
-      return { ok: false, reason: "cupo" };
+      const [row] = await db
+        .insert(appointments)
+        .values({
+          fecha: params.fecha,
+          hora,
+          nombreCliente: params.nombre,
+          telefono: params.telefono,
+          email,
+          servicioNombre: params.servicioNombre,
+          responsable: params.responsable,
+          codigoCancelacion: codigo,
+          estado: "activo",
+        })
+        .returning({ id: appointments.id, codigoCancelacion: appointments.codigoCancelacion });
+      if (row) return { ok: true, id: row.id, codigo: row.codigoCancelacion };
     } catch (e) {
       if (isUniqueViolation(e)) continue;
       throw e;
@@ -103,37 +134,6 @@ export async function cancelarTurnoPorCodigo(
   return { ok: true };
 }
 
-/** Cupos activos por hora para un servicio/responsable/fecha (paridad `obtenerHorariosDisponibles`). */
-export async function contarActivosPorHora(
-  fecha: string,
-  servicioNombre: string,
-  responsable: string
-): Promise<Map<string, number>> {
-  const db = getDb();
-  if (!db) return new Map();
-
-  const rows = await db
-    .select({
-      hora: appointments.hora,
-      n: sql<number>`count(*)::int`.as("n"),
-    })
-    .from(appointments)
-    .where(
-      and(
-        eq(appointments.fecha, fecha),
-        eq(appointments.servicioNombre, servicioNombre),
-        eq(appointments.responsable, responsable),
-        eq(appointments.estado, "activo")
-      )
-    )
-    .groupBy(appointments.hora);
-
-  const map = new Map<string, number>();
-  for (const r of rows) {
-    map.set(normalizarHora(r.hora), Number(r.n));
-  }
-  return map;
-}
 
 /** Nombres de servicio del catálogo (para filtros en admin). */
 export async function listarNombresServiciosCatalogo(): Promise<string[]> {

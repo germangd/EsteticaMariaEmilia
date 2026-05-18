@@ -2,7 +2,12 @@ import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
 import { services } from "@/db/schema";
-import { esFechaHoraValida, getAppTimeZone, normalizarHora } from "@/lib/agenda";
+import {
+  esFechaHoraValida,
+  getAppTimeZone,
+  normalizarHora,
+  turnoCabeEnHorario,
+} from "@/lib/agenda";
 import { enviarMailsTurnoConfirmado } from "@/lib/mail-turno";
 import { insertarTurnoSiHayCupo } from "@/lib/turnos-repo";
 
@@ -88,6 +93,14 @@ export async function POST(request: Request) {
       });
     }
 
+    if (!turnoCabeEnHorario(hora, servicio.duracionMin, servicio.horarioFin)) {
+      return NextResponse.json({
+        exito: false,
+        mensaje:
+          "Ese horario no alcanza para la duración del servicio antes del cierre.",
+      });
+    }
+
     const ins = await insertarTurnoSiHayCupo({
       fecha,
       hora,
@@ -97,6 +110,7 @@ export async function POST(request: Request) {
       servicioNombre,
       responsable: servicio.responsable,
       capacidad: servicio.capacidad,
+      duracionMin: servicio.duracionMin,
     });
 
     if (ins.ok === false) {
