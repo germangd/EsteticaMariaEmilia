@@ -7,7 +7,7 @@ import { dedupeServiciosPorNombre } from "@/lib/servicio-format";
 import {
   uiBtnDark,
   uiBtnPrimaryFull,
-  uiCardSoft,
+  uiReservarForm,
   uiHint,
   uiInput,
   uiLabel,
@@ -300,7 +300,7 @@ export function ReservarClient() {
         </div>
 
         {tab === "reservar" && (
-          <form onSubmit={enviarReserva} className={uiCardSoft}>
+          <form onSubmit={enviarReserva} className={uiReservarForm}>
             {loadingServicios ? (
               <p className="text-center text-sm text-ink-muted">
                 Cargando servicios…
@@ -409,7 +409,7 @@ export function ReservarClient() {
                   className={`mb-4 ${uiInput}`}
                 />
 
-                <p className="mb-4 rounded-sm border-l-4 border-gold bg-cream px-3 py-2.5 text-xs font-medium leading-relaxed text-ink">
+                <p className="mb-4 rounded-sm border-l-4 border-gold bg-white/70 px-3 py-2.5 text-xs font-medium leading-relaxed text-ink">
                   Cancelaciones con código hasta{" "}
                   <strong>24 h antes</strong> del turno. Con menos tiempo,
                   contactanos por WhatsApp desde la home.
@@ -428,7 +428,7 @@ export function ReservarClient() {
                 )}
 
                 {ultimaReserva && reservaMsg?.type === "ok" ? (
-                  <div className="mb-4 rounded-sm border border-gold/45 bg-cream p-4 text-center shadow-sm">
+                  <div className="mb-4 rounded-sm border border-gold/45 bg-white/80 p-4 text-center shadow-sm">
                     <p className="text-[0.65rem] font-bold uppercase tracking-wider text-ink-dark">
                       Tu código de cancelación
                     </p>
@@ -467,7 +467,7 @@ export function ReservarClient() {
         )}
 
         {tab === "cancelar" && (
-          <form onSubmit={enviarCancelacion} className={uiCardSoft}>
+          <form onSubmit={enviarCancelacion} className={uiReservarForm}>
             <p className={`mb-4 ${uiHint}`}>
               El código aparece en pantalla al reservar (anotalo). Podés
               cancelar sin cargo hasta <strong className="font-semibold">24 h antes</strong> del horario.

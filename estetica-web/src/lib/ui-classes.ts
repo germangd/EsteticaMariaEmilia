@@ -17,6 +17,10 @@ export const uiCard =
 export const uiCardSoft =
   "rounded-sm border border-gold/35 bg-white p-6 shadow-sm";
 
+/** Contenedor del formulario de reservas (tono marfil, distinto del fondo de página). */
+export const uiReservarForm =
+  "rounded-sm border border-gold/50 bg-[#FFF9F2] p-6 shadow-md ring-1 ring-gold/20 md:p-7";
+
 export const uiBtnPrimary =
   "inline-flex items-center justify-center rounded-sm bg-gold px-5 py-2.5 text-[0.72rem] font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-gold-dark hover:shadow focus:outline-none focus:ring-2 focus:ring-gold/40 disabled:cursor-not-allowed disabled:opacity-50";
 
