@@ -4,6 +4,20 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MeLogo } from "@/components/landing/me-logo";
 import { dedupeServiciosPorNombre } from "@/lib/servicio-format";
+import {
+  uiBtnDark,
+  uiBtnPrimaryFull,
+  uiCardSoft,
+  uiHint,
+  uiInput,
+  uiLabel,
+  uiSelect,
+  uiTabActive,
+  uiTabBar,
+  uiTabInactive,
+  uiTimeSlot,
+  uiTimeSlotActive,
+} from "@/lib/ui-classes";
 import { buildWhatsAppTurnoUrl } from "@/lib/whatsapp";
 
 type ServicioApi = {
@@ -243,7 +257,7 @@ export function ReservarClient() {
   }
 
   return (
-    <div className="min-h-screen bg-cream pb-16 pt-24 text-ink">
+    <div className="min-h-screen bg-cream-dark pb-16 pt-24 text-ink">
       <div className="mx-auto max-w-lg px-4">
         <header className="mb-8 text-center">
           <Link
@@ -259,45 +273,34 @@ export function ReservarClient() {
             </span>
           </Link>
         </header>
-        <h1 className="mb-2 text-center font-serif text-2xl font-light text-ink-dark md:text-3xl">
+        <h1 className="mb-2 text-center font-serif text-2xl font-medium text-ink-dark md:text-3xl">
           Turnos online
         </h1>
-        <p className="mb-8 text-center text-sm font-light text-ink-muted">
+        <p className="mb-8 text-center text-sm font-medium text-ink">
           Elegí servicio, fecha y horario. Al confirmar verás un{" "}
-          <strong className="font-medium text-ink">código en pantalla</strong>:
+          <strong className="font-semibold text-ink-dark">código en pantalla</strong>:
           guardalo para cancelar o para consultarnos.
         </p>
 
-        <div className="mb-8 flex rounded border border-gold/25 bg-white/80 p-1 shadow-sm">
+        <div className={uiTabBar}>
           <button
             type="button"
             onClick={() => setTab("reservar")}
-            className={`flex-1 rounded py-2.5 text-xs font-medium uppercase tracking-wide transition-colors ${
-              tab === "reservar"
-                ? "bg-gold text-white"
-                : "text-ink-muted hover:text-ink"
-            }`}
+            className={tab === "reservar" ? uiTabActive : uiTabInactive}
           >
             Reservar
           </button>
           <button
             type="button"
             onClick={() => setTab("cancelar")}
-            className={`flex-1 rounded py-2.5 text-xs font-medium uppercase tracking-wide transition-colors ${
-              tab === "cancelar"
-                ? "bg-gold text-white"
-                : "text-ink-muted hover:text-ink"
-            }`}
+            className={tab === "cancelar" ? uiTabActive : uiTabInactive}
           >
             Cancelar
           </button>
         </div>
 
         {tab === "reservar" && (
-          <form
-            onSubmit={enviarReserva}
-            className="rounded border border-gold/20 bg-white/90 p-6 shadow-sm"
-          >
+          <form onSubmit={enviarReserva} className={uiCardSoft}>
             {loadingServicios ? (
               <p className="text-center text-sm text-ink-muted">
                 Cargando servicios…
@@ -314,14 +317,12 @@ export function ReservarClient() {
               </p>
             ) : (
               <>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Servicio
-                </label>
+                <label className={uiLabel}>Servicio</label>
                 <select
                   required
                   value={servicio}
                   onChange={(e) => setServicio(e.target.value)}
-                  className="mb-4 w-full rounded border border-gold/25 bg-cream px-3 py-2.5 text-sm outline-none ring-gold/30 focus:ring-2"
+                  className={`mb-4 ${uiSelect}`}
                 >
                   <option value="">Elegí un servicio</option>
                   {servicios.map((s) => (
@@ -331,9 +332,7 @@ export function ReservarClient() {
                   ))}
                 </select>
 
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Fecha
-                </label>
+                <label className={uiLabel}>Fecha</label>
                 <input
                   type="date"
                   required
@@ -341,12 +340,10 @@ export function ReservarClient() {
                   max={maxFecha}
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
-                  className="mb-4 w-full rounded border border-gold/25 bg-cream px-3 py-2.5 text-sm outline-none ring-gold/30 focus:ring-2"
+                  className={`mb-4 ${uiInput}`}
                 />
 
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Horario
-                </label>
+                <label className={uiLabel}>Horario</label>
                 {loadingHorarios ? (
                   <p className="mb-4 text-sm text-ink-muted">
                     Buscando horarios…
@@ -370,11 +367,7 @@ export function ReservarClient() {
                         key={h}
                         type="button"
                         onClick={() => setHora(h)}
-                        className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                          hora === h
-                            ? "border-gold-dark bg-gold text-white"
-                            : "border-gold/30 bg-cream text-ink hover:border-gold"
-                        }`}
+                        className={hora === h ? uiTimeSlotActive : uiTimeSlot}
                       >
                         {h}
                       </button>
@@ -382,19 +375,15 @@ export function ReservarClient() {
                   </div>
                 )}
 
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Nombre completo
-                </label>
+                <label className={uiLabel}>Nombre completo</label>
                 <input
                   required
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  className="mb-4 w-full rounded border border-gold/25 bg-cream px-3 py-2.5 text-sm outline-none ring-gold/30 focus:ring-2"
+                  className={`mb-4 ${uiInput}`}
                 />
 
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Teléfono (código de área, sin 0 ni 15)
-                </label>
+                <label className={uiLabel}>Teléfono (código de área, sin 0 ni 15)</label>
                 <input
                   required
                   type="tel"
@@ -402,16 +391,14 @@ export function ReservarClient() {
                   placeholder="Ej: 2215918286"
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
-                  className="mb-4 w-full rounded border border-gold/25 bg-cream px-3 py-2.5 text-sm outline-none ring-gold/30 focus:ring-2"
+                  className={`mb-4 ${uiInput}`}
                 />
 
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                  Email (opcional)
-                </label>
-                <p className="mb-2 text-xs leading-relaxed text-ink-muted">
+                <label className={uiLabel}>Email (opcional)</label>
+                <p className={`mb-2 ${uiHint}`}>
                   Si lo dejás, podemos enviarte confirmación cuando el correo del
                   salón esté activo.{" "}
-                  <strong className="font-medium text-ink">
+                  <strong className="font-semibold text-ink-dark">
                     El código oficial aparece siempre al confirmar abajo.
                   </strong>
                 </p>
@@ -419,10 +406,10 @@ export function ReservarClient() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mb-4 w-full rounded border border-gold/25 bg-cream px-3 py-2.5 text-sm outline-none ring-gold/30 focus:ring-2"
+                  className={`mb-4 ${uiInput}`}
                 />
 
-                <p className="mb-4 rounded border-l-4 border-gold bg-cream/80 px-3 py-2 text-xs leading-relaxed text-ink-muted">
+                <p className="mb-4 rounded-sm border-l-4 border-gold bg-cream px-3 py-2.5 text-xs font-medium leading-relaxed text-ink">
                   Cancelaciones con código hasta{" "}
                   <strong>24 h antes</strong> del turno. Con menos tiempo,
                   contactanos por WhatsApp desde la home.
@@ -441,8 +428,8 @@ export function ReservarClient() {
                 )}
 
                 {ultimaReserva && reservaMsg?.type === "ok" ? (
-                  <div className="mb-4 rounded border border-gold/30 bg-cream/90 p-4 text-center">
-                    <p className="text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+                  <div className="mb-4 rounded-sm border border-gold/45 bg-cream p-4 text-center shadow-sm">
+                    <p className="text-[0.65rem] font-bold uppercase tracking-wider text-ink-dark">
                       Tu código de cancelación
                     </p>
                     <p className="my-2 font-mono text-2xl font-semibold tracking-[0.2em] text-gold-dark">
@@ -470,7 +457,7 @@ export function ReservarClient() {
                 <button
                   type="submit"
                   disabled={reservando || !hora}
-                  className="w-full rounded bg-gold py-3 text-xs font-semibold uppercase tracking-widest text-white transition-colors hover:bg-gold-dark disabled:cursor-not-allowed disabled:opacity-50"
+                  className={uiBtnPrimaryFull}
                 >
                   {reservando ? "Enviando…" : "Solicitar turno"}
                 </button>
@@ -480,22 +467,17 @@ export function ReservarClient() {
         )}
 
         {tab === "cancelar" && (
-          <form
-            onSubmit={enviarCancelacion}
-            className="rounded border border-gold/20 bg-white/90 p-6 shadow-sm"
-          >
-            <p className="mb-4 text-sm leading-relaxed text-ink-muted">
+          <form onSubmit={enviarCancelacion} className={uiCardSoft}>
+            <p className={`mb-4 ${uiHint}`}>
               El código aparece en pantalla al reservar (anotalo). Podés
-              cancelar sin cargo hasta <strong>24 h antes</strong> del horario.
+              cancelar sin cargo hasta <strong className="font-semibold">24 h antes</strong> del horario.
             </p>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              Código de cancelación
-            </label>
+            <label className={uiLabel}>Código de cancelación</label>
             <input
               value={codigoCancel}
               onChange={(e) => setCodigoCancel(e.target.value)}
               placeholder="Ej: A1B2C3"
-              className="mb-4 w-full rounded border border-gold/25 bg-cream px-3 py-2.5 text-sm uppercase outline-none ring-gold/30 focus:ring-2"
+              className={`mb-4 uppercase ${uiInput}`}
             />
             {cancelMsg && (
               <p
@@ -511,7 +493,7 @@ export function ReservarClient() {
             <button
               type="submit"
               disabled={cancelando}
-              className="w-full rounded bg-ink-dark py-3 text-xs font-semibold uppercase tracking-widest text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className={uiBtnDark}
             >
               {cancelando ? "Procesando…" : "Cancelar mi turno"}
             </button>

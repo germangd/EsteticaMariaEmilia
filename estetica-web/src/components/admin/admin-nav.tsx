@@ -22,10 +22,10 @@ export function AdminNav() {
           <Link
             key={href}
             href={href}
-            className={`rounded-sm px-4 py-2 text-[0.7rem] font-medium uppercase tracking-wider transition ${
+            className={`rounded-sm px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-wider transition ${
               active
-                ? "bg-gold text-white"
-                : "border border-gold/30 text-gold-dark hover:bg-cream"
+                ? "bg-gold text-white shadow-sm"
+                : "border border-gold/55 bg-white text-gold-dark shadow-sm hover:border-gold hover:bg-cream"
             }`}
           >
             {label}

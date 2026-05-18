@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
+import {
+  uiBtnPrimary,
+  uiCard,
+  uiInput,
+  uiLabel,
+  uiTableHead,
+  uiTableWrap,
+} from "@/lib/ui-classes";
 
 export type PaqueteAdmin = {
   id: number;
@@ -89,8 +97,7 @@ export function AdminPaquetesManager({
     }
   }, [paqueteSel, asigPrecio]);
 
-  const inputClass =
-    "w-full rounded-sm border border-gold/30 bg-cream px-3 py-2 text-sm text-ink";
+  const inputClass = uiInput;
 
   const resetForm = useCallback(() => {
     setForm(emptyPaquete());
@@ -266,7 +273,7 @@ export function AdminPaquetesManager({
 
   return (
     <div className="space-y-12">
-      <section className="rounded-sm border border-gold/20 bg-white p-5 shadow-sm md:p-6">
+      <section className={uiCard}>
         <h2 className="mb-1 font-serif text-lg font-normal text-ink-dark">
           {editingId ? "Editar paquete" : "Nuevo paquete"}
         </h2>
@@ -276,7 +283,7 @@ export function AdminPaquetesManager({
         </p>
         <form onSubmit={(e) => void onSubmitPaquete(e)} className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Nombre
             </label>
             <input
@@ -287,7 +294,7 @@ export function AdminPaquetesManager({
             />
           </div>
           <div>
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Precio (ARS)
             </label>
             <input
@@ -302,7 +309,7 @@ export function AdminPaquetesManager({
             />
           </div>
           <div>
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Sesiones incluidas
             </label>
             <input
@@ -317,7 +324,7 @@ export function AdminPaquetesManager({
             />
           </div>
           <div className="md:col-span-2">
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Descripción (opcional)
             </label>
             <input
@@ -327,7 +334,7 @@ export function AdminPaquetesManager({
             />
           </div>
           <div className="md:col-span-2">
-            <p className="mb-2 text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <p className={`mb-2 ${uiLabel}`}>
               Servicios del paquete
             </p>
             <div className="flex flex-wrap gap-3">
@@ -358,7 +365,7 @@ export function AdminPaquetesManager({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-sm bg-gold px-5 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-white hover:bg-gold-dark disabled:opacity-50"
+              className={uiBtnPrimary}
             >
               {pending ? "Guardando…" : editingId ? "Actualizar" : "Crear paquete"}
             </button>
@@ -383,9 +390,9 @@ export function AdminPaquetesManager({
         {paquetes.length === 0 ? (
           <p className="text-sm text-ink-muted">No hay paquetes cargados.</p>
         ) : (
-          <div className="overflow-x-auto rounded-sm border border-gold/25 bg-white shadow-sm">
+          <div className={uiTableWrap}>
             <table className="min-w-[720px] w-full text-left text-sm">
-              <thead className="border-b border-gold/20 bg-cream text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-muted">
+              <thead className={uiTableHead}>
                 <tr>
                   <th className="px-3 py-3 pl-4">Paquete</th>
                   <th className="px-3 py-3">Precio</th>
@@ -434,7 +441,7 @@ export function AdminPaquetesManager({
         )}
       </section>
 
-      <section className="rounded-sm border border-gold/20 bg-white p-5 shadow-sm md:p-6">
+      <section className={uiCard}>
         <h2 className="mb-1 font-serif text-lg font-normal text-ink-dark">
           Vender / asignar paquete a cliente
         </h2>
@@ -447,7 +454,7 @@ export function AdminPaquetesManager({
         ) : (
           <form onSubmit={(e) => void onAsignar(e)} className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
-              <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+              <label className={uiLabel}>
                 Paquete
               </label>
               <select
@@ -471,7 +478,7 @@ export function AdminPaquetesManager({
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+              <label className={uiLabel}>
                 Cliente
               </label>
               <input
@@ -482,7 +489,7 @@ export function AdminPaquetesManager({
               />
             </div>
             <div>
-              <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+              <label className={uiLabel}>
                 Teléfono
               </label>
               <input
@@ -493,7 +500,7 @@ export function AdminPaquetesManager({
               />
             </div>
             <div>
-              <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+              <label className={uiLabel}>
                 Fecha de cobro
               </label>
               <input
@@ -505,7 +512,7 @@ export function AdminPaquetesManager({
               />
             </div>
             <div>
-              <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+              <label className={uiLabel}>
                 Monto cobrado (ARS)
               </label>
               <input
@@ -518,7 +525,7 @@ export function AdminPaquetesManager({
               />
             </div>
             <div className="md:col-span-2">
-              <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+              <label className={uiLabel}>
                 Notas (opcional)
               </label>
               <input
@@ -531,7 +538,7 @@ export function AdminPaquetesManager({
               <button
                 type="submit"
                 disabled={pending}
-                className="rounded-sm bg-gold px-5 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-white hover:bg-gold-dark disabled:opacity-50"
+                className={uiBtnPrimary}
               >
                 Registrar venta
               </button>
@@ -547,9 +554,9 @@ export function AdminPaquetesManager({
         {asignaciones.length === 0 ? (
           <p className="text-sm text-ink-muted">No hay asignaciones activas.</p>
         ) : (
-          <div className="overflow-x-auto rounded-sm border border-gold/25 bg-white shadow-sm">
+          <div className={uiTableWrap}>
             <table className="min-w-[800px] w-full text-left text-sm">
-              <thead className="border-b border-gold/20 bg-cream text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-muted">
+              <thead className={uiTableHead}>
                 <tr>
                   <th className="px-3 py-3 pl-4">Cliente</th>
                   <th className="px-3 py-3">Paquete</th>

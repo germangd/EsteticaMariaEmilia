@@ -2,6 +2,12 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import {
+  uiBtnPrimaryFull,
+  uiCardSoft,
+  uiInput,
+  uiLabel,
+} from "@/lib/ui-classes";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -45,32 +51,23 @@ export function AdminLoginForm() {
   }
 
   return (
-    <form
-      onSubmit={(e) => void onSubmit(e)}
-      className="mx-auto max-w-md rounded-sm border border-gold/25 bg-white p-8 shadow-sm"
-    >
-      <label className="mb-2 block text-[0.72rem] font-medium uppercase tracking-wider text-ink-muted">
-        Contraseña de administración
-      </label>
+    <form onSubmit={(e) => void onSubmit(e)} className={`mx-auto max-w-md ${uiCardSoft}`}>
+      <label className={uiLabel}>Contraseña de administración</label>
       <input
         type="password"
         autoComplete="current-password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        className="mb-4 w-full rounded-sm border border-gold/30 bg-cream px-3 py-2.5 text-sm text-ink outline-none ring-gold/30 focus:ring-2"
+        className={`mb-4 ${uiInput}`}
         placeholder="••••••••"
         required
       />
       {error ? (
-        <p className="mb-4 text-sm text-red-700" role="alert">
+        <p className="mb-4 text-sm font-medium text-red-700" role="alert">
           {error}
         </p>
       ) : null}
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-sm bg-gold px-4 py-3 text-[0.72rem] font-medium uppercase tracking-wider text-white transition hover:bg-gold-dark disabled:opacity-60"
-      >
+      <button type="submit" disabled={pending} className={uiBtnPrimaryFull}>
         {pending ? "Ingresando…" : "Ingresar"}
       </button>
     </form>

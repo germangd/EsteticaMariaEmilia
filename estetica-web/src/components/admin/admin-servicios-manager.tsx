@@ -1,6 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  uiBtnPrimary,
+  uiBtnSecondary,
+  uiCard,
+  uiInput,
+  uiLabel,
+  uiSubsectionTitle,
+  uiTableHead,
+  uiTableWrap,
+} from "@/lib/ui-classes";
 
 export type ServicioAdmin = {
   id: number;
@@ -122,22 +132,21 @@ export function AdminServiciosManager({
     }
   }
 
-  const inputClass =
-    "w-full rounded-sm border border-gold/30 bg-cream px-3 py-2 text-sm text-ink";
+  const inputClass = uiInput;
 
   return (
     <div className="space-y-10">
-      <section className="rounded-sm border border-gold/20 bg-white p-5 shadow-sm md:p-6">
-        <h2 className="mb-1 font-serif text-lg font-normal text-ink-dark">
+      <section className={uiCard}>
+        <h2 className={uiSubsectionTitle}>
           {editingId ? "Editar servicio" : "Nuevo servicio"}
         </h2>
-        <p className="mb-4 text-sm text-ink-muted">
+        <p className="mb-4 text-sm font-medium text-ink">
           La <strong>capacidad</strong> es cuántos clientes pueden reservar el
           mismo servicio a la misma hora (cupo por turno).
         </p>
         <form onSubmit={(e) => void onSubmit(e)} className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Nombre
             </label>
             <input
@@ -148,7 +157,7 @@ export function AdminServiciosManager({
             />
           </div>
           <div>
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Duración (min)
             </label>
             <input
@@ -164,7 +173,7 @@ export function AdminServiciosManager({
             />
           </div>
           <div>
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Cupo por turno
             </label>
             <input
@@ -179,7 +188,7 @@ export function AdminServiciosManager({
             />
           </div>
           <div>
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Responsable
             </label>
             <input
@@ -189,7 +198,7 @@ export function AdminServiciosManager({
             />
           </div>
           <div>
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Horario desde
             </label>
             <input
@@ -203,7 +212,7 @@ export function AdminServiciosManager({
             />
           </div>
           <div>
-            <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <label className={uiLabel}>
               Horario hasta
             </label>
             <input
@@ -215,11 +224,7 @@ export function AdminServiciosManager({
             />
           </div>
           <div className="flex flex-wrap gap-2 md:col-span-2">
-            <button
-              type="submit"
-              disabled={pending}
-              className="rounded-sm bg-gold px-5 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-white hover:bg-gold-dark disabled:opacity-50"
-            >
+            <button type="submit" disabled={pending} className={uiBtnPrimary}>
               {pending ? "Guardando…" : editingId ? "Actualizar" : "Agregar"}
             </button>
             {editingId ? (
@@ -227,7 +232,7 @@ export function AdminServiciosManager({
                 type="button"
                 disabled={pending}
                 onClick={resetForm}
-                className="rounded-sm border border-gold/40 px-5 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-gold-dark"
+                className={uiBtnSecondary}
               >
                 Cancelar edición
               </button>
@@ -235,23 +240,23 @@ export function AdminServiciosManager({
           </div>
         </form>
         {msg ? (
-          <p className="mt-3 text-sm text-ink-muted">{msg}</p>
+          <p className="mt-3 text-sm font-medium text-ink">{msg}</p>
         ) : null}
       </section>
 
       <section>
-        <h2 className="mb-4 font-serif text-xl font-normal text-ink-dark">
+        <h2 className="mb-4 font-serif text-xl font-semibold text-ink-dark">
           Catálogo ({list.length})
         </h2>
         {list.length === 0 ? (
-          <p className="text-sm text-ink-muted">
+          <p className="text-sm font-medium text-ink">
             No hay servicios. Agregá el primero arriba; aparecerán en la web de
             reservas.
           </p>
         ) : (
-          <div className="overflow-x-auto rounded-sm border border-gold/25 bg-white shadow-sm">
+          <div className={uiTableWrap}>
             <table className="min-w-[720px] w-full text-left text-sm">
-              <thead className="border-b border-gold/20 bg-cream text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-muted">
+              <thead className={uiTableHead}>
                 <tr>
                   <th className="px-3 py-3 pl-4">Servicio</th>
                   <th className="px-3 py-3">Duración</th>

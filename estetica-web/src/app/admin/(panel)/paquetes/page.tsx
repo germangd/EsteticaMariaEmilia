@@ -3,6 +3,7 @@ import { AdminPaquetesManager } from "@/components/admin/admin-paquetes-manager"
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import { rowToServicioApi } from "@/lib/servicio-format";
 import { listarAsignacionesPaquete, listarPaquetesAdmin } from "@/lib/paquetes-repo";
+import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
   title: "Admin — Paquetes | María Emilia Estética",
@@ -25,14 +26,10 @@ export default async function AdminPaquetesPage() {
   return (
     <main className="pb-16 pt-8">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <div className="mb-8 border-b border-gold/20 pb-8">
-          <p className="mb-1 text-[0.65rem] font-medium uppercase tracking-[0.25em] text-gold">
-            Configuración
-          </p>
-          <h1 className="font-serif text-3xl font-light text-ink-dark md:text-4xl">
-            Paquetes
-          </h1>
-          <p className="mt-2 text-sm text-ink-muted">
+        <div className="mb-8 border-b border-gold/35 pb-8">
+          <p className={uiPanelKicker}>Configuración</p>
+          <h1 className={uiPanelTitle}>Paquetes</h1>
+          <p className={uiPanelDesc}>
             Armá combos con varias sesiones, vendelos en el salón y controlá
             cuántas quedan por cliente. La web pública sigue reservando servicios
             sueltos.

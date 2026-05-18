@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
+import {
+  uiBtnPrimary,
+  uiInput,
+  uiLabel,
+  uiSelect,
+} from "@/lib/ui-classes";
 
 export function AdminCargarTurnoForm({
   servicios,
@@ -22,8 +28,8 @@ export function AdminCargarTurnoForm({
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const inputClass =
-    "w-full rounded-sm border border-gold/30 bg-cream px-3 py-2 text-sm text-ink";
+  const inputClass = uiInput;
+  const selectClass = uiSelect;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,12 +88,10 @@ export function AdminCargarTurnoForm({
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="grid gap-4 md:grid-cols-2">
       <div className="md:col-span-2">
-        <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
-          Servicio
-        </label>
+        <label className={uiLabel}>Servicio</label>
         <select
           required
-          className={inputClass}
+          className={selectClass}
           value={servicioId}
           onChange={(e) => setServicioId(e.target.value)}
         >
@@ -99,9 +103,7 @@ export function AdminCargarTurnoForm({
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
-          Fecha
-        </label>
+        <label className={uiLabel}>Fecha</label>
         <input
           type="date"
           required
@@ -111,9 +113,7 @@ export function AdminCargarTurnoForm({
         />
       </div>
       <div>
-        <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
-          Hora
-        </label>
+        <label className={uiLabel}>Hora</label>
         <input
           type="time"
           required
@@ -123,9 +123,7 @@ export function AdminCargarTurnoForm({
         />
       </div>
       <div>
-        <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
-          Nombre cliente
-        </label>
+        <label className={uiLabel}>Nombre cliente</label>
         <input
           required
           className={inputClass}
@@ -134,9 +132,7 @@ export function AdminCargarTurnoForm({
         />
       </div>
       <div>
-        <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
-          Teléfono
-        </label>
+        <label className={uiLabel}>Teléfono</label>
         <input
           required
           className={inputClass}
@@ -145,9 +141,7 @@ export function AdminCargarTurnoForm({
         />
       </div>
       <div className="md:col-span-2">
-        <label className="mb-1 block text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
-          Email (opcional)
-        </label>
+        <label className={uiLabel}>Email (opcional)</label>
         <input
           type="email"
           className={inputClass}
@@ -155,24 +149,20 @@ export function AdminCargarTurnoForm({
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
-      <label className="flex items-center gap-2 text-sm text-ink-muted md:col-span-2">
+      <label className="flex items-center gap-2 text-sm font-medium text-ink md:col-span-2">
         <input
           type="checkbox"
           checked={enviarMail}
           onChange={(e) => setEnviarMail(e.target.checked)}
-          className="rounded border-gold/40"
+          className="h-4 w-4 rounded border-gold/55 text-gold focus:ring-gold/40"
         />
         Enviar mail de confirmación (si hay configuración de correo)
       </label>
       <div className="md:col-span-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-sm bg-gold px-5 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-white hover:bg-gold-dark disabled:opacity-50"
-        >
+        <button type="submit" disabled={pending} className={uiBtnPrimary}>
           {pending ? "Guardando…" : "Cargar turno"}
         </button>
-        {msg ? <p className="mt-3 text-sm text-ink-muted">{msg}</p> : null}
+        {msg ? <p className="mt-3 text-sm font-medium text-ink">{msg}</p> : null}
       </div>
     </form>
   );

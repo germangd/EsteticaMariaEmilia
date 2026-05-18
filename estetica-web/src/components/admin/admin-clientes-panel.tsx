@@ -3,6 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { ClienteDetalle, ClienteResumen } from "@/lib/clientes-repo";
+import {
+  uiBtnDanger,
+  uiBtnPrimary,
+  uiBtnSecondary,
+  uiCard,
+  uiInput,
+  uiLabel,
+  uiTableHead,
+  uiTableWrap,
+} from "@/lib/ui-classes";
 
 function fmtFecha(iso: string): string {
   const p = iso.split("-");
@@ -137,8 +147,7 @@ export function AdminClientesPanel({
     }
   }
 
-  const inputClass =
-    "w-full rounded-sm border border-gold/30 bg-cream px-3 py-2 text-sm text-ink";
+  const inputClass = uiInput;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
@@ -153,17 +162,17 @@ export function AdminClientesPanel({
           />
           <button
             type="submit"
-            className="rounded-sm bg-gold px-4 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-white hover:bg-gold-dark"
+            className={`${uiBtnPrimary} shrink-0`}
           >
             Buscar
           </button>
         </form>
 
-        <p className="mb-3 text-sm text-ink-muted">
+        <p className="mb-3 text-sm font-semibold text-ink-dark">
           {clientes.length} cliente{clientes.length === 1 ? "" : "s"}
         </p>
 
-        <div className="max-h-[70vh] overflow-y-auto rounded-sm border border-gold/25 bg-white shadow-sm">
+        <div className={`max-h-[70vh] overflow-y-auto ${uiTableWrap}`}>
           {clientes.length === 0 ? (
             <p className="p-6 text-center text-sm text-ink-muted">
               No hay clientes con turnos o paquetes aún.
@@ -199,7 +208,7 @@ export function AdminClientesPanel({
         </div>
       </section>
 
-      <section className="rounded-sm border border-gold/20 bg-white p-5 shadow-sm md:p-6">
+      <section className={uiCard}>
         {!tel || !detalle ? (
           <p className="text-sm text-ink-muted">
             Elegí un cliente de la lista para ver su historial de servicios y
@@ -217,11 +226,11 @@ export function AdminClientesPanel({
               onSubmit={(e) => void guardarPerfil(e)}
               className="mb-8 grid gap-3 border-b border-gold/15 pb-6"
             >
-              <h3 className="text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+              <h3 className={`${uiLabel} mb-3`}>
                 Ficha del cliente
               </h3>
               <div>
-                <label className="mb-1 block text-xs text-ink-muted">Teléfono</label>
+                <label className={uiLabel}>Teléfono</label>
                 <input
                   type="tel"
                   required
@@ -234,7 +243,7 @@ export function AdminClientesPanel({
                 </p>
               </div>
               <div>
-                <label className="mb-1 block text-xs text-ink-muted">Nombre</label>
+                <label className={uiLabel}>Nombre</label>
                 <input
                   className={inputClass}
                   value={nombre}
@@ -242,7 +251,7 @@ export function AdminClientesPanel({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-ink-muted">Email</label>
+                <label className={uiLabel}>Email</label>
                 <input
                   type="email"
                   className={inputClass}
@@ -251,7 +260,7 @@ export function AdminClientesPanel({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-ink-muted">Notas</label>
+                <label className={uiLabel}>Notas</label>
                 <textarea
                   rows={3}
                   className={inputClass}
@@ -260,25 +269,21 @@ export function AdminClientesPanel({
                 />
               </div>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="submit"
-                  disabled={pending}
-                  className="rounded-sm border border-gold/40 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-gold-dark hover:bg-cream disabled:opacity-50"
-                >
+                <button type="submit" disabled={pending} className={uiBtnSecondary}>
                   Guardar cambios
                 </button>
                 <button
                   type="button"
                   disabled={pending}
                   onClick={() => void eliminarClienteActual()}
-                  className="rounded-sm border border-red-300 px-4 py-2 text-[0.72rem] font-medium uppercase tracking-wider text-red-800 hover:bg-red-50 disabled:opacity-50"
+                  className={uiBtnDanger}
                 >
                   Eliminar cliente
                 </button>
               </div>
             </form>
 
-            <h3 className="mb-3 text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <h3 className={`${uiLabel} mb-3`}>
               Historial de turnos ({detalle.turnos.length})
             </h3>
             {detalle.turnos.length === 0 ? (
@@ -286,7 +291,7 @@ export function AdminClientesPanel({
             ) : (
               <div className="mb-8 overflow-x-auto">
                 <table className="w-full min-w-[480px] text-left text-sm">
-                  <thead className="border-b border-gold/20 text-[0.65rem] uppercase tracking-wide text-ink-muted">
+                  <thead className={uiTableHead}>
                     <tr>
                       <th className="py-2 pr-2">Fecha</th>
                       <th className="py-2 pr-2">Hora</th>
@@ -310,7 +315,7 @@ export function AdminClientesPanel({
               </div>
             )}
 
-            <h3 className="mb-3 text-[0.65rem] font-medium uppercase tracking-wider text-ink-muted">
+            <h3 className={`${uiLabel} mb-3`}>
               Paquetes ({detalle.paquetes.length})
             </h3>
             {detalle.paquetes.length === 0 ? (
@@ -318,7 +323,7 @@ export function AdminClientesPanel({
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[480px] text-left text-sm">
-                  <thead className="border-b border-gold/20 text-[0.65rem] uppercase tracking-wide text-ink-muted">
+                  <thead className={uiTableHead}>
                     <tr>
                       <th className="py-2 pr-2">Paquete</th>
                       <th className="py-2 pr-2">Sesiones</th>

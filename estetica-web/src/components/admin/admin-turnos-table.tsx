@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import type { AppointmentRow } from "@/db/schema";
 import { AdminCancelCell } from "@/components/admin/admin-cancel-cell";
+import { uiTableHead, uiTableWrap } from "@/lib/ui-classes";
 
 function fmtFechaEtiqueta(fechaIso: string, tz: string): string {
   const dt = DateTime.fromISO(fechaIso, { zone: tz });
@@ -25,9 +26,9 @@ export function AdminTurnosTable({
     );
   }
   return (
-    <div className="overflow-x-auto rounded-sm border border-gold/25 bg-white shadow-sm">
+    <div className={uiTableWrap}>
       <table className="min-w-[780px] w-full text-left text-sm">
-        <thead className="border-b border-gold/20 bg-cream text-[0.65rem] font-medium uppercase tracking-[0.12em] text-ink-muted">
+        <thead className={uiTableHead}>
           <tr>
             <th className="px-3 py-3 pl-4">Fecha</th>
             <th className="px-3 py-3">Hora</th>
@@ -44,11 +45,11 @@ export function AdminTurnosTable({
         </thead>
         <tbody className="divide-y divide-gold/10">
           {rows.map((r) => (
-            <tr key={r.id} className="text-ink hover:bg-cream/60">
-              <td className="whitespace-nowrap px-3 py-2.5 pl-4 text-ink-muted">
+            <tr key={r.id} className="font-medium text-ink hover:bg-cream/80">
+              <td className="whitespace-nowrap px-3 py-2.5 pl-4 text-ink">
                 {fmtFechaEtiqueta(r.fecha, tz)}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 font-medium text-ink-dark">
+              <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-ink-dark">
                 {r.hora}
               </td>
               <td
@@ -63,16 +64,16 @@ export function AdminTurnosTable({
               >
                 {r.nombreCliente}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">
+              <td className="whitespace-nowrap px-3 py-2.5 text-ink">
                 {r.telefono}
               </td>
-              <td className="max-w-[160px] truncate px-3 py-2.5 text-ink-muted">
+              <td className="max-w-[160px] truncate px-3 py-2.5 text-ink">
                 {r.email ?? "—"}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">
+              <td className="whitespace-nowrap px-3 py-2.5 text-ink">
                 {r.responsable}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs text-gold-dark">
+              <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs font-semibold text-gold-dark">
                 {r.codigoCancelacion}
               </td>
               {showActions ? (

@@ -18,24 +18,24 @@ export default async function AdminPanelLayout({
   }
 
   return (
-    <div className="min-h-screen bg-cream">
-      <div className="border-b border-gold/20 bg-white/90">
+    <div className="min-h-screen bg-cream-dark">
+      <div className="border-b border-gold/35 bg-white shadow-sm">
         <div className="mx-auto max-w-6xl px-5 py-3 md:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-[0.65rem] font-medium uppercase tracking-[0.2em] text-gold">
+            <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-gold-dark">
               Panel admin
             </p>
             <div className="flex items-center gap-3">
               <Link
                 href="/"
-                className="text-[0.7rem] text-ink-muted underline hover:text-gold-dark"
+                className="text-[0.7rem] font-medium text-ink underline-offset-2 hover:text-gold-dark"
               >
                 Sitio público
               </Link>
               <form action="/api/admin/logout" method="post">
                 <button
                   type="submit"
-                  className="rounded-sm border border-gold/40 px-3 py-1.5 text-[0.65rem] font-medium uppercase tracking-wide text-gold-dark hover:bg-cream"
+                  className="rounded-sm border border-gold/55 bg-white px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark shadow-sm hover:bg-cream"
                 >
                   Cerrar sesión
                 </button>

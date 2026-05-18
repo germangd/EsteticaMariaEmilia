@@ -6,6 +6,7 @@ import {
   normalizarTelefono,
   obtenerClienteDetalle,
 } from "@/lib/clientes-repo";
+import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
   title: "Admin — Clientes | María Emilia Estética",
@@ -36,14 +37,10 @@ export default async function AdminClientesPage({
   return (
     <main className="pb-16 pt-8">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
-        <div className="mb-8 border-b border-gold/20 pb-8">
-          <p className="mb-1 text-[0.65rem] font-medium uppercase tracking-[0.25em] text-gold">
-            Clientes
-          </p>
-          <h1 className="font-serif text-3xl font-light text-ink-dark md:text-4xl">
-            Historial por cliente
-          </h1>
-          <p className="mt-2 text-sm text-ink-muted">
+        <div className="mb-8 border-b border-gold/35 pb-8">
+          <p className={uiPanelKicker}>Clientes</p>
+          <h1 className={uiPanelTitle}>Historial por cliente</h1>
+          <p className={uiPanelDesc}>
             Se arma solo con los turnos de la web o carga manual y los paquetes
             vendidos. Podés agregar notas en la ficha.
           </p>
