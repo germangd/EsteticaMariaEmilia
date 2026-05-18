@@ -1,8 +1,14 @@
-"use client";
+﻿"use client";
 
-import { useCallback, useMemo, useState } from "react";
-import type { CatalogoCaja, SesionCaja, VentaResumen } from "@/lib/caja-repo";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type {
+  CatalogoCaja,
+  PrefillCobroTurno,
+  SesionCaja,
+  VentaResumen,
+} from "@/lib/caja-repo";
 import { METODOS_PAGO } from "@/lib/caja-repo";
+import { urlTicketVenta } from "@/lib/caja-url";
 import { fmtPesos } from "@/lib/fmt-pesos";
 import {
   uiBtnPrimary,
@@ -55,10 +61,12 @@ export function AdminCajaManager({
   initialSesion,
   initialVentas,
   catalogo,
+  initialPrefill,
 }: {
   initialSesion: SesionCaja | null;
   initialVentas: VentaResumen[];
   catalogo: CatalogoCaja;
+  initialPrefill?: PrefillCobroTurno | null;
 }) {
   const [sesion, setSesion] = useState(initialSesion);
   const [ventas, setVentas] = useState(initialVentas);
@@ -74,6 +82,31 @@ export function AdminCajaManager({
   const [descuento, setDescuento] = useState("0");
   const [metodoPago, setMetodoPago] = useState<string>("efectivo");
   const [notasVenta, setNotasVenta] = useState("");
+  const [linkAppointmentId, setLinkAppointmentId] = useState<number | undefined>(
+    undefined
+  );
+
+  useEffect(() => {
+    if (!initialPrefill) return;
+    if (initialPrefill.yaCobrado) return;
+
+    setClienteNombre(initialPrefill.clienteNombre);
+    setClienteTel(initialPrefill.clienteTelefono);
+    setLinkAppointmentId(initialPrefill.appointmentId);
+    setLineas([
+      {
+        key: crypto.randomUUID(),
+        tipo: "servicio",
+        descripcion: `${initialPrefill.servicioNombre} (${initialPrefill.fecha} ${initialPrefill.hora})`,
+        cantidad: 1,
+        precioUnitarioPesos: 0,
+        serviceId: initialPrefill.serviceId ?? undefined,
+      },
+    ]);
+    setMsg(
+      `Cobro del turno #${initialPrefill.appointmentId}: indic\u00e1 el importe y confirm\u00e1.`
+    );
+  }, [initialPrefill]);
 
   const subtotal = useMemo(
     () =>
@@ -232,6 +265,7 @@ export function AdminCajaManager({
           descuentoPesos: descuentoNum,
           metodoPago,
           notas: notasVenta,
+          appointmentId: linkAppointmentId,
           lineas: lineas.map((l) => ({
             tipo: l.tipo,
             descripcion: l.descripcion,
@@ -258,8 +292,9 @@ export function AdminCajaManager({
       setClienteTel("");
       setDescuento("0");
       setNotasVenta("");
+      setLinkAppointmentId(undefined);
       setMsg("Venta registrada.");
-      window.open(`/admin/caja/ticket/${data.id}`, "_blank", "noopener");
+      window.open(urlTicketVenta(data.id), "_blank", "noopener");
     } finally {
       setPending(false);
     }
@@ -287,12 +322,23 @@ export function AdminCajaManager({
     }
   }
 
-  const esperadoCierre = sesion
-    ? sesion.openingAmountPesos + sesion.totalVentasPesos
-    : 0;
+  const efectivoEnCajon = sesion?.efectivoEsperadoEnCajon ?? 0;
 
   return (
     <div className="space-y-10">
+      {initialPrefill?.yaCobrado && initialPrefill.ventaId ? (
+        <p className="rounded-sm border border-gold/50 bg-cream px-4 py-2 text-sm text-ink-dark">
+          {"Este turno ya tiene cobro registrado. "}
+          <a
+            href={urlTicketVenta(initialPrefill.ventaId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-gold-dark underline"
+          >
+            Ver ticket
+          </a>
+        </p>
+      ) : null}
       {msg ? (
         <p className="rounded-sm border border-gold/40 bg-cream px-4 py-2 text-sm font-medium text-ink-dark">
           {msg}
@@ -338,12 +384,64 @@ export function AdminCajaManager({
                 </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-ink-muted">Esperado en caja</dt>
+                <dt className="text-xs uppercase text-ink-muted">
+                  {"Efectivo en caj\u00f3n"}
+                </dt>
                 <dd className="font-semibold tabular-nums text-gold-dark">
-                  {fmtPesos(esperadoCierre)}
+                  {fmtPesos(efectivoEnCajon)}
                 </dd>
               </div>
             </dl>
+            {sesion.arqueoPorMetodo.length > 0 ? (
+              <div className="rounded-sm border border-gold/25 bg-white/50 p-4">
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+                  {"Arqueo por forma de pago"}
+                </h3>
+                <div className={uiTableWrap}>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className={uiTableHead}>
+                        <th className="px-3 py-2 text-left">{"M\u00e9todo"}</th>
+                        <th className="px-3 py-2 text-center">Ops.</th>
+                        <th className="px-3 py-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sesion.arqueoPorMetodo.map((a) => (
+                        <tr
+                          key={a.metodoPago}
+                          className="border-t border-gold/10"
+                        >
+                          <td className="px-3 py-2">
+                            {METODO_LABEL[a.metodoPago] ?? a.metodoPago}
+                          </td>
+                          <td className="px-3 py-2 text-center tabular-nums">
+                            {a.cantidad}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums font-medium">
+                            {fmtPesos(a.totalPesos)}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="border-t border-gold/30 font-semibold">
+                        <td className="px-3 py-2">Total ventas</td>
+                        <td className="px-3 py-2 text-center tabular-nums">
+                          {sesion.cantidadVentas}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums">
+                          {fmtPesos(sesion.totalVentasPesos)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-2 text-xs text-ink-muted">
+                  {
+                    "Al cerrar, cont\u00e1 solo el efectivo f\u00edsico (fondo + cobros en efectivo). Transferencia y tarjetas no van al caj\u00f3n."
+                  }
+                </p>
+              </div>
+            ) : null}
             <form
               onSubmit={onCerrarCaja}
               className="flex flex-wrap items-end gap-4 border-t border-gold/20 pt-4"
@@ -356,7 +454,7 @@ export function AdminCajaManager({
                   step={1}
                   value={cierreMonto}
                   onChange={(e) => setCierreMonto(e.target.value)}
-                  placeholder={String(esperadoCierre)}
+                  placeholder={String(efectivoEnCajon)}
                   className={`w-40 ${uiInput}`}
                 />
               </div>
@@ -370,10 +468,15 @@ export function AdminCajaManager({
 
       {sesion ? (
         <>
-          <section className={uiCard}>
+          <section id="nueva-venta" className={`scroll-mt-6 ${uiCard}`}>
             <h2 className="mb-4 font-serif text-lg text-ink-dark">
               Nueva venta / cobro
             </h2>
+            {linkAppointmentId ? (
+              <p className="mb-4 text-sm font-medium text-gold-dark">
+                {`Vinculado al turno #${linkAppointmentId} de la agenda.`}
+              </p>
+            ) : null}
             <form onSubmit={onRegistrarVenta} className="space-y-6">
               <div className="space-y-4">
                 {lineas.map((l, idx) => (

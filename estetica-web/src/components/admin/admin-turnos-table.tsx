@@ -1,6 +1,7 @@
 import { DateTime } from "luxon";
 import type { AppointmentRow } from "@/db/schema";
 import { AdminCancelCell } from "@/components/admin/admin-cancel-cell";
+import { urlCobrarTurno } from "@/lib/caja-url";
 import { uiTableHead, uiTableWrap } from "@/lib/ui-classes";
 
 function fmtFechaEtiqueta(fechaIso: string, tz: string): string {
@@ -77,7 +78,13 @@ export function AdminTurnosTable({
                 {r.codigoCancelacion}
               </td>
               {showActions ? (
-                <td className="px-3 py-2 pr-4 text-right">
+                <td className="px-3 py-2 pr-4 text-right whitespace-nowrap">
+                  <a
+                    href={urlCobrarTurno(r.id)}
+                    className="mr-3 text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark underline"
+                  >
+                    Cobrar
+                  </a>
                   <AdminCancelCell codigo={r.codigoCancelacion} />
                 </td>
               ) : null}

@@ -3,6 +3,7 @@ import {
   adminUnauthorizedResponse,
   isAdminRequest,
 } from "@/lib/admin-api-auth";
+import { crearVentaDesdePaquete } from "@/lib/caja-repo";
 import {
   asignarPaqueteCliente,
   listarAsignacionesPaquete,
@@ -47,6 +48,9 @@ export async function POST(request: NextRequest) {
     b.precioCobradoPesos != null ? Number(b.precioCobradoPesos) : undefined;
   const notas = typeof b.notas === "string" ? b.notas : null;
   const sesiones = b.sesiones != null ? Number(b.sesiones) : undefined;
+  const registrarEnCaja = b.registrarEnCaja !== false;
+  const metodoPago =
+    typeof b.metodoPago === "string" ? b.metodoPago : "efectivo";
 
   const res = await asignarPaqueteCliente({
     packageId,
@@ -71,5 +75,33 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, id: res.id });
+  let ventaCaja: { id: number; numero: number } | null = null;
+  let avisoCaja: string | undefined;
+
+  if (registrarEnCaja) {
+    const v = await crearVentaDesdePaquete({
+      clientPackageId: res.id,
+      metodoPago,
+      notas: notas ?? undefined,
+    });
+    if (v.ok) {
+      ventaCaja = { id: v.id, numero: v.numero };
+    } else if (v.reason === "ya_cobrado") {
+      avisoCaja = "Paquete asignado; el cobro en caja ya estaba registrado.";
+    } else if (v.reason === "sin_sesion") {
+      avisoCaja =
+        "Paquete asignado. Abr\u00ed la caja para emitir el ticket de cobro.";
+    } else if (v.reason === "sesion_cerrada") {
+      avisoCaja = "Paquete asignado. La caja est\u00e1 cerrada; no se emiti\u00f3 ticket.";
+    } else if (v.reason === "sin_monto") {
+      avisoCaja = "Paquete asignado. Indic\u00e1 un monto mayor a cero para ticket.";
+    }
+  }
+
+  return NextResponse.json({
+    ok: true,
+    id: res.id,
+    ventaCaja,
+    avisoCaja,
+  });
 }

@@ -58,9 +58,17 @@ body {
 
 @media print {
   @page {
-    margin: 12mm;
+    margin: 2mm;
+    size: 80mm auto;
   }
   body {
     background: white;
+  }
+  .ticket-thermal {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 auto;
+    padding: 0 !important;
+    font-size: 11px;
   }
 }

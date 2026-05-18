@@ -1,7 +1,9 @@
 import { and, desc, eq, max, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
+  appointments,
   cashSessions,
+  clientPackages,
   saleLines,
   sales,
   servicePackages,
@@ -19,6 +21,12 @@ export const METODOS_PAGO = [
 
 export type MetodoPago = (typeof METODOS_PAGO)[number];
 
+export type ArqueoMetodo = {
+  metodoPago: string;
+  totalPesos: number;
+  cantidad: number;
+};
+
 export type SesionCaja = {
   id: number;
   openedAt: string;
@@ -29,6 +37,21 @@ export type SesionCaja = {
   status: string;
   totalVentasPesos: number;
   cantidadVentas: number;
+  arqueoPorMetodo: ArqueoMetodo[];
+  /** Fondo inicial + ventas en efectivo (para contar el cajón). */
+  efectivoEsperadoEnCajon: number;
+};
+
+export type PrefillCobroTurno = {
+  appointmentId: number;
+  clienteNombre: string;
+  clienteTelefono: string;
+  servicioNombre: string;
+  fecha: string;
+  hora: string;
+  serviceId: number | null;
+  yaCobrado: boolean;
+  ventaId: number | null;
 };
 
 export type LineaVentaInput = {
@@ -127,10 +150,41 @@ async function totalesSesion(
   };
 }
 
-function mapSesion(
-  row: typeof cashSessions.$inferSelect,
-  stats: { total: number; count: number }
-): SesionCaja {
+export async function resumenArqueoSesion(
+  sessionId: number
+): Promise<ArqueoMetodo[] | { ok: false; reason: "no_db" }> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+
+  const rows = await db
+    .select({
+      metodoPago: sales.metodoPago,
+      totalPesos: sql<number>`coalesce(sum(${sales.totalPesos}), 0)::int`,
+      cantidad: sql<number>`count(*)::int`,
+    })
+    .from(sales)
+    .where(
+      and(eq(sales.sessionId, sessionId), eq(sales.estado, "completada"))
+    )
+    .groupBy(sales.metodoPago)
+    .orderBy(sales.metodoPago);
+
+  return rows.map((r) => ({
+    metodoPago: r.metodoPago,
+    totalPesos: Number(r.totalPesos ?? 0),
+    cantidad: Number(r.cantidad ?? 0),
+  }));
+}
+
+async function buildSesionStats(
+  row: typeof cashSessions.$inferSelect
+): Promise<SesionCaja> {
+  const stats = await totalesSesion(row.id);
+  const arqueoRaw = await resumenArqueoSesion(row.id);
+  const arqueoPorMetodo = Array.isArray(arqueoRaw) ? arqueoRaw : [];
+  const efectivoVentas =
+    arqueoPorMetodo.find((a) => a.metodoPago === "efectivo")?.totalPesos ?? 0;
+
   return {
     id: row.id,
     openedAt: row.openedAt.toISOString(),
@@ -141,6 +195,8 @@ function mapSesion(
     status: row.status,
     totalVentasPesos: stats.total,
     cantidadVentas: stats.count,
+    arqueoPorMetodo,
+    efectivoEsperadoEnCajon: row.openingAmountPesos + efectivoVentas,
   };
 }
 
@@ -158,8 +214,7 @@ export async function obtenerSesionAbierta(): Promise<
     .limit(1);
 
   if (!row) return null;
-  const stats = await totalesSesion(row.id);
-  return mapSesion(row, stats);
+  return buildSesionStats(row);
 }
 
 export async function abrirSesionCaja(input: {
@@ -193,7 +248,7 @@ export async function abrirSesionCaja(input: {
 
   return {
     ok: true,
-    sesion: mapSesion(inserted, { total: 0, count: 0 }),
+    sesion: await buildSesionStats(inserted),
   };
 }
 
@@ -231,8 +286,7 @@ export async function cerrarSesionCaja(input: {
     .where(eq(cashSessions.id, input.sessionId))
     .returning();
 
-  const stats = await totalesSesion(updated.id);
-  return { ok: true, sesion: mapSesion(updated, stats) };
+  return { ok: true, sesion: await buildSesionStats(updated) };
 }
 
 export async function listarVentasSesion(
@@ -481,4 +535,235 @@ export async function obtenerCatalogoCaja(): Promise<
     servicios: servs,
     paquetes: packs,
   };
+}
+
+async function ventaActivaPorReferencia(opts: {
+  appointmentId?: number;
+  clientPackageId?: number;
+}): Promise<{ id: number } | null> {
+  const db = getDb();
+  if (!db) return null;
+
+  if (opts.appointmentId && opts.appointmentId > 0) {
+    const [row] = await db
+      .select({ id: sales.id })
+      .from(sales)
+      .where(
+        and(
+          eq(sales.appointmentId, opts.appointmentId),
+          eq(sales.estado, "completada")
+        )
+      )
+      .limit(1);
+    if (row) return row;
+  }
+
+  if (opts.clientPackageId && opts.clientPackageId > 0) {
+    const [row] = await db
+      .select({ id: sales.id })
+      .from(sales)
+      .where(
+        and(
+          eq(sales.clientPackageId, opts.clientPackageId),
+          eq(sales.estado, "completada")
+        )
+      )
+      .limit(1);
+    if (row) return row;
+  }
+
+  return null;
+}
+
+export async function obtenerPrefillCobroTurno(
+  appointmentId: number
+): Promise<PrefillCobroTurno | null | { ok: false; reason: "no_db" }> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+  if (!Number.isFinite(appointmentId) || appointmentId < 1) return null;
+
+  const [turno] = await db
+    .select()
+    .from(appointments)
+    .where(eq(appointments.id, appointmentId))
+    .limit(1);
+
+  if (!turno || turno.estado !== "activo") return null;
+
+  const [svc] = await db
+    .select({ id: services.id })
+    .from(services)
+    .where(eq(services.nombre, turno.servicioNombre))
+    .limit(1);
+
+  const venta = await ventaActivaPorReferencia({ appointmentId });
+
+  return {
+    appointmentId: turno.id,
+    clienteNombre: turno.nombreCliente,
+    clienteTelefono: turno.telefono,
+    servicioNombre: turno.servicioNombre,
+    fecha: turno.fecha,
+    hora: turno.hora,
+    serviceId: svc?.id ?? null,
+    yaCobrado: Boolean(venta),
+    ventaId: venta?.id ?? null,
+  };
+}
+
+export async function crearVentaDesdePaquete(params: {
+  clientPackageId: number;
+  metodoPago: string;
+  notas?: string | null;
+}): Promise<
+  | { ok: true; id: number; numero: number }
+  | {
+      ok: false;
+      reason:
+        | "no_db"
+        | "not_found"
+        | "ya_cobrado"
+        | "sin_sesion"
+        | "sesion_cerrada"
+        | "sin_monto";
+    }
+> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+
+  const [asig] = await db
+    .select({
+      id: clientPackages.id,
+      packageId: clientPackages.packageId,
+      nombreCliente: clientPackages.nombreCliente,
+      telefono: clientPackages.telefono,
+      precioCobradoPesos: clientPackages.precioCobradoPesos,
+      paqueteNombre: servicePackages.nombre,
+    })
+    .from(clientPackages)
+    .innerJoin(
+      servicePackages,
+      eq(clientPackages.packageId, servicePackages.id)
+    )
+    .where(eq(clientPackages.id, params.clientPackageId))
+    .limit(1);
+
+  if (!asig) return { ok: false, reason: "not_found" };
+
+  const existente = await ventaActivaPorReferencia({
+    clientPackageId: asig.id,
+  });
+  if (existente) return { ok: false, reason: "ya_cobrado" };
+
+  const monto = pesos(asig.precioCobradoPesos ?? 0);
+  if (monto <= 0) return { ok: false, reason: "sin_monto" };
+
+  const venta = await crearVenta({
+    clienteTelefono: asig.telefono,
+    clienteNombre: asig.nombreCliente,
+    metodoPago: params.metodoPago,
+    notas: params.notas,
+    clientPackageId: asig.id,
+    lineas: [
+      {
+        tipo: "paquete",
+        descripcion: `Paquete: ${asig.paqueteNombre}`,
+        cantidad: 1,
+        precioUnitarioPesos: monto,
+        servicePackageId: asig.packageId,
+      },
+    ],
+  });
+  if (venta.ok) return venta;
+  if (venta.reason === "sin_lineas" || venta.reason === "invalido") {
+    return { ok: false, reason: "sin_monto" };
+  }
+  if (
+    venta.reason === "sin_sesion" ||
+    venta.reason === "sesion_cerrada" ||
+    venta.reason === "no_db"
+  ) {
+    return { ok: false, reason: venta.reason };
+  }
+  return { ok: false, reason: "sin_monto" };
+}
+
+export async function crearVentaDesdeTurno(params: {
+  appointmentId: number;
+  precioPesos: number;
+  metodoPago: string;
+  descuentoPesos?: number;
+  notas?: string | null;
+}): Promise<
+  | { ok: true; id: number; numero: number }
+  | {
+      ok: false;
+      reason:
+        | "no_db"
+        | "not_found"
+        | "ya_cobrado"
+        | "sin_sesion"
+        | "sesion_cerrada"
+        | "sin_monto"
+        | "invalido";
+    }
+> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+
+  const [turno] = await db
+    .select()
+    .from(appointments)
+    .where(eq(appointments.id, params.appointmentId))
+    .limit(1);
+
+  if (!turno || turno.estado !== "activo") {
+    return { ok: false, reason: "not_found" };
+  }
+
+  const existente = await ventaActivaPorReferencia({
+    appointmentId: turno.id,
+  });
+  if (existente) return { ok: false, reason: "ya_cobrado" };
+
+  const monto = pesos(params.precioPesos);
+  if (monto <= 0) return { ok: false, reason: "sin_monto" };
+
+  const [svc] = await db
+    .select({ id: services.id })
+    .from(services)
+    .where(eq(services.nombre, turno.servicioNombre))
+    .limit(1);
+
+  const fechaHora = `${turno.fecha} ${turno.hora}`;
+
+  const venta = await crearVenta({
+    clienteTelefono: turno.telefono,
+    clienteNombre: turno.nombreCliente,
+    metodoPago: params.metodoPago,
+    descuentoPesos: params.descuentoPesos,
+    notas: params.notas,
+    appointmentId: turno.id,
+    lineas: [
+      {
+        tipo: "servicio",
+        descripcion: `${turno.servicioNombre} (${fechaHora})`,
+        cantidad: 1,
+        precioUnitarioPesos: monto,
+        serviceId: svc?.id,
+      },
+    ],
+  });
+  if (venta.ok) return venta;
+  if (venta.reason === "sin_lineas" || venta.reason === "invalido") {
+    return { ok: false, reason: "sin_monto" };
+  }
+  if (
+    venta.reason === "sin_sesion" ||
+    venta.reason === "sesion_cerrada" ||
+    venta.reason === "no_db"
+  ) {
+    return { ok: false, reason: venta.reason };
+  }
+  return { ok: false, reason: "sin_monto" };
 }

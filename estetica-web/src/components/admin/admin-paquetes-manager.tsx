@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
+import { METODOS_PAGO } from "@/lib/caja-repo";
+import { urlTicketVenta } from "@/lib/caja-url";
 import {
   uiBtnPrimary,
   uiCard,
   uiInput,
   uiLabel,
+  uiSelect,
   uiTableHead,
   uiTableWrap,
 } from "@/lib/ui-classes";
@@ -80,6 +83,8 @@ export function AdminPaquetesManager({
   const [asigFecha, setAsigFecha] = useState(hoyIso());
   const [asigPrecio, setAsigPrecio] = useState("");
   const [asigNotas, setAsigNotas] = useState("");
+  const [asigRegistrarCaja, setAsigRegistrarCaja] = useState(true);
+  const [asigMetodoPago, setAsigMetodoPago] = useState("efectivo");
 
   const paqueteSel = useMemo(
     () => paquetes.find((p) => String(p.id) === asigPackageId),
@@ -207,14 +212,32 @@ export function AdminPaquetesManager({
           fechaCompra: asigFecha,
           precioCobradoPesos: Number(asigPrecio) || undefined,
           notas: asigNotas || null,
+          registrarEnCaja: asigRegistrarCaja,
+          metodoPago: asigMetodoPago,
         }),
       });
-      const data = (await r.json()) as { ok?: boolean; mensaje?: string };
+      const data = (await r.json()) as {
+        ok?: boolean;
+        mensaje?: string;
+        ventaCaja?: { id: number; numero: number };
+        avisoCaja?: string;
+      };
       if (!r.ok || !data.ok) {
         setMsg(data.mensaje ?? "No se pudo asignar.");
         return;
       }
-      setMsg("Paquete asignado al cliente (control de cobro registrado).");
+      if (data.ventaCaja?.id) {
+        window.open(urlTicketVenta(data.ventaCaja.id), "_blank", "noopener");
+        setMsg(
+          data.avisoCaja ??
+            "Paquete asignado y ticket de caja emitido."
+        );
+      } else {
+        setMsg(
+          data.avisoCaja ??
+            "Paquete asignado al cliente (control de cobro registrado)."
+        );
+      }
       setAsigNombre("");
       setAsigTel("");
       setAsigNotas("");
@@ -533,6 +556,31 @@ export function AdminPaquetesManager({
                 value={asigNotas}
                 onChange={(e) => setAsigNotas(e.target.value)}
               />
+            </div>
+            <div>
+              <label className={uiLabel}>Forma de pago (caja)</label>
+              <select
+                className={uiSelect}
+                value={asigMetodoPago}
+                onChange={(e) => setAsigMetodoPago(e.target.value)}
+                disabled={!asigRegistrarCaja}
+              >
+                {METODOS_PAGO.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  checked={asigRegistrarCaja}
+                  onChange={(e) => setAsigRegistrarCaja(e.target.checked)}
+                />
+                Emitir ticket en caja
+              </label>
             </div>
             <div className="md:col-span-2">
               <button

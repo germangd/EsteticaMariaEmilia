@@ -6,8 +6,8 @@ import { fmtPesos } from "@/lib/fmt-pesos";
 const METODO_LABEL: Record<string, string> = {
   efectivo: "Efectivo",
   transferencia: "Transferencia",
-  debito: "D\u00e9bito",
-  credito: "Cr\u00e9dito",
+  debito: "Debito",
+  credito: "Credito",
   otro: "Otro",
 };
 
@@ -15,124 +15,110 @@ function fmtFecha(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleString("es-AR", {
-    dateStyle: "short",
-    timeStyle: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 export function AdminCajaTicket({ venta }: { venta: VentaDetalle }) {
   const anulada = venta.estado === "anulada";
+  const ticketNum = `${venta.sessionId}-${String(venta.numero).padStart(4, "0")}`;
 
   return (
-    <div className="ticket-print mx-auto max-w-md bg-white p-6 text-ink-dark print:m-0 print:max-w-none print:p-4">
-      <div className="mb-4 border-b border-dashed border-ink/30 pb-4 text-center">
-        <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-gold-dark">
-          {"Mar\u00eda Emilia Est\u00e9tica"}
+    <div className="ticket-thermal mx-auto w-[80mm] max-w-[80mm] bg-white px-3 py-4 font-mono text-[11px] leading-snug text-black print:m-0 print:w-[80mm] print:max-w-[80mm] print:p-0">
+      <div className="border-b border-dashed border-black/40 pb-2 text-center">
+        <p className="text-[10px] font-bold uppercase tracking-widest">
+          Maria Emilia Estetica
         </p>
-        <h1 className="font-serif text-xl font-light">Comprobante de venta</h1>
+        <p className="mt-1 text-[12px] font-bold">COMPROBANTE DE VENTA</p>
         {anulada ? (
-          <p className="mt-2 text-sm font-bold uppercase text-red-700">
-            Anulado
-          </p>
+          <p className="mt-1 text-[11px] font-bold uppercase">*** ANULADO ***</p>
         ) : null}
       </div>
 
-      <dl className="mb-4 space-y-1 text-sm">
-        <div className="flex justify-between gap-4">
-          <dt className="text-ink-muted">{"Ticket N\u00b0"}</dt>
-          <dd className="font-semibold">
-            {venta.sessionId}-{String(venta.numero).padStart(4, "0")}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-4">
-          <dt className="text-ink-muted">Fecha</dt>
-          <dd>{fmtFecha(venta.createdAt)}</dd>
-        </div>
+      <div className="my-2 space-y-0.5">
+        <Row label="Ticket" value={ticketNum} bold />
+        <Row label="Fecha" value={fmtFecha(venta.createdAt)} />
         {venta.clienteNombre ? (
-          <div className="flex justify-between gap-4">
-            <dt className="text-ink-muted">Cliente</dt>
-            <dd className="text-right">{venta.clienteNombre}</dd>
-          </div>
+          <Row label="Cliente" value={venta.clienteNombre} />
         ) : null}
         {venta.clienteTelefono ? (
-          <div className="flex justify-between gap-4">
-            <dt className="text-ink-muted">{"Tel\u00e9fono"}</dt>
-            <dd>{venta.clienteTelefono}</dd>
-          </div>
+          <Row label="Tel" value={venta.clienteTelefono} />
         ) : null}
-        <div className="flex justify-between gap-4">
-          <dt className="text-ink-muted">Pago</dt>
-          <dd className="capitalize">
-            {METODO_LABEL[venta.metodoPago] ?? venta.metodoPago}
-          </dd>
-        </div>
-      </dl>
+        <Row
+          label="Pago"
+          value={METODO_LABEL[venta.metodoPago] ?? venta.metodoPago}
+        />
+      </div>
 
-      <table className="mb-4 w-full border-collapse text-sm">
-        <thead>
-          <tr className="border-b border-ink/20 text-left text-[0.65rem] uppercase tracking-wide text-ink-muted">
-            <th className="py-1 pr-2">Concepto</th>
-            <th className="py-1 px-1 text-center">Cant.</th>
-            <th className="py-1 pl-2 text-right">Importe</th>
-          </tr>
-        </thead>
-        <tbody>
-          {venta.lineas.map((l) => (
-            <tr key={l.id} className="border-b border-ink/10">
-              <td className="py-2 pr-2">{l.descripcion}</td>
-              <td className="py-2 px-1 text-center">{l.cantidad}</td>
-              <td className="py-2 pl-2 text-right tabular-nums">
-                {fmtPesos(l.totalLineaPesos)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="border-y border-dashed border-black/40 py-2">
+        {venta.lineas.map((l) => (
+          <div key={l.id} className="mb-2 last:mb-0">
+            <p className="font-semibold leading-tight">{l.descripcion}</p>
+            <p className="flex justify-between tabular-nums">
+              <span>
+                {l.cantidad} x {fmtPesos(l.precioUnitarioPesos)}
+              </span>
+              <span>{fmtPesos(l.totalLineaPesos)}</span>
+            </p>
+          </div>
+        ))}
+      </div>
 
-      <div className="space-y-1 border-t border-dashed border-ink/30 pt-3 text-sm">
-        <div className="flex justify-between">
-          <span>Subtotal</span>
-          <span className="tabular-nums">{fmtPesos(venta.subtotalPesos)}</span>
-        </div>
+      <div className="mt-2 space-y-0.5 tabular-nums">
+        <Row label="Subtotal" value={fmtPesos(venta.subtotalPesos)} />
         {venta.descuentoPesos > 0 ? (
-          <div className="flex justify-between text-ink-muted">
-            <span>Descuento</span>
-            <span className="tabular-nums">
-              -{fmtPesos(venta.descuentoPesos)}
-            </span>
-          </div>
+          <Row label="Descuento" value={`-${fmtPesos(venta.descuentoPesos)}`} />
         ) : null}
-        <div className="flex justify-between text-base font-bold">
-          <span>Total</span>
-          <span className="tabular-nums">{fmtPesos(venta.totalPesos)}</span>
-        </div>
+        <p className="flex justify-between border-t border-black/30 pt-1 text-[13px] font-bold">
+          <span>TOTAL</span>
+          <span>{fmtPesos(venta.totalPesos)}</span>
+        </p>
       </div>
 
       {venta.notas ? (
-        <p className="mt-4 text-xs text-ink-muted">
-          <span className="font-semibold">Notas:</span> {venta.notas}
-        </p>
+        <p className="mt-2 text-[10px]">Notas: {venta.notas}</p>
       ) : null}
 
-      <p className="mt-6 text-center text-[0.65rem] text-ink-muted">
-        {"Comprobante interno \u2014 no v\u00e1lido como factura fiscal"}
+      <p className="mt-3 border-t border-dashed border-black/30 pt-2 text-center text-[9px] leading-tight">
+        Comprobante interno. No valido como factura fiscal.
       </p>
 
-      <div className="mt-6 flex flex-wrap justify-center gap-3 print:hidden">
+      <div className="mt-4 flex justify-center gap-2 print:hidden">
         <button
           type="button"
           onClick={() => window.print()}
-          className="rounded-sm bg-gold px-5 py-2.5 text-[0.72rem] font-semibold uppercase tracking-wider text-white shadow-sm hover:bg-gold-dark"
+          className="rounded border border-black/30 bg-black px-4 py-2 text-[10px] font-bold uppercase text-white"
         >
           Imprimir
         </button>
         <a
           href="/admin/caja"
-          className="rounded-sm border border-gold/55 bg-white px-5 py-2.5 text-[0.72rem] font-semibold uppercase tracking-wider text-gold-dark hover:bg-cream"
+          className="rounded border border-black/30 px-4 py-2 text-[10px] font-bold uppercase"
         >
-          Volver a caja
+          Volver
         </a>
       </div>
     </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  bold,
+}: {
+  label: string;
+  value: string;
+  bold?: boolean;
+}) {
+  return (
+    <p className={`flex justify-between gap-2 ${bold ? "font-bold" : ""}`}>
+      <span>{label}</span>
+      <span className="text-right">{value}</span>
+    </p>
   );
 }

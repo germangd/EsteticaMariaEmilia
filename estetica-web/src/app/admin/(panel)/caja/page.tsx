@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { AdminCajaManager } from "@/components/admin/admin-caja-manager";
+import { AdminCajaScrollToForm } from "@/components/admin/admin-caja-scroll";
 import type { CatalogoCaja } from "@/lib/caja-repo";
 import {
   listarVentasSesion,
   obtenerCatalogoCaja,
+  obtenerPrefillCobroTurno,
   obtenerSesionAbierta,
 } from "@/lib/caja-repo";
+import type { PrefillCobroTurno } from "@/lib/caja-repo";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
@@ -15,7 +19,13 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminCajaPage() {
+export default async function AdminCajaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ turno?: string }>;
+}) {
+  const sp = await searchParams;
+  const turnoId = Number(sp.turno);
   const sesionRaw = await obtenerSesionAbierta();
   const catalogoRaw = await obtenerCatalogoCaja();
 
@@ -46,6 +56,14 @@ export default async function AdminCajaPage() {
   const ventas = Array.isArray(ventasRaw) ? ventasRaw : [];
   const catalogo = catalogoRaw as CatalogoCaja;
 
+  let prefill: PrefillCobroTurno | null = null;
+  if (Number.isFinite(turnoId) && turnoId > 0) {
+    const prefillRaw = await obtenerPrefillCobroTurno(turnoId);
+    if (prefillRaw && typeof prefillRaw === "object" && "appointmentId" in prefillRaw) {
+      prefill = prefillRaw;
+    }
+  }
+
   return (
     <main className="pb-16 pt-8">
       <div className="mx-auto max-w-6xl px-5 md:px-8">
@@ -57,10 +75,14 @@ export default async function AdminCajaPage() {
           </p>
         </div>
 
+        <Suspense fallback={null}>
+          <AdminCajaScrollToForm />
+        </Suspense>
         <AdminCajaManager
           initialSesion={sesion}
           initialVentas={ventas}
           catalogo={catalogo}
+          initialPrefill={prefill}
         />
       </div>
     </main>
