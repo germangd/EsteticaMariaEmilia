@@ -142,20 +142,36 @@ export default async function Home() {
             </a>
           </li>
           <li>
-            <Link
-              href="/reservar"
-              className="cursor-pointer rounded-[2px] bg-gold px-[22px] py-2.5 text-[0.72rem] font-medium uppercase tracking-[0.15em] text-white transition-colors hover:bg-gold-dark"
-            >
-              Reservar turno
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/reservar"
+                className="cursor-pointer rounded-[2px] bg-gold px-[22px] py-2.5 text-[0.72rem] font-medium uppercase tracking-[0.15em] text-white transition-colors hover:bg-gold-dark"
+              >
+                Reservar turno
+              </Link>
+              <Link
+                href="/admin/login"
+                className="cursor-pointer rounded-[2px] border border-gold/45 px-[18px] py-2.5 text-[0.72rem] font-medium uppercase tracking-[0.15em] text-gold-dark transition-colors hover:bg-cream"
+              >
+                Staff
+              </Link>
+            </div>
           </li>
         </ul>
-        <Link
-          href="/reservar"
-          className="rounded-[2px] bg-gold px-4 py-2 text-[0.65rem] font-medium uppercase tracking-[0.12em] text-white md:hidden"
-        >
-          Reservar
-        </Link>
+        <div className="flex items-center gap-2 md:hidden">
+          <Link
+            href="/admin/login"
+            className="rounded-[2px] border border-gold/45 px-3 py-2 text-[0.65rem] font-medium uppercase tracking-[0.12em] text-gold-dark"
+          >
+            Staff
+          </Link>
+          <Link
+            href="/reservar"
+            className="rounded-[2px] bg-gold px-4 py-2 text-[0.65rem] font-medium uppercase tracking-[0.12em] text-white"
+          >
+            Reservar
+          </Link>
+        </div>
       </nav>
 
       <main id="inicio">
@@ -174,12 +190,18 @@ export default async function Home() {
             <p className="mb-10 max-w-md font-serif text-xl font-light italic text-ink-muted motion-safe:animate-[fadeUp_0.8s_ease_0.3s_both] motion-reduce:opacity-100">
               Tu espacio de belleza y bienestar
             </p>
-            <div className="mb-10 flex flex-wrap gap-4 motion-safe:animate-[fadeUp_0.8s_ease_0.45s_both] motion-reduce:opacity-100">
+            <div className="mb-10 flex flex-wrap items-center gap-4 motion-safe:animate-[fadeUp_0.8s_ease_0.45s_both] motion-reduce:opacity-100">
               <Link
                 href="/reservar"
                 className="inline-block rounded-[2px] bg-gold px-9 py-4 text-[0.72rem] font-medium uppercase tracking-[0.2em] text-white transition-all hover:-translate-y-0.5 hover:bg-gold-dark"
               >
                 Reservar turno
+              </Link>
+              <Link
+                href="/admin/login"
+                className="inline-block rounded-[2px] border border-gold/45 px-9 py-4 text-[0.72rem] font-medium uppercase tracking-[0.2em] text-gold-dark transition-all hover:-translate-y-0.5 hover:bg-cream"
+              >
+                Staff
               </Link>
               <a
                 href="#servicios"
