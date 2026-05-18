@@ -105,7 +105,7 @@ export default async function AdminTurnosPage({
   if (hasta < desde) {
     return (
       <main className="mx-auto max-w-6xl px-5 py-12 md:px-8">
-        <p className="text-sm text-red-700">Rango de fechas inv\u00e1lido.</p>
+        <p className="text-sm text-red-700">{"Rango de fechas inv\u00e1lido."}</p>
         <Link
           href="/admin/turnos"
           className="mt-4 inline-block text-gold-dark underline"
@@ -150,8 +150,7 @@ export default async function AdminTurnosPage({
         <section className={`mb-10 ${uiCard}`}>
           <h2 className={uiSubsectionTitle}>Cargar turno manual</h2>
           <p className="mb-4 text-sm font-medium text-ink">
-            Para reservas por tel\u00e9fono o WhatsApp. Respeta el cupo configurado en
-            cada servicio.
+            {"Para reservas por tel\u00e9fono o WhatsApp. Respeta el cupo configurado en cada servicio."}
           </p>
           <AdminCargarTurnoForm
             servicios={serviciosAdmin}
@@ -165,8 +164,7 @@ export default async function AdminTurnosPage({
         >
           <h2 className={uiSubsectionTitle}>Turnos asignados</h2>
           <p className="mb-4 text-sm font-medium text-ink">
-            Un solo listado seg\u00fan el per\u00edodo elegido. Pod\u00e9s filtrar por
-            servicio.
+            {"Un solo listado seg\u00fan el per\u00edodo elegido. Pod\u00e9s filtrar por servicio."}
           </p>
 
           <div className="mb-4 flex flex-wrap gap-2">
@@ -244,7 +242,7 @@ export default async function AdminTurnosPage({
             >
               Descargar CSV
             </a>{" "}
-            del per\u00edodo mostrado.
+            {"del per\u00edodo mostrado."}
           </p>
 
           <div className="mt-8 border-t border-gold/20 pt-8">
