@@ -19,7 +19,7 @@ export default async function AdminPanelLayout({
 
   return (
     <div className="min-h-screen bg-surface">
-      <div className="border-b border-gold/60 bg-panel shadow-sm ring-1 ring-gold/20">
+      <div className="border-b border-gold/60 bg-panel shadow-sm ring-1 ring-gold/20 print:hidden">
         <div className="mx-auto max-w-6xl px-5 py-3 md:px-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-gold-dark">

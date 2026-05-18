@@ -106,3 +106,66 @@ export const clientProfiles = pgTable("client_profiles", {
 export type ServicePackageRow = typeof servicePackages.$inferSelect;
 export type ClientPackageRow = typeof clientPackages.$inferSelect;
 export type ClientProfileRow = typeof clientProfiles.$inferSelect;
+
+/** Sesión de caja (apertura / cierre del día). */
+export const cashSessions = pgTable("cash_sessions", {
+  id: serial("id").primaryKey(),
+  openedAt: timestamp("opened_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  openingAmountPesos: integer("opening_amount_pesos").notNull().default(0),
+  closingAmountPesos: integer("closing_amount_pesos"),
+  notes: text("notes"),
+  status: text("status").notNull().default("abierta"),
+});
+
+/** Comprobante / venta registrada en caja. */
+export const sales = pgTable("sales", {
+  id: serial("id").primaryKey(),
+  sessionId: integer("session_id")
+    .notNull()
+    .references(() => cashSessions.id),
+  numero: integer("numero").notNull(),
+  clienteTelefono: text("cliente_telefono"),
+  clienteNombre: text("cliente_nombre"),
+  subtotalPesos: integer("subtotal_pesos").notNull().default(0),
+  descuentoPesos: integer("descuento_pesos").notNull().default(0),
+  totalPesos: integer("total_pesos").notNull().default(0),
+  metodoPago: text("metodo_pago").notNull().default("efectivo"),
+  notas: text("notas"),
+  estado: text("estado").notNull().default("completada"),
+  appointmentId: integer("appointment_id").references(() => appointments.id, {
+    onDelete: "set null",
+  }),
+  clientPackageId: integer("client_package_id").references(
+    () => clientPackages.id,
+    { onDelete: "set null" }
+  ),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const saleLines = pgTable("sale_lines", {
+  id: serial("id").primaryKey(),
+  saleId: integer("sale_id")
+    .notNull()
+    .references(() => sales.id, { onDelete: "cascade" }),
+  tipo: text("tipo").notNull().default("otro"),
+  descripcion: text("descripcion").notNull(),
+  cantidad: integer("cantidad").notNull().default(1),
+  precioUnitarioPesos: integer("precio_unitario_pesos").notNull().default(0),
+  totalLineaPesos: integer("total_linea_pesos").notNull().default(0),
+  serviceId: integer("service_id").references(() => services.id, {
+    onDelete: "set null",
+  }),
+  servicePackageId: integer("service_package_id").references(
+    () => servicePackages.id,
+    { onDelete: "set null" }
+  ),
+});
+
+export type CashSessionRow = typeof cashSessions.$inferSelect;
+export type SaleRow = typeof sales.$inferSelect;
+export type SaleLineRow = typeof saleLines.$inferSelect;

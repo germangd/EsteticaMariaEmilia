@@ -55,3 +55,12 @@ body {
     transform: translate(-50%, -50%) rotate(-360deg);
   }
 }
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+  body {
+    background: white;
+  }
+}
