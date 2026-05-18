@@ -2,6 +2,9 @@ import { DateTime } from "luxon";
 
 export type VistaAgenda = "dia" | "semana" | "mes" | "fecha";
 
+/** Ancla para volver al listado tras aplicar filtros en /admin/turnos */
+export const TURNOS_ASIGNADOS_ANCHOR = "turnos-asignados";
+
 export function parseVistaAgenda(raw: string | undefined): VistaAgenda {
   if (raw === "semana" || raw === "mes" || raw === "fecha") return raw;
   return "dia";
@@ -73,4 +76,12 @@ export function buildTurnosQuery(q: {
   u.set("ref", q.ref);
   if (q.servicio?.trim()) u.set("servicio", q.servicio.trim());
   return `?${u.toString()}`;
+}
+
+export function buildTurnosHref(q: {
+  vista: VistaAgenda;
+  ref: string;
+  servicio?: string;
+}): string {
+  return `/admin/turnos${buildTurnosQuery(q)}#${TURNOS_ASIGNADOS_ANCHOR}`;
 }

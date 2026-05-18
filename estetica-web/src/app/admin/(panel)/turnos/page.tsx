@@ -1,13 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { getAppTimeZone, hoyIsoEnZona } from "@/lib/agenda";
 import {
-  buildTurnosQuery,
+  buildTurnosHref,
   parseVistaAgenda,
   rangoAgenda,
+  TURNOS_ASIGNADOS_ANCHOR,
   type VistaAgenda,
 } from "@/lib/agenda-rango";
 import { AdminCargarTurnoForm } from "@/components/admin/admin-cargar-turno-form";
+import { AdminTurnosScrollToList } from "@/components/admin/admin-turnos-scroll";
 import { AdminTurnosTable } from "@/components/admin/admin-turnos-table";
 import { rowToServicioApi } from "@/lib/servicio-format";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
@@ -129,6 +132,9 @@ export default async function AdminTurnosPage({
 
   return (
     <main className="pb-16 pt-8">
+      <Suspense fallback={null}>
+        <AdminTurnosScrollToList />
+      </Suspense>
       <div className="mx-auto max-w-6xl px-5 md:px-8">
         <div className="mb-8 border-b border-gold/35 pb-8">
           <p className={uiPanelKicker}>Turnos</p>
@@ -153,7 +159,10 @@ export default async function AdminTurnosPage({
           />
         </section>
 
-        <section className={`mb-10 ${uiCard}`}>
+        <section
+          id={TURNOS_ASIGNADOS_ANCHOR}
+          className={`scroll-mt-6 ${uiCard}`}
+        >
           <h2 className={uiSubsectionTitle}>Turnos asignados</h2>
           <p className="mb-4 text-sm font-medium text-ink">
             Un solo listado seg\u00fan el per\u00edodo elegido. Pod\u00e9s filtrar por
@@ -164,11 +173,11 @@ export default async function AdminTurnosPage({
             {VISTAS.map((v) => (
               <Link
                 key={v.id}
-                href={`/admin/turnos${buildTurnosQuery({
+                href={buildTurnosHref({
                   vista: v.id,
                   ref,
                   servicio: servicio ?? undefined,
-                })}`}
+                })}
                 className={tabClass(vista === v.id)}
               >
                 {v.id === "dia" && ref === hoy ? "Hoy" : v.label}
@@ -178,6 +187,7 @@ export default async function AdminTurnosPage({
 
           <form
             method="get"
+            action={`/admin/turnos#${TURNOS_ASIGNADOS_ANCHOR}`}
             className="flex flex-col gap-4 border-t border-gold/20 pt-4 md:flex-row md:flex-wrap md:items-end"
           >
             <input type="hidden" name="vista" value={vista} />
@@ -216,7 +226,7 @@ export default async function AdminTurnosPage({
                 Aplicar
               </button>
               <Link
-                href={`/admin/turnos${buildTurnosQuery({ vista: "dia", ref: hoy })}`}
+                href={buildTurnosHref({ vista: "dia", ref: hoy })}
                 className={uiBtnSecondary}
               >
                 Hoy
@@ -236,14 +246,14 @@ export default async function AdminTurnosPage({
             </a>{" "}
             del per\u00edodo mostrado.
           </p>
-        </section>
 
-        <section>
-          <h2 className={uiSectionTitle}>
-            {turnos.length} turno{turnos.length === 1 ? "" : "s"}
-          </h2>
-          <p className="mb-4 text-sm font-medium text-ink-muted">{etiqueta}</p>
-          <AdminTurnosTable rows={turnos} tz={tz} showActions />
+          <div className="mt-8 border-t border-gold/20 pt-8">
+            <h3 className={uiSectionTitle}>
+              {turnos.length} turno{turnos.length === 1 ? "" : "s"}
+            </h3>
+            <p className="mb-4 text-sm font-medium text-ink-muted">{etiqueta}</p>
+            <AdminTurnosTable rows={turnos} tz={tz} showActions />
+          </div>
         </section>
       </div>
     </main>
