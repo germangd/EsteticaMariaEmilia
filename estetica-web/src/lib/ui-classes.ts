@@ -11,15 +11,16 @@ export const uiInput =
 
 export const uiSelect = `${uiInput} cursor-pointer`;
 
-export const uiCard =
-  "rounded-sm border border-gold/40 bg-white p-5 shadow-md md:p-6";
+/** Panel marfil cálido (reservas + staff). */
+const uiWarmPanel =
+  "rounded-sm border border-gold/50 bg-[#FFF9F2] shadow-md ring-1 ring-gold/20";
 
-export const uiCardSoft =
-  "rounded-sm border border-gold/35 bg-white p-6 shadow-sm";
+export const uiCard = `${uiWarmPanel} p-5 md:p-6`;
 
-/** Contenedor del formulario de reservas (tono marfil, distinto del fondo de página). */
-export const uiReservarForm =
-  "rounded-sm border border-gold/50 bg-[#FFF9F2] p-6 shadow-md ring-1 ring-gold/20 md:p-7";
+export const uiCardSoft = `${uiWarmPanel} p-6`;
+
+/** Contenedor de formularios en /reservar */
+export const uiReservarForm = `${uiWarmPanel} p-6 md:p-7`;
 
 export const uiBtnPrimary =
   "inline-flex items-center justify-center rounded-sm bg-gold px-5 py-2.5 text-[0.72rem] font-semibold uppercase tracking-wider text-white shadow-sm transition hover:bg-gold-dark hover:shadow focus:outline-none focus:ring-2 focus:ring-gold/40 disabled:cursor-not-allowed disabled:opacity-50";
@@ -36,11 +37,10 @@ export const uiBtnDark =
 export const uiBtnDanger =
   "inline-flex items-center justify-center rounded-sm border border-red-400/70 bg-white px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-wider text-red-800 shadow-sm transition hover:bg-red-50 disabled:opacity-50";
 
-export const uiTableWrap =
-  "overflow-x-auto rounded-sm border border-gold/45 bg-white shadow-md";
+export const uiTableWrap = `overflow-x-auto ${uiWarmPanel}`;
 
 export const uiTableHead =
-  "border-b border-gold/35 bg-[#F7F2EC] text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-dark";
+  "border-b border-gold/40 bg-[#F5EDE3] text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-dark";
 
 export const uiPanelKicker =
   "mb-1 text-[0.65rem] font-bold uppercase tracking-[0.25em] text-gold-dark";
@@ -57,7 +57,7 @@ export const uiSubsectionTitle =
   "mb-2 font-serif text-lg font-semibold text-ink-dark";
 
 export const uiTabBar =
-  "mb-8 flex rounded-sm border border-gold/40 bg-white p-1 shadow-sm";
+  "mb-8 flex rounded-sm border border-gold/50 bg-[#FFF9F2] p-1 shadow-sm ring-1 ring-gold/15";
 
 export const uiTabActive =
   "flex-1 rounded-sm bg-gold py-2.5 text-xs font-bold uppercase tracking-wide text-white shadow-sm";

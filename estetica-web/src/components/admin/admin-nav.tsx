@@ -25,7 +25,7 @@ export function AdminNav() {
             className={`rounded-sm px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-wider transition ${
               active
                 ? "bg-gold text-white shadow-sm"
-                : "border border-gold/55 bg-white text-gold-dark shadow-sm hover:border-gold hover:bg-cream"
+                : "border border-gold/55 bg-white/90 text-gold-dark shadow-sm hover:border-gold hover:bg-white"
             }`}
           >
             {label}

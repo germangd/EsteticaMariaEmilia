@@ -64,7 +64,7 @@ export default async function AdminLoginPage() {
       </p>
       <Suspense
         fallback={
-          <div className="rounded-sm border border-gold/20 bg-white p-8 text-sm text-ink-muted">
+          <div className="rounded-sm border border-gold/50 bg-[#FFF9F2] p-8 text-sm font-medium text-ink ring-1 ring-gold/15">
             Cargando formulario…
           </div>
         }
