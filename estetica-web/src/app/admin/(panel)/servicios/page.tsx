@@ -40,9 +40,7 @@ export default async function AdminServiciosPage() {
           <p className={uiPanelKicker}>Configuración</p>
           <h1 className={uiPanelTitle}>Servicios</h1>
           <p className={uiPanelDesc}>
-            Cre\u00e1 categor\u00edas (ej. Depilaci\u00f3n) y sub-servicios (cavado,
-            axilas\u2026). Los sub-servicios se reservan online y se usan en
-            paquetes.
+            {"Cre\u00e1 categor\u00edas (ej. Depilaci\u00f3n) y sub-servicios (cavado, axilas\u2026). Los sub-servicios se reservan online y se usan en paquetes."}
           </p>
         </div>
 

@@ -198,10 +198,9 @@ export function AdminServiciosManager({
           {editingId ? "Editar servicio" : "Nuevo servicio"}
         </h2>
         <p className="mb-4 text-sm font-medium text-ink">
-          La <strong>capacidad</strong> es cuántos clientes pueden reservar el
-          mismo servicio a la misma hora (cupo por turno). El{" "}
-          <strong>precio</strong> se usa en caja y podés cambiarlo desde el
-          formulario o haciendo clic en la tabla.
+          {"Cre\u00e1 una "}
+          <strong>{"categor\u00eda"}</strong>
+          {" (ej. Depilaci\u00f3n) y sub-servicios (cavado, axilas). Solo los sub-servicios y sueltos se reservan online y entran en paquetes."}
         </p>
         <form onSubmit={(e) => void onSubmit(e)} className="grid gap-4 md:grid-cols-2">
           <div>
@@ -218,21 +217,21 @@ export function AdminServiciosManager({
                 }));
               }}
             >
-              <option value="grupo">Categor\u00eda (agrupa otros)</option>
+              <option value="grupo">{"Categor\u00eda (agrupa otros)"}</option>
               <option value="sub">Sub-servicio</option>
               <option value="suelto">Servicio suelto</option>
             </select>
           </div>
           {form.tipo === "sub" ? (
             <div>
-              <label className={uiLabel}>Categor\u00eda</label>
+              <label className={uiLabel}>{"Categor\u00eda"}</label>
               <select
                 required
                 className={uiSelect}
                 value={form.parentId}
                 onChange={(e) => setForm({ ...form, parentId: e.target.value })}
               >
-                <option value="">Eleg\u00ed...</option>
+                <option value="">{"Eleg\u00ed..."}</option>
                 {categorias.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nombre}

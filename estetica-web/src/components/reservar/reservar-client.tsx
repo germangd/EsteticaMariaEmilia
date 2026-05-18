@@ -350,7 +350,7 @@ export function ReservarClient() {
                   onChange={setServicio}
                   className={`mb-4 ${uiSelect}`}
                   required
-                  placeholder="Eleg\u00ed un servicio"
+                  placeholder={"Eleg\u00ed un servicio"}
                   valueMode="nombre"
                 />
 
