@@ -31,7 +31,7 @@ import {
 } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
-  title: "Admin ? Turnos | Mar?a Emilia Est?tica",
+  title: "Admin \u2014 Turnos | Mar\u00eda Emilia Est\u00e9tica",
   robots: { index: false, follow: false },
 };
 
@@ -48,7 +48,7 @@ function isIsoDate(s: string | undefined): s is string {
 }
 
 const VISTAS: { id: VistaAgenda; label: string }[] = [
-  { id: "dia", label: "D?a" },
+  { id: "dia", label: "D\u00eda" },
   { id: "semana", label: "Semana" },
   { id: "mes", label: "Mes" },
   { id: "fecha", label: "Fecha" },
@@ -96,13 +96,13 @@ export default async function AdminTurnosPage({
     etiqueta =
       desde === hasta
         ? fmtFechaEtiqueta(desde, tz)
-        : `${fmtFechaEtiqueta(desde, tz)} ? ${fmtFechaEtiqueta(hasta, tz)}`;
+        : `${fmtFechaEtiqueta(desde, tz)} \u2013 ${fmtFechaEtiqueta(hasta, tz)}`;
   }
 
   if (hasta < desde) {
     return (
       <main className="mx-auto max-w-6xl px-5 py-12 md:px-8">
-        <p className="text-sm text-red-700">Rango de fechas inv?lido.</p>
+        <p className="text-sm text-red-700">Rango de fechas inv\u00e1lido.</p>
         <Link
           href="/admin/turnos"
           className="mt-4 inline-block text-gold-dark underline"
@@ -134,7 +134,7 @@ export default async function AdminTurnosPage({
           <p className={uiPanelKicker}>Turnos</p>
           <h1 className={uiPanelTitle}>Agenda</h1>
           <p className={uiPanelDesc}>
-            Zona horaria: {tz} ? Hoy:{" "}
+            Zona horaria: {tz} {"\u00b7"} Hoy:{" "}
             <span className="font-semibold text-ink-dark">
               {fmtFechaEtiqueta(hoy, tz)}
             </span>
@@ -144,7 +144,7 @@ export default async function AdminTurnosPage({
         <section className={`mb-10 ${uiCard}`}>
           <h2 className={uiSubsectionTitle}>Cargar turno manual</h2>
           <p className="mb-4 text-sm font-medium text-ink">
-            Para reservas por tel?fono o WhatsApp. Respeta el cupo configurado en
+            Para reservas por tel\u00e9fono o WhatsApp. Respeta el cupo configurado en
             cada servicio.
           </p>
           <AdminCargarTurnoForm
@@ -156,7 +156,8 @@ export default async function AdminTurnosPage({
         <section className={`mb-10 ${uiCard}`}>
           <h2 className={uiSubsectionTitle}>Turnos asignados</h2>
           <p className="mb-4 text-sm font-medium text-ink">
-            Un solo listado seg?n el per?odo elegido. Pod?s filtrar por servicio.
+            Un solo listado seg\u00fan el per\u00edodo elegido. Pod\u00e9s filtrar por
+            servicio.
           </p>
 
           <div className="mb-4 flex flex-wrap gap-2">
@@ -183,9 +184,9 @@ export default async function AdminTurnosPage({
             <div>
               <label className={uiLabel}>
                 {vista === "semana"
-                  ? "D?a de referencia (semana)"
+                  ? "D\u00eda de referencia (semana)"
                   : vista === "mes"
-                    ? "D?a de referencia (mes)"
+                    ? "D\u00eda de referencia (mes)"
                     : "Fecha"}
               </label>
               <input
@@ -233,7 +234,7 @@ export default async function AdminTurnosPage({
             >
               Descargar CSV
             </a>{" "}
-            del período mostrado.
+            del per\u00edodo mostrado.
           </p>
         </section>
 
