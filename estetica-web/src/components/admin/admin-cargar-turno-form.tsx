@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
 import {
   uiBtnPrimary,
+  uiHint,
   uiInput,
   uiLabel,
   uiSelect,
+  uiTimeSlot,
+  uiTimeSlotActive,
 } from "@/lib/ui-classes";
 
 export function AdminCargarTurnoForm({
@@ -20,7 +23,10 @@ export function AdminCargarTurnoForm({
     servicios[0]?.id ? String(servicios[0].id) : ""
   );
   const [fecha, setFecha] = useState(fechaDefault);
-  const [hora, setHora] = useState("10:00");
+  const [hora, setHora] = useState("");
+  const [horarios, setHorarios] = useState<string[]>([]);
+  const [loadingHorarios, setLoadingHorarios] = useState(false);
+  const [horariosError, setHorariosError] = useState<string | null>(null);
   const [nombre, setNombre] = useState("");
   const [telefono, setTelefono] = useState("");
   const [email, setEmail] = useState("");
@@ -31,8 +37,67 @@ export function AdminCargarTurnoForm({
   const inputClass = uiInput;
   const selectClass = uiSelect;
 
+  const servicioSel = useMemo(
+    () => servicios.find((s) => String(s.id) === servicioId),
+    [servicios, servicioId]
+  );
+
+  const duracionEtiqueta = useMemo(() => {
+    const min = servicioSel?.duracion;
+    if (!min) return null;
+    if (min < 60) return `${min} min`;
+    const h = Math.floor(min / 60);
+    const m = min % 60;
+    return m > 0 ? `${h} h ${m} min` : `${h} h`;
+  }, [servicioSel]);
+
+  const cargarHorarios = useCallback(async () => {
+    const nombre = servicioSel?.nombre;
+    if (!nombre || !fecha) {
+      setHorarios([]);
+      setHora("");
+      setHorariosError(null);
+      return;
+    }
+    setLoadingHorarios(true);
+    setHorariosError(null);
+    setHora("");
+    try {
+      const q = new URLSearchParams({ servicio: nombre, fecha });
+      const r = await fetch(`/api/horarios?${q.toString()}`, {
+        cache: "no-store",
+      });
+      const data = (await r.json()) as {
+        ok?: boolean;
+        horarios?: string[];
+        mensaje?: string;
+      };
+      if (!r.ok || data.ok === false) {
+        setHorarios([]);
+        setHorariosError(data.mensaje ?? "No se pudieron cargar horarios.");
+        return;
+      }
+      const lista = Array.isArray(data.horarios) ? data.horarios : [];
+      setHorarios(lista);
+      if (lista.length === 1) setHora(lista[0]!);
+    } catch {
+      setHorarios([]);
+      setHorariosError("Error de red al cargar horarios.");
+    } finally {
+      setLoadingHorarios(false);
+    }
+  }, [servicioSel?.nombre, fecha]);
+
+  useEffect(() => {
+    void cargarHorarios();
+  }, [cargarHorarios]);
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!hora) {
+      setMsg("Elegí un horario disponible.");
+      return;
+    }
     setPending(true);
     setMsg(null);
     try {
@@ -75,7 +140,7 @@ export function AdminCargarTurnoForm({
 
   if (servicios.length === 0) {
     return (
-      <p className="text-sm text-ink-muted">
+      <p className="text-sm font-medium text-ink">
         Primero cargá servicios en{" "}
         <a href="/admin/servicios" className="text-gold-dark underline">
           Servicios
@@ -112,15 +177,42 @@ export function AdminCargarTurnoForm({
           onChange={(e) => setFecha(e.target.value)}
         />
       </div>
-      <div>
-        <label className={uiLabel}>Hora</label>
-        <input
-          type="time"
-          required
-          className={inputClass}
-          value={hora}
-          onChange={(e) => setHora(e.target.value)}
-        />
+      <div className="md:col-span-2">
+        <label className={uiLabel}>Horario disponible</label>
+        {duracionEtiqueta ? (
+          <p className={`mb-2 ${uiHint}`}>
+            Duración: <strong>{duracionEtiqueta}</strong>. Solo se muestran
+            turnos libres según cupo y reservas ya cargadas.
+          </p>
+        ) : null}
+        {loadingHorarios ? (
+          <p className="text-sm font-medium text-ink">Buscando horarios…</p>
+        ) : horariosError ? (
+          <p className="rounded-sm bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {horariosError}
+          </p>
+        ) : !servicioSel || !fecha ? (
+          <p className="text-sm font-medium text-ink-muted">
+            Elegí servicio y fecha.
+          </p>
+        ) : horarios.length === 0 ? (
+          <p className="text-sm font-medium text-ink-muted">
+            No hay horarios libres para este servicio en esa fecha.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {horarios.map((h) => (
+              <button
+                key={h}
+                type="button"
+                onClick={() => setHora(h)}
+                className={hora === h ? uiTimeSlotActive : uiTimeSlot}
+              >
+                {h}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div>
         <label className={uiLabel}>Nombre cliente</label>
@@ -159,7 +251,11 @@ export function AdminCargarTurnoForm({
         Enviar mail de confirmación (si hay configuración de correo)
       </label>
       <div className="md:col-span-2">
-        <button type="submit" disabled={pending} className={uiBtnPrimary}>
+        <button
+          type="submit"
+          disabled={pending || !hora}
+          className={uiBtnPrimary}
+        >
           {pending ? "Guardando…" : "Cargar turno"}
         </button>
         {msg ? <p className="mt-3 text-sm font-medium text-ink">{msg}</p> : null}
