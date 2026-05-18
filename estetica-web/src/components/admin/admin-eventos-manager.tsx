@@ -24,6 +24,8 @@ export type EventoAdmin = {
   nombre: string;
   descripcion: string | null;
   fecha: string;
+  sedeId: number;
+  sedeNombre: string;
   horarioInicio: string;
   horarioFin: string;
   precioPesos: number;
@@ -33,10 +35,13 @@ export type EventoAdmin = {
   servicios: { id: number; nombre: string }[];
 };
 
-const emptyForm = () => ({
+type SedeOpt = { id: number; nombre: string };
+
+const emptyForm = (sedeIdDefault: number) => ({
   nombre: "",
   descripcion: "",
   fecha: "",
+  sedeId: sedeIdDefault,
   horarioInicio: "09:00",
   horarioFin: "18:00",
   precioPesos: 0,
@@ -58,12 +63,15 @@ function formatPrecio(n: number): string {
 export function AdminEventosManager({
   initialEventos,
   servicios,
+  sedes,
 }: {
   initialEventos: EventoAdmin[];
   servicios: ServicioAdmin[];
+  sedes: SedeOpt[];
 }) {
+  const sedeDefault = sedes[0]?.id ?? 0;
   const [eventos, setEventos] = useState(initialEventos);
-  const [form, setForm] = useState(emptyForm());
+  const [form, setForm] = useState(() => emptyForm(sedeDefault));
   const [editingId, setEditingId] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -112,11 +120,11 @@ export function AdminEventosManager({
   }, [clienteQ]);
 
   const resetForm = useCallback(() => {
-    setForm(emptyForm());
+    setForm(emptyForm(sedeDefault));
     setEditingId(null);
     setClienteQ("");
     setClienteHits([]);
-  }, []);
+  }, [sedeDefault]);
 
   async function refresh() {
     const r = await fetch("/api/admin/eventos", { credentials: "same-origin" });
@@ -195,6 +203,7 @@ export function AdminEventosManager({
       nombre: ev.nombre,
       descripcion: ev.descripcion ?? "",
       fecha: ev.fecha,
+      sedeId: ev.sedeId,
       horarioInicio: ev.horarioInicio,
       horarioFin: ev.horarioFin,
       precioPesos: ev.precioPesos,
@@ -249,6 +258,23 @@ export function AdminEventosManager({
               onChange={(e) => setForm({ ...form, nombre: e.target.value })}
               placeholder="Ej. Jornada de belleza"
             />
+          </div>
+          <div>
+            <label className={uiLabel}>Sede</label>
+            <select
+              required
+              className={uiInput}
+              value={form.sedeId}
+              onChange={(e) =>
+                setForm({ ...form, sedeId: Number(e.target.value) })
+              }
+            >
+              {sedes.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className={uiLabel}>Fecha del evento</label>
@@ -427,6 +453,7 @@ export function AdminEventosManager({
               <thead className={uiTableHead}>
                 <tr>
                   <th className="px-3 py-3 pl-4">Evento</th>
+                  <th className="px-3 py-3">Sede</th>
                   <th className="px-3 py-3">Fecha</th>
                   <th className="px-3 py-3">Franja</th>
                   <th className="px-3 py-3">Cliente</th>
@@ -446,6 +473,7 @@ export function AdminEventosManager({
                         </span>
                       ) : null}
                     </td>
+                    <td className="px-3 py-2.5">{ev.sedeNombre}</td>
                     <td className="px-3 py-2.5">{ev.fecha}</td>
                     <td className="whitespace-nowrap px-3 py-2.5">
                       {ev.horarioInicio} – {ev.horarioFin}

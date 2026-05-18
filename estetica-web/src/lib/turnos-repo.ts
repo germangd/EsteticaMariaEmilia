@@ -1,6 +1,11 @@
 import { and, asc, eq, gte, lte, ne } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { appointments, services, type AppointmentRow } from "@/db/schema";
+import {
+  appointments,
+  sedes,
+  services,
+  type AppointmentRow,
+} from "@/db/schema";
 import {
   contarSolapamiento,
   generarCodigo,
@@ -23,10 +28,19 @@ function isUniqueViolation(e: unknown): boolean {
 export async function listarActivosConDuracion(
   fecha: string,
   servicioNombre: string,
-  responsable: string
+  responsable: string,
+  sedeId: number
 ): Promise<TurnoOcupado[]> {
   const db = getDb();
   if (!db) return [];
+
+  const parts = [
+    eq(appointments.fecha, fecha),
+    eq(appointments.servicioNombre, servicioNombre),
+    eq(appointments.responsable, responsable),
+    eq(appointments.estado, "activo"),
+  ];
+  if (sedeId > 0) parts.push(eq(appointments.sedeId, sedeId));
 
   const rows = await db
     .select({
@@ -35,14 +49,7 @@ export async function listarActivosConDuracion(
     })
     .from(appointments)
     .innerJoin(services, eq(appointments.servicioNombre, services.nombre))
-    .where(
-      and(
-        eq(appointments.fecha, fecha),
-        eq(appointments.servicioNombre, servicioNombre),
-        eq(appointments.responsable, responsable),
-        eq(appointments.estado, "activo")
-      )
-    );
+    .where(and(...parts));
 
   return rows.map((r) => ({
     hora: normalizarHora(r.hora),
@@ -51,6 +58,8 @@ export async function listarActivosConDuracion(
 }
 
 /** Inserta turno si hay cupo considerando la duración del servicio. */
+export type TurnoListado = AppointmentRow & { sedeNombre: string };
+
 export async function insertarTurnoSiHayCupo(params: {
   fecha: string;
   hora: string;
@@ -59,6 +68,7 @@ export async function insertarTurnoSiHayCupo(params: {
   email: string | null;
   servicioNombre: string;
   responsable: string;
+  sedeId: number;
   capacidad: number;
   duracionMin: number;
 }): Promise<
@@ -76,7 +86,8 @@ export async function insertarTurnoSiHayCupo(params: {
   const ocupados = await listarActivosConDuracion(
     params.fecha,
     params.servicioNombre,
-    params.responsable
+    params.responsable,
+    params.sedeId
   );
   if (contarSolapamiento(inicio, duracion, ocupados) >= params.capacidad) {
     return { ok: false, reason: "cupo" };
@@ -97,6 +108,7 @@ export async function insertarTurnoSiHayCupo(params: {
           email,
           servicioNombre: params.servicioNombre,
           responsable: params.responsable,
+          sedeId: params.sedeId,
           codigoCancelacion: codigo,
           estado: "activo",
         })
@@ -155,7 +167,8 @@ export async function listarTurnosActivosFiltrados(params: {
   fechaDesde: string;
   fechaHasta?: string | null;
   servicioNombre?: string | null;
-}): Promise<AppointmentRow[]> {
+  sedeId?: number | null;
+}): Promise<TurnoListado[]> {
   const db = getDb();
   if (!db) return [];
   const parts = [
@@ -166,9 +179,17 @@ export async function listarTurnosActivosFiltrados(params: {
   if (hasta) parts.push(lte(appointments.fecha, hasta));
   const svc = params.servicioNombre?.trim();
   if (svc) parts.push(eq(appointments.servicioNombre, svc));
-  return db
-    .select()
+  if (params.sedeId != null && params.sedeId > 0) {
+    parts.push(eq(appointments.sedeId, params.sedeId));
+  }
+  const rows = await db
+    .select({
+      turno: appointments,
+      sedeNombre: sedes.nombre,
+    })
     .from(appointments)
+    .innerJoin(sedes, eq(appointments.sedeId, sedes.id))
     .where(and(...parts))
     .orderBy(asc(appointments.fecha), asc(appointments.hora));
+  return rows.map((r) => ({ ...r.turno, sedeNombre: r.sedeNombre }));
 }

@@ -9,6 +9,19 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
+/** Lugares de atención (Ensenada, Bavio, Magdalena, etc.). */
+export const sedes = pgTable("sedes", {
+  id: serial("id").primaryKey(),
+  nombre: text("nombre").notNull(),
+  activo: boolean("activo").notNull().default(true),
+  orden: integer("orden").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type SedeRow = typeof sedes.$inferSelect;
+
 /** Paridad con hoja `Config` (columnas A–F en `Código.gs`). */
 export const services = pgTable("services", {
   id: serial("id").primaryKey(),
@@ -54,11 +67,28 @@ export const agendaEvents = pgTable("agenda_events", {
   precioPesos: integer("precio_pesos").notNull().default(0),
   clienteTelefono: text("cliente_telefono"),
   clienteNombre: text("cliente_nombre"),
+  sedeId: integer("sede_id")
+    .notNull()
+    .references(() => sedes.id, { onDelete: "cascade" }),
   activo: boolean("activo").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });
+
+/** Franjas de atención del local (varias por día; Luxon 1=lun … 7=dom). */
+export const businessHourSlots = pgTable("business_hour_slots", {
+  id: serial("id").primaryKey(),
+  sedeId: integer("sede_id")
+    .notNull()
+    .references(() => sedes.id, { onDelete: "cascade" }),
+  diaSemana: integer("dia_semana").notNull(),
+  horarioInicio: text("horario_inicio").notNull(),
+  horarioFin: text("horario_fin").notNull(),
+  activo: boolean("activo").notNull().default(true),
+});
+
+export type BusinessHourSlotRow = typeof businessHourSlots.$inferSelect;
 
 export const agendaEventServices = pgTable(
   "agenda_event_services",
@@ -88,6 +118,9 @@ export const appointments = pgTable("appointments", {
   servicioNombre: text("servicio_nombre").notNull(),
   responsable: text("responsable").notNull(),
   codigoCancelacion: text("codigo_cancelacion").notNull().unique(),
+  sedeId: integer("sede_id")
+    .notNull()
+    .references(() => sedes.id),
   estado: text("estado").notNull().default("activo"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

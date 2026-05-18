@@ -6,7 +6,12 @@ import {
   serviceAvailabilityDates,
   services,
 } from "@/db/schema";
-import { horaAMinutos } from "@/lib/agenda";
+import {
+  type FranjaHoraria,
+  horaAMinutos,
+  intersectarFranjasConVentanaServicio,
+} from "@/lib/agenda";
+import { listarFranjasAtencionParaFecha } from "@/lib/horario-atencion-repo";
 import { padHoraHHmm } from "@/lib/servicio-format";
 
 export type EventoFranja = {
@@ -19,8 +24,7 @@ export type EventoFranja = {
 };
 
 export type VentanaHorario = {
-  horarioInicio: string;
-  horarioFin: string;
+  franjas: FranjaHoraria[];
   /** Motivo si no hay turnos (evento, calendario, etc.). */
   bloqueado?: string;
 };
@@ -120,18 +124,25 @@ export function evaluarReservaEnEvento(
   return { permitido: true };
 }
 
-/** Eventos activos en una fecha con servicios vinculados. */
+/** Eventos activos en una fecha y sede con servicios vinculados. */
 export async function listarEventosActivosEnFecha(
-  fecha: string
+  fecha: string,
+  sedeId: number
 ): Promise<EventoFranja[]> {
-  if (!esFechaIsoValida(fecha)) return [];
+  if (!esFechaIsoValida(fecha) || sedeId < 1) return [];
   const db = getDb();
   if (!db) return [];
 
   const rows = await db
     .select()
     .from(agendaEvents)
-    .where(and(eq(agendaEvents.fecha, fecha), eq(agendaEvents.activo, true)))
+    .where(
+      and(
+        eq(agendaEvents.fecha, fecha),
+        eq(agendaEvents.sedeId, sedeId),
+        eq(agendaEvents.activo, true)
+      )
+    )
     .orderBy(asc(agendaEvents.horarioInicio), asc(agendaEvents.id));
 
   if (rows.length === 0) return [];
@@ -300,39 +311,65 @@ export async function resolverVentanaReserva(
     nombre: string;
   },
   fecha: string,
+  sedeId: number,
   hora?: string
 ): Promise<VentanaHorario | null> {
+  const ventanaServicio: FranjaHoraria = {
+    horarioInicio: padHoraHHmm(servicio.horarioInicio),
+    horarioFin: padHoraHHmm(servicio.horarioFin),
+  };
+
   const permitida = await fechaPermitidaParaServicio(serviceId, fecha);
   if (!permitida) {
     return {
-      horarioInicio: servicio.horarioInicio,
-      horarioFin: servicio.horarioFin,
+      franjas: [],
       bloqueado:
         "Este servicio solo admite turnos en fechas habilitadas en el calendario (configuración admin).",
     };
   }
 
-  const eventos = await listarEventosActivosEnFecha(fecha);
+  if (sedeId < 1) {
+    return { franjas: [], bloqueado: "Elegí una sede válida." };
+  }
+
+  const franjasLocal = await listarFranjasAtencionParaFecha(fecha, sedeId);
+  if (franjasLocal.length === 0) {
+    return {
+      franjas: [],
+      bloqueado:
+        "No hay atención ese día en esta sede (domingo o sin franjas en Horarios).",
+    };
+  }
+
+  let franjas = intersectarFranjasConVentanaServicio(
+    franjasLocal,
+    ventanaServicio
+  );
+  if (franjas.length === 0) {
+    return {
+      franjas: [],
+      bloqueado:
+        "El horario del servicio no coincide con las franjas de atención del local ese día.",
+    };
+  }
+
+  const eventos = await listarEventosActivosEnFecha(fecha, sedeId);
 
   if (hora && eventos.length > 0) {
     const ev = evaluarReservaEnEvento(serviceId, hora, eventos);
     if (!ev.permitido) {
-      return {
-        horarioInicio: servicio.horarioInicio,
-        horarioFin: servicio.horarioFin,
-        bloqueado: ev.mensaje,
-      };
+      return { franjas: [], bloqueado: ev.mensaje };
     }
     if (ev.ventana) {
-      return {
-        horarioInicio: ev.ventana.horarioInicio,
-        horarioFin: ev.ventana.horarioFin,
-      };
+      franjas = intersectarFranjasConVentanaServicio([ev.ventana], ventanaServicio);
+      if (franjas.length === 0) {
+        return {
+          franjas: [],
+          bloqueado: "El horario del evento no es compatible con este servicio.",
+        };
+      }
     }
   }
 
-  return {
-    horarioInicio: padHoraHHmm(servicio.horarioInicio),
-    horarioFin: padHoraHHmm(servicio.horarioFin),
-  };
+  return { franjas };
 }

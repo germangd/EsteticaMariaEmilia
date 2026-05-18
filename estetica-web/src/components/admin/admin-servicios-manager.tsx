@@ -359,7 +359,7 @@ export function AdminServiciosManager({
             <h3 className={uiSubsectionTitle}>Fechas habilitadas</h3>
             <p className="mb-4 text-sm text-ink-muted">
               {
-                "Si agreg\u00e1s fechas, solo esos d\u00edas aceptan reservas de este servicio. Sin fechas, rige el horario habitual (lun\u2013s\u00e1b, sin domingo)."
+                "Si agreg\u00e1s fechas, solo esos d\u00edas aceptan reservas de este servicio. Sin fechas, rige el horario del local (Admin \u2192 Horarios) y el rango de este servicio."
               }
             </p>
             <AdminServicioFechas serviceId={editingId} esGrupo={false} />

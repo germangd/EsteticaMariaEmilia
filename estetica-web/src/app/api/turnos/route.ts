@@ -6,10 +6,11 @@ import {
   esFechaHoraValida,
   getAppTimeZone,
   normalizarHora,
-  turnoCabeEnHorario,
+  turnoCabeEnFranjas,
 } from "@/lib/agenda";
 import { enviarMailsTurnoConfirmado } from "@/lib/mail-turno";
 import { resolverVentanaReserva } from "@/lib/disponibilidad-repo";
+import { obtenerSedePorId } from "@/lib/sedes-repo";
 import { insertarTurnoSiHayCupo } from "@/lib/turnos-repo";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ type Body = {
   nombre?: string;
   telefono?: string;
   email?: string;
+  sedeId?: number;
 };
 
 /**
@@ -53,15 +55,32 @@ export async function POST(request: Request) {
   const nombre = body.nombre?.trim() ?? "";
   const telefono = body.telefono?.trim() ?? "";
   const email = body.email?.trim() || "";
+  const sedeId = Number(body.sedeId);
 
-  if (!servicioNombre || !fecha || !horaRaw || !nombre || !telefono) {
+  if (
+    !servicioNombre ||
+    !fecha ||
+    !horaRaw ||
+    !nombre ||
+    !telefono ||
+    !Number.isFinite(sedeId) ||
+    sedeId < 1
+  ) {
     return NextResponse.json(
       {
         exito: false,
-        mensaje: "Faltan servicio, fecha, hora, nombre o teléfono.",
+        mensaje: "Faltan servicio, sede, fecha, hora, nombre o teléfono.",
       },
       { status: 400 }
     );
+  }
+
+  const sede = await obtenerSedePorId(sedeId);
+  if (!sede?.activo) {
+    return NextResponse.json({
+      exito: false,
+      mensaje: "Sede no válida.",
+    });
   }
 
   if (!hora) {
@@ -98,6 +117,7 @@ export async function POST(request: Request) {
       servicio.id,
       servicio,
       fecha,
+      sedeId,
       hora
     );
     if (!ventana || ventana.bloqueado) {
@@ -109,7 +129,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (!turnoCabeEnHorario(hora, servicio.duracionMin, ventana.horarioFin)) {
+    if (!turnoCabeEnFranjas(hora, servicio.duracionMin, ventana.franjas)) {
       return NextResponse.json({
         exito: false,
         mensaje:
@@ -125,6 +145,7 @@ export async function POST(request: Request) {
       email: email || null,
       servicioNombre,
       responsable: servicio.responsable,
+      sedeId,
       capacidad: servicio.capacidad,
       duracionMin: servicio.duracionMin,
     });
@@ -154,6 +175,7 @@ export async function POST(request: Request) {
         telefono,
         emailCliente: email || null,
         servicio: servicioNombre,
+        sede: sede.nombre,
         responsable: servicio.responsable,
         fecha,
         hora,

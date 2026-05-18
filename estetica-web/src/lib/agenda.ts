@@ -41,6 +41,81 @@ export function intervalosSeSolapan(
 
 export type TurnoOcupado = { hora: string; duracionMin: number };
 
+export type FranjaHoraria = {
+  horarioInicio: string;
+  horarioFin: string;
+};
+
+export function minutosAHora(minutos: number): string {
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/** Intersección de dos franjas [inicio, fin); null si no se solapan. */
+export function intersectarFranja(
+  a: FranjaHoraria,
+  b: FranjaHoraria
+): FranjaHoraria | null {
+  const start = Math.max(
+    horaAMinutos(a.horarioInicio),
+    horaAMinutos(b.horarioInicio)
+  );
+  const end = Math.min(horaAMinutos(a.horarioFin), horaAMinutos(b.horarioFin));
+  if (start < 0 || end < 0 || start >= end) return null;
+  return {
+    horarioInicio: minutosAHora(start),
+    horarioFin: minutosAHora(end),
+  };
+}
+
+/** Cruza franjas del local con el horario del servicio (una ventana). */
+export function intersectarFranjasConVentanaServicio(
+  franjasLocal: FranjaHoraria[],
+  servicio: FranjaHoraria
+): FranjaHoraria[] {
+  const out: FranjaHoraria[] = [];
+  for (const f of franjasLocal) {
+    const x = intersectarFranja(f, servicio);
+    if (x) out.push(x);
+  }
+  return out;
+}
+
+/** Inicios posibles en todas las franjas (sin duplicados). */
+export function generarHorariosDesdeFranjas(
+  franjas: FranjaHoraria[],
+  pasoMin = 30
+): string[] {
+  const set = new Set<string>();
+  for (const f of franjas) {
+    for (const h of generarHorarios(
+      f.horarioInicio,
+      f.horarioFin,
+      pasoMin
+    )) {
+      set.add(h);
+    }
+  }
+  return [...set].sort();
+}
+
+/** El turno debe caber entero dentro de alguna franja. */
+export function turnoCabeEnFranjas(
+  hora: string,
+  duracionMin: number,
+  franjas: FranjaHoraria[]
+): boolean {
+  const inicio = horaAMinutos(hora);
+  if (inicio < 0) return false;
+  const fin = inicio + Math.max(1, duracionMin);
+  return franjas.some((f) => {
+    const i = horaAMinutos(f.horarioInicio);
+    const e = horaAMinutos(f.horarioFin);
+    return i >= 0 && e > i && inicio >= i && fin <= e;
+  });
+}
+
 /** Cuántos turnos activos solapan el intervalo candidato. */
 export function contarSolapamiento(
   inicioCandidato: number,

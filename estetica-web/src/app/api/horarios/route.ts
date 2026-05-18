@@ -4,7 +4,7 @@ import { getDb } from "@/db/client";
 import { services } from "@/db/schema";
 import {
   contarSolapamiento,
-  generarHorarios,
+  generarHorariosDesdeFranjas,
   getAppTimeZone,
   hoyIsoEnZona,
   horaActualEnZona,
@@ -35,13 +35,20 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const servicioNombre = searchParams.get("servicio")?.trim() ?? "";
   const fecha = searchParams.get("fecha")?.trim() ?? "";
+  const sedeId = Number(searchParams.get("sedeId"));
 
-  if (!servicioNombre || !fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+  if (
+    !servicioNombre ||
+    !fecha ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(fecha) ||
+    !Number.isFinite(sedeId) ||
+    sedeId < 1
+  ) {
     return NextResponse.json(
       {
         ok: false,
         error: "invalid_params",
-        mensaje: "Usá ?servicio=Nombre&fecha=YYYY-MM-DD",
+        mensaje: "Usá ?servicio=Nombre&fecha=YYYY-MM-DD&sedeId=1",
         horarios: [],
       },
       { status: 400 }
@@ -59,7 +66,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, horarios: [] });
     }
 
-    const ventana = await resolverVentanaReserva(servicio.id, servicio, fecha);
+    const ventana = await resolverVentanaReserva(
+      servicio.id,
+      servicio,
+      fecha,
+      sedeId
+    );
     if (!ventana || ventana.bloqueado) {
       return NextResponse.json({
         ok: true,
@@ -68,11 +80,10 @@ export async function GET(request: Request) {
       });
     }
 
-    const eventos = await listarEventosActivosEnFecha(fecha);
+    const eventos = await listarEventosActivosEnFecha(fecha, sedeId);
     const duracionMin = Math.max(5, servicio.duracionMin);
-    let horariosPosibles = generarHorarios(
-      ventana.horarioInicio,
-      ventana.horarioFin,
+    let horariosPosibles = generarHorariosDesdeFranjas(
+      ventana.franjas,
       duracionMin
     );
 
@@ -107,7 +118,8 @@ export async function GET(request: Request) {
     const ocupados = await listarActivosConDuracion(
       fecha,
       servicioNombre,
-      servicio.responsable
+      servicio.responsable,
+      sedeId
     );
 
     const capacidad = servicio.capacidad;

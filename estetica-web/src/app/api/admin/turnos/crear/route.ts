@@ -10,16 +10,18 @@ import {
   esFechaHoraValida,
   getAppTimeZone,
   normalizarHora,
-  turnoCabeEnHorario,
+  turnoCabeEnFranjas,
 } from "@/lib/agenda";
 import { enviarMailsTurnoConfirmado } from "@/lib/mail-turno";
 import { resolverVentanaReserva } from "@/lib/disponibilidad-repo";
+import { obtenerSedePorId } from "@/lib/sedes-repo";
 import { insertarTurnoSiHayCupo } from "@/lib/turnos-repo";
 
 export const dynamic = "force-dynamic";
 
 type Body = {
   servicioId?: number;
+  sedeId?: number;
   servicio?: string;
   fecha?: string;
   hora?: string;
@@ -53,8 +55,9 @@ export async function POST(request: NextRequest) {
   const nombre = body.nombre?.trim() ?? "";
   const telefono = body.telefono?.trim() ?? "";
   const email = body.email?.trim() || "";
+  const sedeId = Number(body.sedeId);
 
-  if (!fecha || !horaRaw || !nombre || !telefono) {
+  if (!fecha || !horaRaw || !nombre || !telefono || !Number.isFinite(sedeId) || sedeId < 1) {
     return NextResponse.json(
       { ok: false, mensaje: "Faltan fecha, hora, nombre o teléfono." },
       { status: 400 }
@@ -103,10 +106,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const sede = await obtenerSedePorId(sedeId);
+  if (!sede?.activo) {
+    return NextResponse.json({ ok: false, mensaje: "Sede no válida." }, { status: 400 });
+  }
+
   const ventana = await resolverVentanaReserva(
     servicioRow.id,
     servicioRow,
     fecha,
+    sedeId,
     hora
   );
   if (!ventana || ventana.bloqueado) {
@@ -118,9 +127,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  if (
-    !turnoCabeEnHorario(hora, servicioRow.duracionMin, ventana.horarioFin)
-  ) {
+  if (!turnoCabeEnFranjas(hora, servicioRow.duracionMin, ventana.franjas)) {
     return NextResponse.json({
       ok: false,
       mensaje:
@@ -136,6 +143,7 @@ export async function POST(request: NextRequest) {
     email: email || null,
     servicioNombre: servicioRow.nombre,
     responsable: servicioRow.responsable,
+    sedeId,
     capacidad: servicioRow.capacidad,
     duracionMin: servicioRow.duracionMin,
   });
@@ -160,6 +168,7 @@ export async function POST(request: NextRequest) {
         telefono,
         emailCliente: email || null,
         servicio: servicioRow.nombre,
+        sede: sede.nombre,
         responsable: servicioRow.responsable,
         fecha,
         hora,

@@ -16,12 +16,15 @@ import {
 
 export function AdminCargarTurnoForm({
   servicios,
+  sedes,
   fechaDefault,
 }: {
   servicios: ServicioAdmin[];
+  sedes: { id: number; nombre: string }[];
   fechaDefault: string;
 }) {
   const serviciosReservablesInit = filtrarServiciosReservables(servicios);
+  const [sedeId, setSedeId] = useState(sedes[0]?.id ?? 0);
   const [servicioId, setServicioId] = useState(
     serviciosReservablesInit[0]?.id
       ? String(serviciosReservablesInit[0].id)
@@ -73,7 +76,11 @@ export function AdminCargarTurnoForm({
     setHorariosError(null);
     setHora("");
     try {
-      const q = new URLSearchParams({ servicio: nombre, fecha });
+      const q = new URLSearchParams({
+        servicio: nombre,
+        fecha,
+        sedeId: String(sedeId),
+      });
       const r = await fetch(`/api/horarios?${q.toString()}`, {
         cache: "no-store",
       });
@@ -96,7 +103,7 @@ export function AdminCargarTurnoForm({
     } finally {
       setLoadingHorarios(false);
     }
-  }, [servicioSel?.nombre, fecha]);
+  }, [servicioSel?.nombre, fecha, sedeId]);
 
   useEffect(() => {
     void cargarHorarios();
@@ -117,6 +124,7 @@ export function AdminCargarTurnoForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           servicioId: Number(servicioId),
+          sedeId,
           fecha,
           hora,
           nombre,
@@ -162,6 +170,21 @@ export function AdminCargarTurnoForm({
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="grid gap-4 md:grid-cols-2">
+      <div className="md:col-span-2">
+        <label className={uiLabel}>Sede</label>
+        <select
+          required
+          className={selectClass}
+          value={sedeId}
+          onChange={(e) => setSedeId(Number(e.target.value))}
+        >
+          {sedes.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="md:col-span-2">
         <label className={uiLabel}>Servicio</label>
         <ServicioSelectOptgroups

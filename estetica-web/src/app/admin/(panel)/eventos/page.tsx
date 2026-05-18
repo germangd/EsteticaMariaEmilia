@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AdminEventosManager } from "@/components/admin/admin-eventos-manager";
 import { listarEventosAdmin } from "@/lib/eventos-repo";
+import { listarSedesActivas } from "@/lib/sedes-repo";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import { rowToServicioApi } from "@/lib/servicio-format";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
@@ -26,6 +27,8 @@ export default async function AdminEventosPage() {
     : [];
 
   const eventos = Array.isArray(eventosRaw) ? eventosRaw : [];
+  const sedesRaw = await listarSedesActivas();
+  const sedes = Array.isArray(sedesRaw) ? sedesRaw : [];
 
   return (
     <main className="pb-16 pt-8">
@@ -44,10 +47,10 @@ export default async function AdminEventosPage() {
           <p className="text-sm text-red-700">
             Base de datos no disponible. Aplicá la migración{" "}
             <code className="text-xs">drizzle/0007_availability_events.sql</code> y{" "}
-            <code className="text-xs">0008_eventos_franjas_cliente_precio.sql</code>{" "}
-            en Neon o <code className="text-xs">npm run db:push</code>.
+            <code className="text-xs">0008_eventos_franjas_cliente_precio.sql</code> y{" "}
+            <code className="text-xs">0010_sedes.sql</code> en Neon.
           </p>
-        ) : servicios.length === 0 ? (
+        ) : servicios.length === 0 || sedes.length === 0 ? (
           <p className="text-sm text-ink-muted">
             Primero cargá servicios en{" "}
             <a href="/admin/servicios" className="text-gold-dark underline">
@@ -56,7 +59,11 @@ export default async function AdminEventosPage() {
             .
           </p>
         ) : (
-          <AdminEventosManager initialEventos={eventos} servicios={servicios} />
+          <AdminEventosManager
+            initialEventos={eventos}
+            servicios={servicios}
+            sedes={sedes}
+          />
         )}
       </div>
     </main>

@@ -1,5 +1,5 @@
 import { DateTime } from "luxon";
-import type { AppointmentRow } from "@/db/schema";
+import type { TurnoListado } from "@/lib/turnos-repo";
 import { AdminCancelCell } from "@/components/admin/admin-cancel-cell";
 import { urlCobrarTurno } from "@/lib/caja-url";
 import { uiTableHead, uiTableWrap } from "@/lib/ui-classes";
@@ -15,7 +15,7 @@ export function AdminTurnosTable({
   tz,
   showActions,
 }: {
-  rows: AppointmentRow[];
+  rows: TurnoListado[];
   tz: string;
   showActions: boolean;
 }) {
@@ -33,6 +33,7 @@ export function AdminTurnosTable({
           <tr>
             <th className="px-3 py-3 pl-4">Fecha</th>
             <th className="px-3 py-3">Hora</th>
+            <th className="px-3 py-3">Sede</th>
             <th className="px-3 py-3">Servicio</th>
             <th className="px-3 py-3">Cliente</th>
             <th className="px-3 py-3">Teléfono</th>
@@ -52,6 +53,9 @@ export function AdminTurnosTable({
               </td>
               <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-ink-dark">
                 {r.hora}
+              </td>
+              <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">
+                {r.sedeNombre}
               </td>
               <td
                 className="max-w-[140px] truncate px-3 py-2.5"

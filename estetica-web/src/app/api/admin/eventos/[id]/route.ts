@@ -22,6 +22,7 @@ function parseEventoBody(body: unknown) {
   const descripcion =
     typeof b.descripcion === "string" ? b.descripcion : null;
   const fecha = typeof b.fecha === "string" ? b.fecha : "";
+  const sedeId = Number(b.sedeId);
   const horarioInicio =
     typeof b.horarioInicio === "string" ? b.horarioInicio : "09:00";
   const horarioFin = typeof b.horarioFin === "string" ? b.horarioFin : "18:00";
@@ -37,11 +38,20 @@ function parseEventoBody(body: unknown) {
   const serviceIds = Array.isArray(b.serviceIds)
     ? b.serviceIds.map(Number).filter((n) => Number.isFinite(n) && n > 0)
     : [];
-  if (!nombre.trim() || !fecha.trim() || serviceIds.length === 0) return null;
+  if (
+    !nombre.trim() ||
+    !fecha.trim() ||
+    serviceIds.length === 0 ||
+    !Number.isFinite(sedeId) ||
+    sedeId < 1
+  ) {
+    return null;
+  }
   return {
     nombre,
     descripcion,
     fecha,
+    sedeId,
     horarioInicio,
     horarioFin,
     precioPesos,

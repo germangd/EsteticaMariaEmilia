@@ -14,6 +14,7 @@ import { AdminTurnosScrollToList } from "@/components/admin/admin-turnos-scroll"
 import { AdminTurnosTable } from "@/components/admin/admin-turnos-table";
 import { rowToServicioApi } from "@/lib/servicio-format";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
+import { listarSedesActivas } from "@/lib/sedes-repo";
 import {
   listarNombresServiciosCatalogo,
   listarTurnosActivosFiltrados,
@@ -72,6 +73,7 @@ export default async function AdminTurnosPage({
     vista?: string;
     ref?: string;
     servicio?: string;
+    sede?: string;
     desde?: string;
     hasta?: string;
   }>;
@@ -85,6 +87,11 @@ export default async function AdminTurnosPage({
   if (!isIsoDate(ref)) ref = hoy;
 
   const servicio = sp.servicio?.trim() || null;
+  const sedeIdRaw = sp.sede?.trim();
+  const sedeId =
+    sedeIdRaw && Number.isFinite(Number(sedeIdRaw)) && Number(sedeIdRaw) > 0
+      ? Number(sedeIdRaw)
+      : null;
 
   let { desde, hasta, etiqueta } = rangoAgenda({
     vista,
@@ -117,6 +124,8 @@ export default async function AdminTurnosPage({
   }
 
   const catalogo = await listarNombresServiciosCatalogo();
+  const sedesRaw = await listarSedesActivas();
+  const sedes = Array.isArray(sedesRaw) ? sedesRaw : [];
   const rowsServ = await listarServiciosAdmin();
   const byId = Array.isArray(rowsServ)
     ? new Map(
@@ -139,6 +148,7 @@ export default async function AdminTurnosPage({
     fechaDesde: desde,
     fechaHasta: hasta,
     servicioNombre: servicio,
+    sedeId,
   });
 
   const exportHref = `/api/admin/turnos/export?servicio=${encodeURIComponent(servicio ?? "")}&desde=${desde}&hasta=${hasta}`;
@@ -167,6 +177,7 @@ export default async function AdminTurnosPage({
           </p>
           <AdminCargarTurnoForm
             servicios={serviciosAdmin}
+            sedes={sedes}
             fechaDefault={hoy}
           />
         </section>
@@ -216,6 +227,21 @@ export default async function AdminTurnosPage({
                 defaultValue={ref}
                 className={`md:w-auto ${uiInput}`}
               />
+            </div>
+            <div className="min-w-[160px]">
+              <label className={uiLabel}>Sede</label>
+              <select
+                name="sede"
+                defaultValue={sedeId ? String(sedeId) : ""}
+                className={uiSelect}
+              >
+                <option value="">Todas</option>
+                {sedes.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="min-w-[200px] flex-1">
               <label className={uiLabel}>Servicio</label>

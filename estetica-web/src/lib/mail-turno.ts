@@ -6,6 +6,7 @@ export type TurnoMailPayload = {
   telefono: string;
   emailCliente: string | null;
   servicio: string;
+  sede?: string | null;
   responsable: string;
   fecha: string;
   hora: string;
@@ -36,6 +37,7 @@ function fechaLegible(fechaIso: string): string {
 function htmlCliente(p: TurnoMailPayload): string {
   const nombre = escapeHtml(p.nombre);
   const servicio = escapeHtml(p.servicio);
+  const sede = p.sede ? escapeHtml(p.sede) : "";
   const responsable = escapeHtml(p.responsable);
   const fechaL = escapeHtml(fechaLegible(p.fecha));
   const hora = escapeHtml(p.hora);
@@ -50,6 +52,7 @@ function htmlCliente(p: TurnoMailPayload): string {
             <p style="color:#4A3F3A;font-size:15px;">Hola <strong>${nombre}</strong>, tu turno fue reservado con éxito. Acá están los detalles:</p>
             <table style="width:100%;border-collapse:collapse;margin:20px 0;">
               <tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">💆 Servicio</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${servicio}</td></tr>
+              ${sede ? `<tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📍 Sede</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${sede}</td></tr>` : ""}
               <tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">👩 Responsable</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${responsable}</td></tr>
               <tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📆 Fecha</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${fechaL}</td></tr>
               <tr><td style="padding:10px 0;color:#8A7A74;font-size:13px;">⏰ Hora</td><td style="padding:10px 0;font-weight:bold;color:#2C2420;">${hora}</td></tr>
@@ -72,6 +75,7 @@ function htmlDuenio(p: TurnoMailPayload): string {
   const telefono = escapeHtml(p.telefono);
   const email = p.emailCliente ? escapeHtml(p.emailCliente) : "—";
   const servicio = escapeHtml(p.servicio);
+  const sede = p.sede ? escapeHtml(p.sede) : "";
   const responsable = escapeHtml(p.responsable);
   const fechaL = escapeHtml(fechaLegible(p.fecha));
   const hora = escapeHtml(p.hora);
@@ -86,6 +90,7 @@ function htmlDuenio(p: TurnoMailPayload): string {
             <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📞 Teléfono</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${telefono}</td></tr>
             <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📧 Email</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${email}</td></tr>
             <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">💆 Servicio</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${servicio}</td></tr>
+            ${sede ? `<tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📍 Sede</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${sede}</td></tr>` : ""}
             <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">👩 Responsable</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${responsable}</td></tr>
             <tr><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">📆 Fecha</td><td style="padding:8px 0;border-bottom:1px solid #f0e8e8;">${fechaL}</td></tr>
             <tr><td style="padding:8px 0;color:#8A7A74;font-size:13px;">⏰ Hora</td><td style="padding:8px 0;">${hora}</td></tr>

@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import {
   agendaEventServices,
   agendaEvents,
+  sedes,
   services,
   type AgendaEventRow,
 } from "@/db/schema";
@@ -18,6 +19,7 @@ export type EventoInput = {
   nombre: string;
   descripcion?: string | null;
   fecha: string;
+  sedeId: number;
   horarioInicio: string;
   horarioFin: string;
   precioPesos?: number;
@@ -32,6 +34,8 @@ export type EventoConServicios = {
   nombre: string;
   descripcion: string | null;
   fecha: string;
+  sedeId: number;
+  sedeNombre: string;
   horarioInicio: string;
   horarioFin: string;
   precioPesos: number;
@@ -57,6 +61,7 @@ function normalizeInput(input: EventoInput): EventoInput {
     precioPesos: precio,
     clienteTelefono: tel,
     clienteNombre: nombreCliente,
+    sedeId: Math.round(Number(input.sedeId) || 0),
     activo: input.activo !== false,
     serviceIds: [...new Set(input.serviceIds.filter((id) => id > 0))],
   };
@@ -69,6 +74,7 @@ function franjaHorariaValida(inicio: string, fin: string): boolean {
 }
 
 async function franjaSolapaConOtroEvento(
+  sedeId: number,
   fecha: string,
   horarioInicio: string,
   horarioFin: string,
@@ -84,7 +90,13 @@ async function franjaSolapaConOtroEvento(
       horarioFin: agendaEvents.horarioFin,
     })
     .from(agendaEvents)
-    .where(and(eq(agendaEvents.fecha, fecha), eq(agendaEvents.activo, true)));
+    .where(
+      and(
+        eq(agendaEvents.fecha, fecha),
+        eq(agendaEvents.sedeId, sedeId),
+        eq(agendaEvents.activo, true)
+      )
+    );
 
   for (const row of rows) {
     if (excludeId != null && row.id === excludeId) continue;
@@ -129,6 +141,7 @@ async function attachServicios(
 
 function rowToEvento(
   r: AgendaEventRow,
+  sedeNombre: string,
   servicios: { id: number; nombre: string }[]
 ): EventoConServicios {
   return {
@@ -136,6 +149,8 @@ function rowToEvento(
     nombre: r.nombre,
     descripcion: r.descripcion,
     fecha: r.fecha,
+    sedeId: r.sedeId,
+    sedeNombre,
     horarioInicio: padHoraHHmm(r.horarioInicio),
     horarioFin: padHoraHHmm(r.horarioFin),
     precioPesos: r.precioPesos ?? 0,
@@ -153,12 +168,18 @@ export async function listarEventosAdmin(): Promise<
   if (!db) return { ok: false, reason: "no_db" };
 
   const rows = await db
-    .select()
+    .select({
+      evento: agendaEvents,
+      sedeNombre: sedes.nombre,
+    })
     .from(agendaEvents)
+    .innerJoin(sedes, eq(agendaEvents.sedeId, sedes.id))
     .orderBy(asc(agendaEvents.fecha), asc(agendaEvents.horarioInicio), asc(agendaEvents.id));
 
-  const svcMap = await attachServicios(rows.map((r) => r.id));
-  return rows.map((r) => rowToEvento(r, svcMap.get(r.id) ?? []));
+  const svcMap = await attachServicios(rows.map((r) => r.evento.id));
+  return rows.map((r) =>
+    rowToEvento(r.evento, r.sedeNombre, svcMap.get(r.evento.id) ?? [])
+  );
 }
 
 export async function crearEvento(
@@ -171,7 +192,7 @@ export async function crearEvento(
   if (!db) return { ok: false, reason: "no_db" };
 
   const data = normalizeInput(input);
-  if (!data.nombre || !esFechaIsoValida(data.fecha)) {
+  if (!data.nombre || !esFechaIsoValida(data.fecha) || data.sedeId < 1) {
     return { ok: false, reason: "invalido" };
   }
   if (data.serviceIds.length === 0) return { ok: false, reason: "invalido" };
@@ -189,6 +210,7 @@ export async function crearEvento(
 
   if (
     await franjaSolapaConOtroEvento(
+      data.sedeId,
       data.fecha,
       data.horarioInicio,
       data.horarioFin
@@ -203,6 +225,7 @@ export async function crearEvento(
       nombre: data.nombre,
       descripcion: data.descripcion,
       fecha: data.fecha,
+      sedeId: data.sedeId,
       horarioInicio: data.horarioInicio,
       horarioFin: data.horarioFin,
       precioPesos: data.precioPesos,
@@ -234,7 +257,7 @@ export async function actualizarEvento(
   if (!Number.isFinite(id) || id < 1) return { ok: false, reason: "not_found" };
 
   const data = normalizeInput(input);
-  if (!data.nombre || !esFechaIsoValida(data.fecha)) {
+  if (!data.nombre || !esFechaIsoValida(data.fecha) || data.sedeId < 1) {
     return { ok: false, reason: "invalido" };
   }
   if (data.serviceIds.length === 0) return { ok: false, reason: "invalido" };
@@ -244,6 +267,7 @@ export async function actualizarEvento(
 
   if (
     await franjaSolapaConOtroEvento(
+      data.sedeId,
       data.fecha,
       data.horarioInicio,
       data.horarioFin,
@@ -259,6 +283,7 @@ export async function actualizarEvento(
       nombre: data.nombre,
       descripcion: data.descripcion,
       fecha: data.fecha,
+      sedeId: data.sedeId,
       horarioInicio: data.horarioInicio,
       horarioFin: data.horarioFin,
       precioPesos: data.precioPesos,

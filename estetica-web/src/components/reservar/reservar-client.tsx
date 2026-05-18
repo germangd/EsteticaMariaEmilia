@@ -39,6 +39,10 @@ type Tab = "reservar" | "cancelar";
 export function ReservarClient() {
   const [tab, setTab] = useState<Tab>("reservar");
 
+  const [sedes, setSedes] = useState<{ id: number; nombre: string }[]>([]);
+  const [sedeId, setSedeId] = useState<number>(0);
+  const [sedesError, setSedesError] = useState<string | null>(null);
+
   const [servicios, setServicios] = useState<ServicioApi[]>([]);
   const [serviciosError, setServiciosError] = useState<string | null>(null);
   const [loadingServicios, setLoadingServicios] = useState(true);
@@ -102,6 +106,31 @@ export function ReservarClient() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      try {
+        const rSedes = await fetch("/api/sedes", { cache: "no-store" });
+        const dataSedes = (await rSedes.json()) as {
+          ok?: boolean;
+          sedes?: { id: number; nombre: string }[];
+        };
+        if (cancelled) return;
+        if (dataSedes.ok && dataSedes.sedes?.length) {
+          setSedes(dataSedes.sedes);
+          setSedeId(dataSedes.sedes[0]!.id);
+        } else {
+          setSedesError("No hay sedes disponibles.");
+        }
+      } catch {
+        if (!cancelled) setSedesError("Error al cargar sedes.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
       setLoadingServicios(true);
       setServiciosError(null);
       try {
@@ -132,7 +161,7 @@ export function ReservarClient() {
   }, []);
 
   const cargarHorarios = useCallback(async () => {
-    if (!servicio || !fecha) {
+    if (!servicio || !fecha || sedeId < 1) {
       setHorarios([]);
       setHora("");
       setHorariosError(null);
@@ -145,6 +174,7 @@ export function ReservarClient() {
       const q = new URLSearchParams({
         servicio,
         fecha,
+        sedeId: String(sedeId),
       });
       const r = await fetch(`/api/horarios?${q.toString()}`, {
         cache: "no-store",
@@ -170,7 +200,7 @@ export function ReservarClient() {
     } finally {
       setLoadingHorarios(false);
     }
-  }, [servicio, fecha]);
+  }, [servicio, fecha, sedeId]);
 
   useEffect(() => {
     void cargarHorarios();
@@ -194,6 +224,7 @@ export function ReservarClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           servicio,
+          sedeId,
           fecha,
           hora,
           nombre: nombre.trim(),
@@ -338,8 +369,26 @@ export function ReservarClient() {
                 <code className="text-xs">seed_example.sql</code> o el panel de
                 datos.
               </p>
+            ) : sedesError ? (
+              <p className="rounded bg-red-50 px-3 py-2 text-center text-sm text-red-800">
+                {sedesError}
+              </p>
             ) : (
               <>
+                <label className={uiLabel}>Sede</label>
+                <select
+                  required
+                  className={`mb-4 ${uiSelect}`}
+                  value={sedeId}
+                  onChange={(e) => setSedeId(Number(e.target.value))}
+                >
+                  {sedes.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre}
+                    </option>
+                  ))}
+                </select>
+
                 <label className={uiLabel}>Servicio</label>
                 <ServicioSelectOptgroups
                   servicios={servicios.map((s) => ({
