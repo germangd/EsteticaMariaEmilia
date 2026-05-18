@@ -13,6 +13,7 @@ import {
   normalizarHora,
   type TurnoOcupado,
 } from "@/lib/agenda";
+import { cupoCompartidoEntreSedes } from "@/lib/cupo-sedes";
 import { dedupeNombresServicio } from "@/lib/servicio-format";
 
 function isUniqueViolation(e: unknown): boolean {
@@ -24,23 +25,26 @@ function isUniqueViolation(e: unknown): boolean {
   );
 }
 
-/** Turnos activos del día con duración del catálogo (para cupo por solapamiento). */
+/**
+ * Turnos activos del día con duración del catálogo (cupo por solapamiento).
+ * Por defecto incluye todas las sedes (ver `cupoCompartidoEntreSedes`).
+ */
 export async function listarActivosConDuracion(
   fecha: string,
-  servicioNombre: string,
   responsable: string,
-  sedeId: number
+  sedeId?: number
 ): Promise<TurnoOcupado[]> {
   const db = getDb();
   if (!db) return [];
 
   const parts = [
     eq(appointments.fecha, fecha),
-    eq(appointments.servicioNombre, servicioNombre),
     eq(appointments.responsable, responsable),
     eq(appointments.estado, "activo"),
   ];
-  if (sedeId > 0) parts.push(eq(appointments.sedeId, sedeId));
+  if (!cupoCompartidoEntreSedes() && sedeId != null && sedeId > 0) {
+    parts.push(eq(appointments.sedeId, sedeId));
+  }
 
   const rows = await db
     .select({
@@ -85,7 +89,6 @@ export async function insertarTurnoSiHayCupo(params: {
   const duracion = Math.max(5, Math.round(params.duracionMin));
   const ocupados = await listarActivosConDuracion(
     params.fecha,
-    params.servicioNombre,
     params.responsable,
     params.sedeId
   );

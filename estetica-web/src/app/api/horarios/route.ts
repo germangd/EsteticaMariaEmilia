@@ -117,7 +117,6 @@ export async function GET(request: Request) {
 
     const ocupados = await listarActivosConDuracion(
       fecha,
-      servicioNombre,
       servicio.responsable,
       sedeId
     );

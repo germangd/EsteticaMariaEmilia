@@ -23,7 +23,9 @@ export default async function AdminSedesPage() {
           <p className={uiPanelDesc}>
             Lugares de atención (Ensenada, Bartolomé Bavio, Magdalena). Cada
             sede tiene su horario en Admin → Horarios; los turnos y eventos se
-            asocian a una sede.
+            asocian a una sede. Por ahora la agenda es única: si hay turno en
+            una sede, ese horario no se ofrece en las otras (mismo
+            responsable).
           </p>
         </div>
 
