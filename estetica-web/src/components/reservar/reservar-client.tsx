@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MeLogo } from "@/components/landing/me-logo";
+import { ServicioSelectOptgroups } from "@/components/admin/servicio-select-optgroups";
 import { dedupeServiciosPorNombre } from "@/lib/servicio-format";
 import {
   uiBtnDark,
@@ -21,12 +22,16 @@ import {
 import { buildWhatsAppTurnoUrl } from "@/lib/whatsapp";
 
 type ServicioApi = {
+  id: number;
   nombre: string;
   duracion: number;
   responsable: string;
   capacidad: number;
   horarioInicio: string;
   horarioFin: string;
+  parentId?: number | null;
+  esGrupo?: boolean;
+  categoriaNombre?: string | null;
 };
 
 type Tab = "reservar" | "cancelar";
@@ -332,19 +337,22 @@ export function ReservarClient() {
             ) : (
               <>
                 <label className={uiLabel}>Servicio</label>
-                <select
-                  required
+                <ServicioSelectOptgroups
+                  servicios={servicios.map((s) => ({
+                    id: s.id,
+                    nombre: s.nombre,
+                    parentId: s.parentId ?? null,
+                    esGrupo: false,
+                    capacidad: s.capacidad,
+                    categoriaNombre: s.categoriaNombre,
+                  }))}
                   value={servicio}
-                  onChange={(e) => setServicio(e.target.value)}
+                  onChange={setServicio}
                   className={`mb-4 ${uiSelect}`}
-                >
-                  <option value="">Elegí un servicio</option>
-                  {servicios.map((s) => (
-                    <option key={s.nombre} value={s.nombre}>
-                      {s.nombre}
-                    </option>
-                  ))}
-                </select>
+                  required
+                  placeholder="Eleg\u00ed un servicio"
+                  valueMode="nombre"
+                />
 
                 <label className={uiLabel}>Fecha</label>
                 <input

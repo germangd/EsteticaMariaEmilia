@@ -524,6 +524,7 @@ export async function obtenerCatalogoCaja(): Promise<
       precioPesos: services.precioPesos,
     })
     .from(services)
+    .where(eq(services.esGrupo, false))
     .orderBy(services.nombre);
 
   const packs = await db

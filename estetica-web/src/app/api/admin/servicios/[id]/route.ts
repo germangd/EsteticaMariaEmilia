@@ -4,43 +4,13 @@ import {
   isAdminRequest,
 } from "@/lib/admin-api-auth";
 import { actualizarServicio, eliminarServicio } from "@/lib/servicios-repo";
+import { mensajeErrorServicio, parseServicioBody } from "@/lib/parse-servicio-body";
 
 export const dynamic = "force-dynamic";
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
-  if (!Number.isFinite(id) || id < 1) return null;
-  return id;
-}
-
-function parseBody(body: unknown) {
-  if (!body || typeof body !== "object") return null;
-  const b = body as Record<string, unknown>;
-  const nombre = typeof b.nombre === "string" ? b.nombre : "";
-  const duracionMin = Number(b.duracionMin ?? b.duracion);
-  const responsable = typeof b.responsable === "string" ? b.responsable : "";
-  const capacidad = Number(b.capacidad);
-  const horarioInicio =
-    typeof b.horarioInicio === "string" ? b.horarioInicio : "09:00";
-  const horarioFin = typeof b.horarioFin === "string" ? b.horarioFin : "18:00";
-  const precioPesos =
-    b.precioPesos != null
-      ? Number(b.precioPesos)
-      : b.precio != null
-        ? Number(b.precio)
-        : 0;
-  if (!nombre.trim() || !Number.isFinite(duracionMin) || !Number.isFinite(capacidad)) {
-    return null;
-  }
-  return {
-    nombre,
-    duracionMin,
-    responsable,
-    capacidad,
-    horarioInicio,
-    horarioFin,
-    precioPesos: Number.isFinite(precioPesos) ? precioPesos : 0,
-  };
+  return Number.isFinite(id) && id > 0 ? id : null;
 }
 
 export async function PATCH(
@@ -62,7 +32,7 @@ export async function PATCH(
     return NextResponse.json({ ok: false, mensaje: "JSON inválido." }, { status: 400 });
   }
 
-  const input = parseBody(body);
+  const input = parseServicioBody(body);
   if (!input) {
     return NextResponse.json(
       { ok: false, mensaje: "Datos incompletos o inválidos." },
@@ -72,18 +42,19 @@ export async function PATCH(
 
   const res = await actualizarServicio(id, input);
   if (!res.ok) {
-    if (res.reason === "not_found") {
-      return NextResponse.json({ ok: false, mensaje: "Servicio no encontrado." }, { status: 404 });
-    }
-    if (res.reason === "duplicado") {
-      return NextResponse.json(
-        { ok: false, mensaje: "Ya existe otro servicio con ese nombre." },
-        { status: 409 }
-      );
-    }
+    const status =
+      res.reason === "not_found"
+        ? 404
+        : res.reason === "duplicado"
+          ? 409
+          : res.reason === "invalido" ||
+              res.reason === "parent_invalido" ||
+              res.reason === "tiene_hijos"
+            ? 400
+            : 503;
     return NextResponse.json(
-      { ok: false, mensaje: "No se pudo actualizar." },
-      { status: 503 }
+      { ok: false, mensaje: mensajeErrorServicio(res.reason) },
+      { status }
     );
   }
 
@@ -106,6 +77,16 @@ export async function DELETE(
   if (!res.ok) {
     if (res.reason === "not_found") {
       return NextResponse.json({ ok: false, mensaje: "Servicio no encontrado." }, { status: 404 });
+    }
+    if (res.reason === "tiene_hijos") {
+      return NextResponse.json(
+        {
+          ok: false,
+          mensaje:
+            "Esta categoría tiene sub-servicios. Eliminalos o reasignalos antes.",
+        },
+        { status: 409 }
+      );
     }
     return NextResponse.json(
       { ok: false, mensaje: "No se pudo eliminar." },

@@ -118,8 +118,21 @@ export default async function AdminTurnosPage({
 
   const catalogo = await listarNombresServiciosCatalogo();
   const rowsServ = await listarServiciosAdmin();
+  const byId = Array.isArray(rowsServ)
+    ? new Map(
+        rowsServ.map((x) => [
+          x.id,
+          { id: x.id, nombre: x.nombre, parentId: x.parentId, esGrupo: x.esGrupo },
+        ])
+      )
+    : new Map();
   const serviciosAdmin = Array.isArray(rowsServ)
-    ? rowsServ.map((r) => ({ id: r.id, ...rowToServicioApi(r) }))
+    ? rowsServ.map((r) => ({
+        id: r.id,
+        ...rowToServicioApi(r),
+        categoriaNombre:
+          r.parentId != null ? (byId.get(r.parentId)?.nombre ?? null) : null,
+      }))
     : [];
 
   const turnos = await listarTurnosActivosFiltrados({

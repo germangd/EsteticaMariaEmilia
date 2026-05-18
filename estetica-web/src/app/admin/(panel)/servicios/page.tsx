@@ -3,6 +3,7 @@ import { AdminServiciosManager } from "@/components/admin/admin-servicios-manage
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import { rowToServicioApi } from "@/lib/servicio-format";
+import { nombreCategoria } from "@/lib/servicio-tree";
 
 export const metadata: Metadata = {
   title: "Admin — Servicios | María Emilia Estética",
@@ -13,11 +14,22 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminServiciosPage() {
   const rows = await listarServiciosAdmin();
-  const servicios =
-    Array.isArray(rows) ?
-      rows.map((r) => ({
+  const byId = Array.isArray(rows)
+    ? new Map(
+        rows.map((x) => [
+          x.id,
+          { id: x.id, nombre: x.nombre, parentId: x.parentId, esGrupo: x.esGrupo },
+        ])
+      )
+    : new Map();
+  const servicios = Array.isArray(rows)
+    ? rows.map((r) => ({
         id: r.id,
         ...rowToServicioApi(r),
+        categoriaNombre: nombreCategoria(
+          { id: r.id, nombre: r.nombre, parentId: r.parentId, esGrupo: r.esGrupo },
+          byId
+        ),
       }))
     : [];
 
@@ -28,8 +40,9 @@ export default async function AdminServiciosPage() {
           <p className={uiPanelKicker}>Configuración</p>
           <h1 className={uiPanelTitle}>Servicios</h1>
           <p className={uiPanelDesc}>
-            Lo que cargues acá aparece en la web de reservas. El cupo define
-            cuántos clientes pueden tomar el mismo horario.
+            Cre\u00e1 categor\u00edas (ej. Depilaci\u00f3n) y sub-servicios (cavado,
+            axilas\u2026). Los sub-servicios se reservan online y se usan en
+            paquetes.
           </p>
         </div>
 

@@ -1,13 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { fmtPesos } from "@/lib/fmt-pesos";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { PrecioInlineEditor } from "@/components/admin/precio-inline-editor";
+import { ordenarServiciosArbol } from "@/lib/servicio-tree";
 import {
   uiBtnPrimary,
   uiBtnSecondary,
   uiCard,
   uiInput,
   uiLabel,
+  uiSelect,
   uiSubsectionTitle,
   uiTableHead,
   uiTableWrap,
@@ -22,9 +24,27 @@ export type ServicioAdmin = {
   horarioInicio: string;
   horarioFin: string;
   precioPesos: number;
+  parentId: number | null;
+  esGrupo: boolean;
+  categoriaNombre?: string | null;
 };
 
-const emptyForm = (): Omit<ServicioAdmin, "id"> => ({
+type TipoServicio = "grupo" | "sub" | "suelto";
+
+type FormState = Omit<ServicioAdmin, "id" | "parentId" | "esGrupo" | "categoriaNombre"> & {
+  tipo: TipoServicio;
+  parentId: string;
+};
+
+function tipoDeServicio(s: Pick<ServicioAdmin, "esGrupo" | "parentId">): TipoServicio {
+  if (s.esGrupo) return "grupo";
+  if (s.parentId != null) return "sub";
+  return "suelto";
+}
+
+const emptyForm = (): FormState => ({
+  tipo: "suelto",
+  parentId: "",
   nombre: "",
   duracion: 30,
   responsable: "Mar\u00eda Emilia",
@@ -54,6 +74,15 @@ export function AdminServiciosManager({
     setList(initialServicios);
   }, [initialServicios]);
 
+  const categorias = useMemo(
+    () => list.filter((s) => s.esGrupo).sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    [list]
+  );
+
+  const listOrdenada = useMemo(() => ordenarServiciosArbol(list), [list]);
+
+  const esFormGrupo = form.tipo === "grupo";
+
   async function refresh() {
     const r = await fetch("/api/admin/servicios", { credentials: "same-origin" });
     const data = (await r.json()) as {
@@ -68,7 +97,9 @@ export function AdminServiciosManager({
     setPending(true);
     setMsg(null);
     const payload = {
+      tipo: form.tipo,
       nombre: form.nombre,
+      parentId: form.tipo === "sub" ? form.parentId : null,
       duracionMin: form.duracion,
       responsable: form.responsable,
       capacidad: form.capacidad,
@@ -104,6 +135,8 @@ export function AdminServiciosManager({
   function startEdit(s: ServicioAdmin) {
     setEditingId(s.id);
     setForm({
+      tipo: tipoDeServicio(s),
+      parentId: s.parentId != null ? String(s.parentId) : "",
       nombre: s.nombre,
       duracion: s.duracion,
       responsable: s.responsable,
@@ -113,6 +146,25 @@ export function AdminServiciosManager({
       precioPesos: s.precioPesos ?? 0,
     });
     setMsg(null);
+  }
+
+  async function guardarPrecio(id: number, precioPesos: number): Promise<boolean> {
+    const r = await fetch(`/api/admin/servicios/${id}/precio`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ precioPesos }),
+    });
+    const data = (await r.json()) as { ok?: boolean };
+    if (!r.ok || !data.ok) {
+      setMsg("No se pudo actualizar el precio.");
+      return false;
+    }
+    setList((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, precioPesos } : s))
+    );
+    if (editingId === id) setForm((f) => ({ ...f, precioPesos }));
+    return true;
   }
 
   async function onDelete(id: number, nombre: string) {
@@ -147,9 +199,50 @@ export function AdminServiciosManager({
         </h2>
         <p className="mb-4 text-sm font-medium text-ink">
           La <strong>capacidad</strong> es cuántos clientes pueden reservar el
-          mismo servicio a la misma hora (cupo por turno).
+          mismo servicio a la misma hora (cupo por turno). El{" "}
+          <strong>precio</strong> se usa en caja y podés cambiarlo desde el
+          formulario o haciendo clic en la tabla.
         </p>
         <form onSubmit={(e) => void onSubmit(e)} className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className={uiLabel}>Tipo</label>
+            <select
+              className={uiSelect}
+              value={form.tipo}
+              onChange={(e) => {
+                const tipo = e.target.value as TipoServicio;
+                setForm((f) => ({
+                  ...f,
+                  tipo,
+                  parentId: tipo === "sub" ? f.parentId : "",
+                }));
+              }}
+            >
+              <option value="grupo">Categor\u00eda (agrupa otros)</option>
+              <option value="sub">Sub-servicio</option>
+              <option value="suelto">Servicio suelto</option>
+            </select>
+          </div>
+          {form.tipo === "sub" ? (
+            <div>
+              <label className={uiLabel}>Categor\u00eda</label>
+              <select
+                required
+                className={uiSelect}
+                value={form.parentId}
+                onChange={(e) => setForm({ ...form, parentId: e.target.value })}
+              >
+                <option value="">Eleg\u00ed...</option>
+                {categorias.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div />
+          )}
           <div className="md:col-span-2">
             <label className={uiLabel}>
               Nombre
@@ -161,6 +254,8 @@ export function AdminServiciosManager({
               onChange={(e) => setForm({ ...form, nombre: e.target.value })}
             />
           </div>
+          {!esFormGrupo ? (
+          <>
           <div>
             <label className={uiLabel}>
               Duración (min)
@@ -240,10 +335,9 @@ export function AdminServiciosManager({
                 setForm({ ...form, precioPesos: Number(e.target.value) || 0 })
               }
             />
-            <p className="mt-1 text-xs text-ink-muted">
-              Se usa en caja al cobrar; 0 = cargar manual.
-            </p>
           </div>
+          </>
+          ) : null}
           <div className="flex flex-wrap gap-2 md:col-span-2">
             <button type="submit" disabled={pending} className={uiBtnPrimary}>
               {pending ? "Guardando\u2026" : editingId ? "Actualizar" : "Agregar"}
@@ -280,6 +374,7 @@ export function AdminServiciosManager({
               <thead className={uiTableHead}>
                 <tr>
                   <th className="px-3 py-3 pl-4">Servicio</th>
+                  <th className="px-3 py-3">Tipo</th>
                   <th className="px-3 py-3">Duración</th>
                   <th className="px-3 py-3">Precio</th>
                   <th className="px-3 py-3">Cupo</th>
@@ -289,19 +384,51 @@ export function AdminServiciosManager({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gold/10">
-                {list.map((s) => (
+                {listOrdenada.map((s) => (
                   <tr key={s.id} className="hover:bg-cream/60">
-                    <td className="px-3 py-2.5 pl-4 font-medium text-ink-dark">
+                    <td
+                      className={`px-3 py-2.5 font-medium text-ink-dark ${
+                        s.parentId ? "pl-8" : "pl-4"
+                      }`}
+                    >
                       {s.nombre}
+                      {s.categoriaNombre ? (
+                        <span className="ml-1 text-xs font-normal text-ink-muted">
+                          ({s.categoriaNombre})
+                        </span>
+                      ) : null}
                     </td>
-                    <td className="px-3 py-2.5 text-ink-muted">{s.duracion} min</td>
-                    <td className="px-3 py-2.5 tabular-nums text-ink-muted">
-                      {(s.precioPesos ?? 0) > 0 ? fmtPesos(s.precioPesos) : "—"}
+                    <td className="px-3 py-2.5 text-xs uppercase text-ink-muted">
+                      {s.esGrupo
+                        ? "Categor\u00eda"
+                        : s.parentId
+                          ? "Sub"
+                          : "Suelto"}
                     </td>
-                    <td className="px-3 py-2.5 text-ink-muted">{s.capacidad}</td>
-                    <td className="px-3 py-2.5 text-ink-muted">{s.responsable}</td>
+                    <td className="px-3 py-2.5 text-ink-muted">
+                      {s.esGrupo ? "\u2014" : `${s.duracion} min`}
+                    </td>
+                    <td className="px-3 py-2.5 text-ink-muted">
+                      {s.esGrupo ? (
+                        "\u2014"
+                      ) : (
+                        <PrecioInlineEditor
+                          value={s.precioPesos ?? 0}
+                          disabled={pending}
+                          onSave={(precio) => guardarPrecio(s.id, precio)}
+                        />
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-ink-muted">
+                      {s.esGrupo ? "\u2014" : s.capacidad}
+                    </td>
+                    <td className="px-3 py-2.5 text-ink-muted">
+                      {s.esGrupo ? "\u2014" : s.responsable}
+                    </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">
-                      {s.horarioInicio} – {s.horarioFin}
+                      {s.esGrupo
+                        ? "\u2014"
+                        : `${s.horarioInicio} \u2013 ${s.horarioFin}`}
                     </td>
                     <td className="space-x-2 px-3 py-2 pr-4 text-right">
                       <button

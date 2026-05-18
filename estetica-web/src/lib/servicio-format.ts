@@ -44,6 +44,8 @@ export function rowToServicioApi(row: {
   horarioInicio: string;
   horarioFin: string;
   precioPesos?: number;
+  parentId?: number | null;
+  esGrupo?: boolean;
 }) {
   return {
     nombre: row.nombre.trim(),
@@ -53,5 +55,7 @@ export function rowToServicioApi(row: {
     horarioInicio: padHoraHHmm(row.horarioInicio || "09:00"),
     horarioFin: padHoraHHmm(row.horarioFin || "18:00"),
     precioPesos: Math.max(0, Math.round(row.precioPesos ?? 0)),
+    parentId: row.parentId ?? null,
+    esGrupo: Boolean(row.esGrupo),
   };
 }

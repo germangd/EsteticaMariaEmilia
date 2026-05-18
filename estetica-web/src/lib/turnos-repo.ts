@@ -142,6 +142,7 @@ export async function listarNombresServiciosCatalogo(): Promise<string[]> {
   const rows = await db
     .select({ n: services.nombre })
     .from(services)
+    .where(eq(services.esGrupo, false))
     .orderBy(asc(services.nombre));
   return dedupeNombresServicio(rows.map((r) => r.n.trim()).filter(Boolean));
 }

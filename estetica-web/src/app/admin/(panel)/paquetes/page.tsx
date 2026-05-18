@@ -20,7 +20,12 @@ export default async function AdminPaquetesPage() {
   const paquetes = Array.isArray(paquetesRaw) ? paquetesRaw : [];
   const asignaciones = Array.isArray(asignRaw) ? asignRaw : [];
   const servicios = Array.isArray(serviciosRaw)
-    ? serviciosRaw.map((r) => ({ id: r.id, ...rowToServicioApi(r) }))
+    ? serviciosRaw.map((r) => ({
+        id: r.id,
+        ...rowToServicioApi(r),
+        parentId: r.parentId,
+        esGrupo: r.esGrupo,
+      }))
     : [];
 
   return (
@@ -30,9 +35,9 @@ export default async function AdminPaquetesPage() {
           <p className={uiPanelKicker}>Configuración</p>
           <h1 className={uiPanelTitle}>Paquetes</h1>
           <p className={uiPanelDesc}>
-            Armá combos con varias sesiones, vendelos en el salón y controlá
-            cuántas quedan por cliente. La web pública sigue reservando servicios
-            sueltos.
+            Armá combos eligiendo sub-servicios (ej. cavado, axilas dentro de
+            Depilación). Vendelos en el salón y controlá cuántas sesiones quedan
+            por cliente.
           </p>
         </div>
 

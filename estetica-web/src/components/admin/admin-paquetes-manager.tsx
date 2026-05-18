@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PrecioInlineEditor } from "@/components/admin/precio-inline-editor";
+import { ServiciosCheckboxGrupos } from "@/components/admin/servicios-checkbox-grupos";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
 import { METODOS_PAGO } from "@/lib/caja-repo";
 import { urlTicketVenta } from "@/lib/caja-url";
@@ -175,6 +177,28 @@ export function AdminPaquetesManager({
     setMsg(null);
   }
 
+  async function guardarPrecioPaquete(
+    id: number,
+    precioPesos: number
+  ): Promise<boolean> {
+    const r = await fetch(`/api/admin/paquetes/${id}/precio`, {
+      method: "PATCH",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ precioPesos }),
+    });
+    const data = (await r.json()) as { ok?: boolean };
+    if (!r.ok || !data.ok) {
+      setMsg("No se pudo actualizar el precio del paquete.");
+      return false;
+    }
+    setPaquetes((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, precioPesos } : p))
+    );
+    if (editingId === id) setForm((f) => ({ ...f, precioPesos }));
+    return true;
+  }
+
   async function onDeletePaquete(id: number, nombre: string) {
     if (!window.confirm(`¿Eliminar el paquete "${nombre}"?`)) return;
     setPending(true);
@@ -302,7 +326,8 @@ export function AdminPaquetesManager({
         </h2>
         <p className="mb-4 text-sm text-ink-muted">
           Definí precio de referencia, cantidad de sesiones y qué servicios
-          incluye. La reserva online sigue siendo por servicio suelto.
+          incluye. Podés modificar el precio en el formulario o en la tabla del
+          catálogo. La reserva online sigue siendo por servicio suelto.
         </p>
         <form onSubmit={(e) => void onSubmitPaquete(e)} className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
@@ -358,23 +383,14 @@ export function AdminPaquetesManager({
           </div>
           <div className="md:col-span-2">
             <p className={`mb-2 ${uiLabel}`}>
-              Servicios del paquete
+              Sub-servicios del paquete
             </p>
-            <div className="flex flex-wrap gap-3">
-              {servicios.map((s) => (
-                <label
-                  key={s.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-sm border border-gold/25 bg-cream/60 px-3 py-2 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={form.serviceIds.includes(s.id)}
-                    onChange={() => toggleService(s.id)}
-                  />
-                  {s.nombre}
-                </label>
-              ))}
-            </div>
+            <ServiciosCheckboxGrupos
+              servicios={servicios}
+              selectedIds={form.serviceIds}
+              onToggle={toggleService}
+              disabled={pending}
+            />
           </div>
           <label className="flex items-center gap-2 text-sm text-ink-muted md:col-span-2">
             <input
@@ -433,7 +449,13 @@ export function AdminPaquetesManager({
                         <span className="ml-2 text-xs text-ink-muted">(inactivo)</span>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2.5">{fmtPesos(p.precioPesos)}</td>
+                    <td className="px-3 py-2.5">
+                      <PrecioInlineEditor
+                        value={p.precioPesos}
+                        disabled={pending}
+                        onSave={(precio) => guardarPrecioPaquete(p.id, precio)}
+                      />
+                    </td>
                     <td className="px-3 py-2.5">{p.sesionesTotal}</td>
                     <td className="max-w-[200px] px-3 py-2.5 text-ink-muted">
                       {p.servicios.map((s) => s.nombre).join(", ") || "—"}

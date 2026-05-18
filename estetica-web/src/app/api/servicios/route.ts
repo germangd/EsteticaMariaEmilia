@@ -1,11 +1,12 @@
 import { asc } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
-import { services } from "@/db/schema";
+import { services, type ServiceRow } from "@/db/schema";
 import {
   dedupeServiciosPorNombre,
   rowToServicioApi,
 } from "@/lib/servicio-format";
+import { nombreCategoria } from "@/lib/servicio-tree";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +30,24 @@ export async function GET() {
       .from(services)
       .orderBy(asc(services.id));
 
+    const reservables = rows.filter(
+      (r): r is ServiceRow => Boolean(r.nombre?.trim()) && !r.esGrupo
+    );
+    const byId = new Map(
+      reservables.map((x) => [
+        x.id,
+        { id: x.id, nombre: x.nombre, parentId: x.parentId, esGrupo: x.esGrupo },
+      ])
+    );
     const list = dedupeServiciosPorNombre(
-      rows.filter((r) => r.nombre?.trim()).map((r) => rowToServicioApi(r))
+      reservables.map((r) => ({
+        id: r.id,
+        ...rowToServicioApi(r),
+        categoriaNombre: nombreCategoria(
+          { id: r.id, nombre: r.nombre, parentId: r.parentId, esGrupo: r.esGrupo },
+          byId
+        ),
+      }))
     );
 
     return NextResponse.json({ ok: true, servicios: list });

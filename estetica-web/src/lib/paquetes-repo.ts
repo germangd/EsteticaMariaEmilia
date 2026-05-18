@@ -113,6 +113,17 @@ export async function crearPaquete(
   if (!data.nombre) return { ok: false, reason: "invalido" };
   if (data.serviceIds.length === 0) return { ok: false, reason: "invalido" };
 
+  const svcs = await db
+    .select({ id: services.id, esGrupo: services.esGrupo })
+    .from(services)
+    .where(inArray(services.id, data.serviceIds));
+  if (
+    svcs.length !== data.serviceIds.length ||
+    svcs.some((s) => s.esGrupo)
+  ) {
+    return { ok: false, reason: "invalido" };
+  }
+
   const todos = await db.select({ id: servicePackages.id, nombre: servicePackages.nombre }).from(servicePackages);
   if (todos.some((p) => p.nombre.trim().toLowerCase() === data.nombre.toLowerCase())) {
     return { ok: false, reason: "duplicado" };
@@ -154,6 +165,17 @@ export async function actualizarPaquete(
   if (!data.nombre) return { ok: false, reason: "invalido" };
   if (data.serviceIds.length === 0) return { ok: false, reason: "invalido" };
 
+  const svcs = await db
+    .select({ id: services.id, esGrupo: services.esGrupo })
+    .from(services)
+    .where(inArray(services.id, data.serviceIds));
+  if (
+    svcs.length !== data.serviceIds.length ||
+    svcs.some((s) => s.esGrupo)
+  ) {
+    return { ok: false, reason: "invalido" };
+  }
+
   const todos = await db.select({ id: servicePackages.id, nombre: servicePackages.nombre }).from(servicePackages);
   if (
     todos.some(
@@ -182,6 +204,24 @@ export async function actualizarPaquete(
     data.serviceIds.map((serviceId) => ({ packageId: id, serviceId }))
   );
 
+  return { ok: true };
+}
+
+export async function actualizarPrecioPaquete(
+  id: number,
+  precioPesos: number
+): Promise<{ ok: true } | { ok: false; reason: "no_db" | "not_found" }> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+  if (!Number.isFinite(id) || id < 1) return { ok: false, reason: "not_found" };
+
+  const updated = await db
+    .update(servicePackages)
+    .set({ precioPesos: Math.max(0, Math.round(precioPesos)) })
+    .where(eq(servicePackages.id, id))
+    .returning({ id: servicePackages.id });
+
+  if (updated.length === 0) return { ok: false, reason: "not_found" };
   return { ok: true };
 }
 

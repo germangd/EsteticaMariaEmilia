@@ -20,6 +20,11 @@ export const services = pgTable("services", {
   horarioFin: text("horario_fin").notNull().default("18:00"),
   /** Precio de referencia en ARS (caja; 0 = sin precio fijo). */
   precioPesos: integer("precio_pesos").notNull().default(0),
+  /** Categoría padre (ej. Depilación). Null si es suelto o es categoría raíz. */
+  /** FK a `services.id` (ver migración 0006; sin `.references` por autorreferencia). */
+  parentId: integer("parent_id"),
+  /** true = agrupa otros servicios; no se reserva ni entra en paquetes como ítem. */
+  esGrupo: boolean("es_grupo").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -70,6 +70,7 @@ export function AdminCajaManager({
 }) {
   const [sesion, setSesion] = useState(initialSesion);
   const [ventas, setVentas] = useState(initialVentas);
+  const [catalogoState, setCatalogoState] = useState(catalogo);
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -88,6 +89,10 @@ export function AdminCajaManager({
   const [ultimaSesionCerradaId, setUltimaSesionCerradaId] = useState<number | null>(
     null
   );
+
+  useEffect(() => {
+    setCatalogoState(catalogo);
+  }, [catalogo]);
 
   useEffect(() => {
     if (!initialPrefill) return;
@@ -236,7 +241,7 @@ export function AdminCajaManager({
   }
 
   function onPickServicio(key: string, serviceId: number) {
-    const s = catalogo.servicios.find((x) => x.id === serviceId);
+    const s = catalogoState.servicios.find((x) => x.id === serviceId);
     if (!s) return;
     updateLinea(key, {
       serviceId,
@@ -247,7 +252,7 @@ export function AdminCajaManager({
   }
 
   function onPickPaquete(key: string, packageId: number) {
-    const p = catalogo.paquetes.find((x) => x.id === packageId);
+    const p = catalogoState.paquetes.find((x) => x.id === packageId);
     if (!p) return;
     updateLinea(key, {
       servicePackageId: packageId,
@@ -255,6 +260,61 @@ export function AdminCajaManager({
       descripcion: p.nombre,
       precioUnitarioPesos: p.precioPesos,
     });
+  }
+
+  function precioCatalogoLinea(l: LineaForm): number | null {
+    if (l.tipo === "servicio" && l.serviceId) {
+      return catalogoState.servicios.find((s) => s.id === l.serviceId)?.precioPesos ?? null;
+    }
+    if (l.tipo === "paquete" && l.servicePackageId) {
+      return catalogoState.paquetes.find((p) => p.id === l.servicePackageId)?.precioPesos ?? null;
+    }
+    return null;
+  }
+
+  async function guardarPrecioEnCatalogo(l: LineaForm) {
+    const precio = Math.max(0, Math.round(l.precioUnitarioPesos));
+    if (l.tipo === "servicio" && l.serviceId) {
+      const r = await fetch(`/api/admin/servicios/${l.serviceId}/precio`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ precioPesos: precio }),
+      });
+      const data = (await r.json()) as { ok?: boolean };
+      if (!r.ok || !data.ok) {
+        setMsg("No se pudo guardar el precio del servicio en el cat\u00e1logo.");
+        return;
+      }
+      setCatalogoState((c) => ({
+        ...c,
+        servicios: c.servicios.map((s) =>
+          s.id === l.serviceId ? { ...s, precioPesos: precio } : s
+        ),
+      }));
+      setMsg(`Precio del servicio actualizado a ${fmtPesos(precio)}.`);
+      return;
+    }
+    if (l.tipo === "paquete" && l.servicePackageId) {
+      const r = await fetch(`/api/admin/paquetes/${l.servicePackageId}/precio`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ precioPesos: precio }),
+      });
+      const data = (await r.json()) as { ok?: boolean };
+      if (!r.ok || !data.ok) {
+        setMsg("No se pudo guardar el precio del paquete en el cat\u00e1logo.");
+        return;
+      }
+      setCatalogoState((c) => ({
+        ...c,
+        paquetes: c.paquetes.map((p) =>
+          p.id === l.servicePackageId ? { ...p, precioPesos: precio } : p
+        ),
+      }));
+      setMsg(`Precio del paquete actualizado a ${fmtPesos(precio)}.`);
+    }
   }
 
   async function onRegistrarVenta(e: React.FormEvent) {
@@ -559,7 +619,7 @@ export function AdminCajaManager({
                             className={uiInput}
                           >
                             <option value="">Elegir...</option>
-                            {catalogo.servicios.map((s) => (
+                            {catalogoState.servicios.map((s) => (
                               <option key={s.id} value={s.id}>
                                 {s.nombre}
                                 {s.precioPesos > 0
@@ -580,7 +640,7 @@ export function AdminCajaManager({
                             className={uiInput}
                           >
                             <option value="">Elegir...</option>
-                            {catalogo.paquetes.map((p) => (
+                            {catalogoState.paquetes.map((p) => (
                               <option key={p.id} value={p.id}>
                                 {p.nombre} ({fmtPesos(p.precioPesos)})
                               </option>
@@ -629,6 +689,46 @@ export function AdminCajaManager({
                           }
                           className={uiInput}
                         />
+                        {l.tipo === "servicio" || l.tipo === "paquete" ? (
+                          <p className="mt-1 text-xs text-ink-muted">
+                            {(() => {
+                              const ref = precioCatalogoLinea(l);
+                              if (ref == null) return null;
+                              if (ref === l.precioUnitarioPesos) {
+                                return ref > 0
+                                  ? "Coincide con el precio del cat\u00e1logo."
+                                  : "Sin precio en cat\u00e1logo (0).";
+                              }
+                              if (ref === 0 && l.precioUnitarioPesos > 0) {
+                                return (
+                                  <button
+                                    type="button"
+                                    disabled={pending}
+                                    className="underline"
+                                    onClick={() => void guardarPrecioEnCatalogo(l)}
+                                  >
+                                    Guardar {fmtPesos(l.precioUnitarioPesos)} como
+                                    precio del cat\u00e1logo
+                                  </button>
+                                );
+                              }
+                              return (
+                                <>
+                                  Cat\u00e1logo: {fmtPesos(ref)}.{" "}
+                                  <button
+                                    type="button"
+                                    disabled={pending}
+                                    className="underline"
+                                    onClick={() => void guardarPrecioEnCatalogo(l)}
+                                  >
+                                    Guardar {fmtPesos(l.precioUnitarioPesos)} en
+                                    cat\u00e1logo
+                                  </button>
+                                </>
+                              );
+                            })()}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                     {l.tipo !== "otro" && l.descripcion ? (

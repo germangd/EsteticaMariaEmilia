@@ -6,41 +6,12 @@ import {
 import {
   crearServicio,
   listarServiciosAdmin,
-  type ServicioInput,
 } from "@/lib/servicios-repo";
 import { rowToServicioApi } from "@/lib/servicio-format";
+import { mensajeErrorServicio, parseServicioBody } from "@/lib/parse-servicio-body";
+import { nombreCategoria } from "@/lib/servicio-tree";
 
 export const dynamic = "force-dynamic";
-
-function parseBody(body: unknown): ServicioInput | null {
-  if (!body || typeof body !== "object") return null;
-  const b = body as Record<string, unknown>;
-  const nombre = typeof b.nombre === "string" ? b.nombre : "";
-  const duracionMin = Number(b.duracionMin ?? b.duracion);
-  const responsable = typeof b.responsable === "string" ? b.responsable : "";
-  const capacidad = Number(b.capacidad);
-  const horarioInicio =
-    typeof b.horarioInicio === "string" ? b.horarioInicio : "09:00";
-  const horarioFin = typeof b.horarioFin === "string" ? b.horarioFin : "18:00";
-  const precioPesos =
-    b.precioPesos != null
-      ? Number(b.precioPesos)
-      : b.precio != null
-        ? Number(b.precio)
-        : 0;
-  if (!nombre.trim() || !Number.isFinite(duracionMin) || !Number.isFinite(capacidad)) {
-    return null;
-  }
-  return {
-    nombre,
-    duracionMin,
-    responsable,
-    capacidad,
-    horarioInicio,
-    horarioFin,
-    precioPesos: Number.isFinite(precioPesos) ? precioPesos : 0,
-  };
-}
 
 export async function GET(request: NextRequest) {
   if (!isAdminRequest(request)) return adminUnauthorizedResponse();
@@ -53,11 +24,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const byId = new Map(
+    rows.map((x) => [
+      x.id,
+      { id: x.id, nombre: x.nombre, parentId: x.parentId, esGrupo: x.esGrupo },
+    ])
+  );
   return NextResponse.json({
     ok: true,
     servicios: rows.map((r) => ({
       id: r.id,
       ...rowToServicioApi(r),
+      categoriaNombre: nombreCategoria(
+        { id: r.id, nombre: r.nombre, parentId: r.parentId, esGrupo: r.esGrupo },
+        byId
+      ),
     })),
   });
 }
@@ -72,7 +53,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, mensaje: "JSON inválido." }, { status: 400 });
   }
 
-  const input = parseBody(body);
+  const input = parseServicioBody(body);
   if (!input) {
     return NextResponse.json(
       { ok: false, mensaje: "Datos incompletos o inválidos." },
@@ -82,21 +63,15 @@ export async function POST(request: NextRequest) {
 
   const res = await crearServicio(input);
   if (!res.ok) {
-    if (res.reason === "duplicado") {
-      return NextResponse.json(
-        { ok: false, mensaje: "Ya existe un servicio con ese nombre." },
-        { status: 409 }
-      );
-    }
-    if (res.reason === "invalido") {
-      return NextResponse.json(
-        { ok: false, mensaje: "Nombre de servicio obligatorio." },
-        { status: 400 }
-      );
-    }
+    const status =
+      res.reason === "duplicado"
+        ? 409
+        : res.reason === "invalido" || res.reason === "parent_invalido"
+          ? 400
+          : 503;
     return NextResponse.json(
-      { ok: false, mensaje: "Base de datos no disponible." },
-      { status: 503 }
+      { ok: false, mensaje: mensajeErrorServicio(res.reason) },
+      { status }
     );
   }
 

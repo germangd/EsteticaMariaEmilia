@@ -11,18 +11,66 @@ export type ServicioInput = {
   horarioInicio: string;
   horarioFin: string;
   precioPesos?: number;
+  parentId?: number | null;
+  esGrupo?: boolean;
 };
 
 function normalizeInput(input: ServicioInput): ServicioInput {
+  const esGrupo = input.esGrupo === true;
   return {
     nombre: input.nombre.trim(),
-    duracionMin: Math.max(5, Math.round(input.duracionMin)),
+    duracionMin: esGrupo ? 0 : Math.max(5, Math.round(input.duracionMin)),
     responsable: input.responsable.trim() || "No asignado",
-    capacidad: Math.max(1, Math.round(input.capacidad)),
+    capacidad: esGrupo ? 0 : Math.max(1, Math.round(input.capacidad)),
     horarioInicio: padHoraHHmm(input.horarioInicio || "09:00"),
     horarioFin: padHoraHHmm(input.horarioFin || "18:00"),
     precioPesos: Math.max(0, Math.round(input.precioPesos ?? 0)),
+    parentId: esGrupo ? null : input.parentId ?? null,
+    esGrupo,
   };
+}
+
+async function validarJerarquia(
+  data: ServicioInput,
+  id?: number
+): Promise<
+  | { ok: true }
+  | { ok: false; reason: "invalido" | "parent_invalido" | "tiene_hijos" }
+> {
+  if (!data.nombre) return { ok: false, reason: "invalido" };
+
+  if (data.esGrupo) {
+    if (data.parentId != null) return { ok: false, reason: "invalido" };
+    return { ok: true };
+  }
+
+  if (data.parentId == null) return { ok: true };
+
+  const db = getDb();
+  if (!db) return { ok: false, reason: "invalido" };
+
+  if (id != null && data.parentId === id) {
+    return { ok: false, reason: "parent_invalido" };
+  }
+
+  const [parent] = await db
+    .select({ id: services.id, esGrupo: services.esGrupo })
+    .from(services)
+    .where(eq(services.id, data.parentId))
+    .limit(1);
+
+  if (!parent?.esGrupo) return { ok: false, reason: "parent_invalido" };
+
+  if (id != null) {
+    const hijos = await db
+      .select({ id: services.id })
+      .from(services)
+      .where(eq(services.parentId, id))
+      .limit(1);
+    if (hijos.length > 0) return { ok: false, reason: "tiene_hijos" };
+  }
+
+  return { ok: true };
 }
 
 export async function listarServiciosAdmin(): Promise<
@@ -41,12 +89,22 @@ export async function crearServicio(
   input: ServicioInput
 ): Promise<
   | { ok: true; id: number }
-  | { ok: false; reason: "no_db" | "duplicado" | "invalido" }
+  | {
+      ok: false;
+      reason:
+        | "no_db"
+        | "duplicado"
+        | "invalido"
+        | "parent_invalido"
+        | "tiene_hijos";
+    }
 > {
   const db = getDb();
   if (!db) return { ok: false, reason: "no_db" };
   const data = normalizeInput(input);
-  if (!data.nombre) return { ok: false, reason: "invalido" };
+
+  const val = await validarJerarquia(data);
+  if (!val.ok) return { ok: false, reason: val.reason };
 
   const todos = await db.select({ id: services.id, nombre: services.nombre }).from(services);
   const key = data.nombre.toLowerCase();
@@ -64,6 +122,8 @@ export async function crearServicio(
       horarioInicio: data.horarioInicio,
       horarioFin: data.horarioFin,
       precioPesos: data.precioPesos ?? 0,
+      parentId: data.parentId,
+      esGrupo: data.esGrupo ?? false,
     })
     .returning({ id: services.id });
 
@@ -75,14 +135,25 @@ export async function actualizarServicio(
   input: ServicioInput
 ): Promise<
   | { ok: true }
-  | { ok: false; reason: "no_db" | "not_found" | "duplicado" | "invalido" }
+  | {
+      ok: false;
+      reason:
+        | "no_db"
+        | "not_found"
+        | "duplicado"
+        | "invalido"
+        | "parent_invalido"
+        | "tiene_hijos";
+    }
 > {
   const db = getDb();
   if (!db) return { ok: false, reason: "no_db" };
   if (!Number.isFinite(id) || id < 1) return { ok: false, reason: "not_found" };
 
   const data = normalizeInput(input);
-  if (!data.nombre) return { ok: false, reason: "invalido" };
+
+  const val = await validarJerarquia(data, id);
+  if (!val.ok) return { ok: false, reason: val.reason };
 
   const todos = await db.select({ id: services.id, nombre: services.nombre }).from(services);
   const key = data.nombre.toLowerCase();
@@ -100,7 +171,35 @@ export async function actualizarServicio(
       horarioInicio: data.horarioInicio,
       horarioFin: data.horarioFin,
       precioPesos: data.precioPesos ?? 0,
+      parentId: data.parentId,
+      esGrupo: data.esGrupo ?? false,
     })
+    .where(eq(services.id, id))
+    .returning({ id: services.id });
+
+  if (updated.length === 0) return { ok: false, reason: "not_found" };
+  return { ok: true };
+}
+
+export async function actualizarPrecioServicio(
+  id: number,
+  precioPesos: number
+): Promise<{ ok: true } | { ok: false; reason: "no_db" | "not_found" | "es_grupo" }> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+  if (!Number.isFinite(id) || id < 1) return { ok: false, reason: "not_found" };
+
+  const [row] = await db
+    .select({ esGrupo: services.esGrupo })
+    .from(services)
+    .where(eq(services.id, id))
+    .limit(1);
+  if (!row) return { ok: false, reason: "not_found" };
+  if (row.esGrupo) return { ok: false, reason: "es_grupo" };
+
+  const updated = await db
+    .update(services)
+    .set({ precioPesos: Math.max(0, Math.round(precioPesos)) })
     .where(eq(services.id, id))
     .returning({ id: services.id });
 
@@ -110,10 +209,19 @@ export async function actualizarServicio(
 
 export async function eliminarServicio(
   id: number
-): Promise<{ ok: true } | { ok: false; reason: "no_db" | "not_found" }> {
+): Promise<
+  { ok: true } | { ok: false; reason: "no_db" | "not_found" | "tiene_hijos" }
+> {
   const db = getDb();
   if (!db) return { ok: false, reason: "no_db" };
   if (!Number.isFinite(id) || id < 1) return { ok: false, reason: "not_found" };
+
+  const hijos = await db
+    .select({ id: services.id })
+    .from(services)
+    .where(eq(services.parentId, id))
+    .limit(1);
+  if (hijos.length > 0) return { ok: false, reason: "tiene_hijos" };
 
   const deleted = await db
     .delete(services)
@@ -122,4 +230,15 @@ export async function eliminarServicio(
 
   if (deleted.length === 0) return { ok: false, reason: "not_found" };
   return { ok: true };
+}
+
+/** IDs de servicios que pueden reservarse o incluirse en paquetes. */
+export async function listarIdsServiciosReservables(): Promise<number[]> {
+  const db = getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ id: services.id })
+    .from(services)
+    .where(eq(services.esGrupo, false));
+  return rows.map((r) => r.id);
 }

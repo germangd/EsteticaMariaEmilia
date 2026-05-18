@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ServicioSelectOptgroups } from "@/components/admin/servicio-select-optgroups";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
+import { filtrarServiciosReservables } from "@/lib/servicio-tree";
 import {
   uiBtnPrimary,
   uiHint,
@@ -19,8 +21,11 @@ export function AdminCargarTurnoForm({
   servicios: ServicioAdmin[];
   fechaDefault: string;
 }) {
+  const serviciosReservablesInit = filtrarServiciosReservables(servicios);
   const [servicioId, setServicioId] = useState(
-    servicios[0]?.id ? String(servicios[0].id) : ""
+    serviciosReservablesInit[0]?.id
+      ? String(serviciosReservablesInit[0].id)
+      : ""
   );
   const [fecha, setFecha] = useState(fechaDefault);
   const [hora, setHora] = useState("");
@@ -37,9 +42,14 @@ export function AdminCargarTurnoForm({
   const inputClass = uiInput;
   const selectClass = uiSelect;
 
+  const serviciosReservables = useMemo(
+    () => filtrarServiciosReservables(servicios),
+    [servicios]
+  );
+
   const servicioSel = useMemo(
-    () => servicios.find((s) => String(s.id) === servicioId),
-    [servicios, servicioId]
+    () => serviciosReservables.find((s) => String(s.id) === servicioId),
+    [serviciosReservables, servicioId]
   );
 
   const duracionEtiqueta = useMemo(() => {
@@ -138,7 +148,7 @@ export function AdminCargarTurnoForm({
     }
   }
 
-  if (servicios.length === 0) {
+  if (serviciosReservables.length === 0) {
     return (
       <p className="text-sm font-medium text-ink">
         Primero cargá servicios en{" "}
@@ -154,18 +164,15 @@ export function AdminCargarTurnoForm({
     <form onSubmit={(e) => void onSubmit(e)} className="grid gap-4 md:grid-cols-2">
       <div className="md:col-span-2">
         <label className={uiLabel}>Servicio</label>
-        <select
-          required
-          className={selectClass}
+        <ServicioSelectOptgroups
+          servicios={serviciosReservables}
           value={servicioId}
-          onChange={(e) => setServicioId(e.target.value)}
-        >
-          {servicios.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.nombre} (cupo {s.capacidad})
-            </option>
-          ))}
-        </select>
+          onChange={setServicioId}
+          className={selectClass}
+          required
+          valueMode="id"
+          showCupo
+        />
       </div>
       <div>
         <label className={uiLabel}>Fecha</label>

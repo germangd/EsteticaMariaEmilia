@@ -1,0 +1,82 @@
+import type { ServicioInput } from "@/lib/servicios-repo";
+
+/** Parsea body JSON de crear/actualizar servicio (admin). */
+export function parseServicioBody(body: unknown): ServicioInput | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as Record<string, unknown>;
+
+  const nombre = typeof b.nombre === "string" ? b.nombre : "";
+  const tipo =
+    b.tipo === "grupo" || b.tipo === "sub" || b.tipo === "suelto" ? b.tipo : null;
+  const esGrupo = b.esGrupo === true || tipo === "grupo";
+  const esSub = tipo === "sub" || (!esGrupo && b.parentId != null && b.parentId !== "");
+
+  const duracionMin = Number(b.duracionMin ?? b.duracion);
+  const responsable = typeof b.responsable === "string" ? b.responsable : "";
+  const capacidad = Number(b.capacidad);
+  const horarioInicio =
+    typeof b.horarioInicio === "string" ? b.horarioInicio : "09:00";
+  const horarioFin = typeof b.horarioFin === "string" ? b.horarioFin : "18:00";
+  const precioPesos =
+    b.precioPesos != null
+      ? Number(b.precioPesos)
+      : b.precio != null
+        ? Number(b.precio)
+        : 0;
+
+  let parentId: number | null = null;
+  if (esSub) {
+    const pid = Number(b.parentId);
+    if (!Number.isFinite(pid) || pid < 1) return null;
+    parentId = pid;
+  }
+
+  if (!nombre.trim()) return null;
+
+  if (esGrupo) {
+    return {
+      nombre,
+      duracionMin: 0,
+      responsable: responsable || "No asignado",
+      capacidad: 0,
+      horarioInicio,
+      horarioFin,
+      precioPesos: 0,
+      parentId: null,
+      esGrupo: true,
+    };
+  }
+
+  if (!Number.isFinite(duracionMin) || !Number.isFinite(capacidad)) return null;
+
+  return {
+    nombre,
+    duracionMin,
+    responsable,
+    capacidad,
+    horarioInicio,
+    horarioFin,
+    precioPesos: Number.isFinite(precioPesos) ? precioPesos : 0,
+    parentId,
+    esGrupo: false,
+  };
+}
+
+export function mensajeErrorServicio(
+  reason: string | undefined
+): string {
+  switch (reason) {
+    case "duplicado":
+      return "Ya existe un servicio con ese nombre.";
+    case "parent_invalido":
+      return "Elegí una categoría válida (servicio tipo grupo).";
+    case "tiene_hijos":
+      return "Esta categoría tiene sub-servicios. Eliminalos o reasignalos antes.";
+    case "invalido":
+      return "Datos incompletos o inválidos.";
+    case "not_found":
+      return "Servicio no encontrado.";
+    default:
+      return "No se pudo guardar el servicio.";
+  }
+}
