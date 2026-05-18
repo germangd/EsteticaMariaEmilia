@@ -11,15 +11,14 @@ export const uiInput =
 
 export const uiSelect = `${uiInput} cursor-pointer`;
 
-/** Panel marfil cálido (reservas + staff). */
+/** Panel cálido (usa token `panel` de tailwind — no color arbitrario). */
 const uiWarmPanel =
-  "rounded-sm border border-gold/50 bg-[#FFF9F2] shadow-md ring-1 ring-gold/20";
+  "rounded-sm border border-gold/60 bg-panel shadow-md ring-1 ring-gold/25";
 
 export const uiCard = `${uiWarmPanel} p-5 md:p-6`;
 
 export const uiCardSoft = `${uiWarmPanel} p-6`;
 
-/** Contenedor de formularios en /reservar */
 export const uiReservarForm = `${uiWarmPanel} p-6 md:p-7`;
 
 export const uiBtnPrimary =
@@ -40,7 +39,7 @@ export const uiBtnDanger =
 export const uiTableWrap = `overflow-x-auto ${uiWarmPanel}`;
 
 export const uiTableHead =
-  "border-b border-gold/40 bg-[#F5EDE3] text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-dark";
+  "border-b border-gold/45 bg-panel-head text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-dark";
 
 export const uiPanelKicker =
   "mb-1 text-[0.65rem] font-bold uppercase tracking-[0.25em] text-gold-dark";
@@ -57,7 +56,7 @@ export const uiSubsectionTitle =
   "mb-2 font-serif text-lg font-semibold text-ink-dark";
 
 export const uiTabBar =
-  "mb-8 flex rounded-sm border border-gold/50 bg-[#FFF9F2] p-1 shadow-sm ring-1 ring-gold/15";
+  "mb-8 flex rounded-sm border border-gold/60 bg-panel p-1 shadow-sm ring-1 ring-gold/20";
 
 export const uiTabActive =
   "flex-1 rounded-sm bg-gold py-2.5 text-xs font-bold uppercase tracking-wide text-white shadow-sm";
