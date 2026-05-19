@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MeLogo } from "@/components/landing/me-logo";
-import { ServicioSelectOptgroups } from "@/components/admin/servicio-select-optgroups";
+import { ReservaCatalogoSelect } from "@/components/reservar/reserva-catalogo-select";
 import { dedupeServiciosPorNombre } from "@/lib/servicio-format";
+import { parsearClaveReserva } from "@/lib/reserva-claves";
 import {
   uiBtnDark,
   uiBtnPrimaryFull,
@@ -34,6 +35,16 @@ type ServicioApi = {
   categoriaNombre?: string | null;
 };
 
+type PaqueteApi = {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+  precioPesos: number;
+  sesionesTotal: number;
+  serviciosIncluidos: string[];
+  duracion: number;
+};
+
 type Tab = "reservar" | "cancelar";
 
 export function ReservarClient() {
@@ -44,10 +55,11 @@ export function ReservarClient() {
   const [sedesError, setSedesError] = useState<string | null>(null);
 
   const [servicios, setServicios] = useState<ServicioApi[]>([]);
-  const [serviciosError, setServiciosError] = useState<string | null>(null);
-  const [loadingServicios, setLoadingServicios] = useState(true);
+  const [paquetes, setPaquetes] = useState<PaqueteApi[]>([]);
+  const [catalogoError, setCatalogoError] = useState<string | null>(null);
+  const [loadingCatalogo, setLoadingCatalogo] = useState(true);
 
-  const [servicio, setServicio] = useState("");
+  const [claveReserva, setClaveReserva] = useState("");
   const [fecha, setFecha] = useState("");
   const [horarios, setHorarios] = useState<string[]>([]);
   const [loadingHorarios, setLoadingHorarios] = useState(false);
@@ -89,19 +101,44 @@ export function ReservarClient() {
     return d.toISOString().slice(0, 10);
   }, []);
 
-  const servicioSel = useMemo(
-    () => servicios.find((s) => s.nombre === servicio),
-    [servicios, servicio]
-  );
+  const itemSel = useMemo(() => {
+    const parsed = parsearClaveReserva(claveReserva);
+    if (!parsed) return null;
+    if (parsed.tipo === "servicio") {
+      const s = servicios.find((x) => x.nombre === parsed.nombre);
+      if (!s) return null;
+      return {
+        tipo: "servicio" as const,
+        nombre: s.nombre,
+        duracion: s.duracion,
+        sesionesTotal: undefined as number | undefined,
+      };
+    }
+    const p = paquetes.find((x) => x.id === parsed.id);
+    if (!p) return null;
+    return {
+      tipo: "paquete" as const,
+      nombre: p.nombre,
+      duracion: p.duracion,
+      sesionesTotal: p.sesionesTotal,
+    };
+  }, [claveReserva, servicios, paquetes]);
 
   const duracionEtiqueta = useMemo(() => {
-    const min = servicioSel?.duracion;
+    const min = itemSel?.duracion;
     if (!min) return null;
-    if (min < 60) return `${min} min`;
-    const h = Math.floor(min / 60);
-    const m = min % 60;
-    return m > 0 ? `${h} h ${m} min` : `${h} h`;
-  }, [servicioSel]);
+    let base: string;
+    if (min < 60) base = `${min} min`;
+    else {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      base = m > 0 ? `${h} h ${m} min` : `${h} h`;
+    }
+    if (itemSel?.tipo === "paquete" && (itemSel.sesionesTotal ?? 0) > 1) {
+      return `${base} por sesión · paquete de ${itemSel.sesionesTotal} sesiones`;
+    }
+    return base;
+  }, [itemSel]);
 
   useEffect(() => {
     let cancelled = false;
@@ -131,28 +168,41 @@ export function ReservarClient() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoadingServicios(true);
-      setServiciosError(null);
+      setLoadingCatalogo(true);
+      setCatalogoError(null);
       try {
-        const r = await fetch("/api/servicios", { cache: "no-store" });
-        const data = (await r.json()) as {
+        const [rSvc, rPkg] = await Promise.all([
+          fetch("/api/servicios", { cache: "no-store" }),
+          fetch("/api/paquetes", { cache: "no-store" }),
+        ]);
+        const dataSvc = (await rSvc.json()) as {
           ok?: boolean;
           servicios?: ServicioApi[];
           mensaje?: string;
         };
+        const dataPkg = (await rPkg.json()) as {
+          ok?: boolean;
+          paquetes?: PaqueteApi[];
+        };
         if (cancelled) return;
-        if (!r.ok || !data.ok || !Array.isArray(data.servicios)) {
-          setServiciosError(
-            data.mensaje ?? "No se pudieron cargar los servicios."
+        if (!rSvc.ok || !dataSvc.ok || !Array.isArray(dataSvc.servicios)) {
+          setCatalogoError(
+            dataSvc.mensaje ?? "No se pudieron cargar los servicios."
           );
           setServicios([]);
+          setPaquetes([]);
           return;
         }
-        setServicios(dedupeServiciosPorNombre(data.servicios));
+        setServicios(dedupeServiciosPorNombre(dataSvc.servicios));
+        setPaquetes(
+          rPkg.ok && dataPkg.ok && Array.isArray(dataPkg.paquetes)
+            ? dataPkg.paquetes
+            : []
+        );
       } catch {
-        if (!cancelled) setServiciosError("Error de red al cargar servicios.");
+        if (!cancelled) setCatalogoError("Error de red al cargar el catálogo.");
       } finally {
-        if (!cancelled) setLoadingServicios(false);
+        if (!cancelled) setLoadingCatalogo(false);
       }
     })();
     return () => {
@@ -161,7 +211,7 @@ export function ReservarClient() {
   }, []);
 
   const cargarHorarios = useCallback(async () => {
-    if (!servicio || !fecha || sedeId < 1) {
+    if (!claveReserva || !fecha || sedeId < 1) {
       setHorarios([]);
       setHora("");
       setHorariosError(null);
@@ -172,7 +222,7 @@ export function ReservarClient() {
     setHora("");
     try {
       const q = new URLSearchParams({
-        servicio,
+        clave: claveReserva,
         fecha,
         sedeId: String(sedeId),
       });
@@ -200,7 +250,7 @@ export function ReservarClient() {
     } finally {
       setLoadingHorarios(false);
     }
-  }, [servicio, fecha, sedeId]);
+  }, [claveReserva, fecha, sedeId]);
 
   useEffect(() => {
     void cargarHorarios();
@@ -210,10 +260,17 @@ export function ReservarClient() {
     e.preventDefault();
     setReservaMsg(null);
     setUltimaReserva(null);
-    if (!servicio || !fecha || !hora || !nombre.trim() || !telefono.trim()) {
+    if (
+      !claveReserva ||
+      !itemSel ||
+      !fecha ||
+      !hora ||
+      !nombre.trim() ||
+      !telefono.trim()
+    ) {
       setReservaMsg({
         type: "err",
-        text: "Completá servicio, fecha, horario, nombre y teléfono.",
+        text: "Completá servicio o combo, fecha, horario, nombre y teléfono.",
       });
       return;
     }
@@ -223,7 +280,7 @@ export function ReservarClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          servicio,
+          clave: claveReserva,
           sedeId,
           fecha,
           hora,
@@ -242,7 +299,7 @@ export function ReservarClient() {
         if (data.codigo) {
           setUltimaReserva({
             codigo: data.codigo,
-            servicio,
+            servicio: itemSel.nombre,
             fecha,
             hora,
             nombre: nombreGuardado,
@@ -331,7 +388,7 @@ export function ReservarClient() {
           Turnos online
         </h1>
         <p className="mb-8 text-center text-sm font-medium text-ink">
-          Elegí servicio, fecha y horario. Al confirmar verás un{" "}
+          Elegí servicio o combo, fecha y horario. Al confirmar verás un{" "}
           <strong className="font-semibold text-ink-dark">código en pantalla</strong>:
           guardalo para cancelar o para consultarnos.
         </p>
@@ -355,19 +412,18 @@ export function ReservarClient() {
 
         {tab === "reservar" && (
           <form onSubmit={enviarReserva} className={uiReservarForm}>
-            {loadingServicios ? (
+            {loadingCatalogo ? (
               <p className="text-center text-sm text-ink-muted">
-                Cargando servicios…
+                Cargando servicios y combos…
               </p>
-            ) : serviciosError ? (
+            ) : catalogoError ? (
               <p className="rounded bg-red-50 px-3 py-2 text-center text-sm text-red-800">
-                {serviciosError}
+                {catalogoError}
               </p>
-            ) : servicios.length === 0 ? (
+            ) : servicios.length === 0 && paquetes.length === 0 ? (
               <p className="text-center text-sm text-ink-muted">
-                No hay servicios cargados en la base. Usá{" "}
-                <code className="text-xs">seed_example.sql</code> o el panel de
-                datos.
+                No hay servicios ni combos disponibles. Configuralos en el panel
+                de administración.
               </p>
             ) : sedesError ? (
               <p className="rounded bg-red-50 px-3 py-2 text-center text-sm text-red-800">
@@ -389,22 +445,25 @@ export function ReservarClient() {
                   ))}
                 </select>
 
-                <label className={uiLabel}>Servicio</label>
-                <ServicioSelectOptgroups
+                <label className={uiLabel}>Servicio o combo</label>
+                <ReservaCatalogoSelect
                   servicios={servicios.map((s) => ({
                     id: s.id,
                     nombre: s.nombre,
                     parentId: s.parentId ?? null,
-                    esGrupo: false,
-                    capacidad: s.capacidad,
                     categoriaNombre: s.categoriaNombre,
                   }))}
-                  value={servicio}
-                  onChange={setServicio}
+                  paquetes={paquetes.map((p) => ({
+                    id: p.id,
+                    nombre: p.nombre,
+                    precioPesos: p.precioPesos,
+                    sesionesTotal: p.sesionesTotal,
+                    serviciosIncluidos: p.serviciosIncluidos,
+                  }))}
+                  value={claveReserva}
+                  onChange={setClaveReserva}
                   className={`mb-4 ${uiSelect}`}
                   required
-                  placeholder={"Eleg\u00ed un servicio"}
-                  valueMode="nombre"
                 />
 
                 <label className={uiLabel}>Fecha</label>
@@ -421,7 +480,7 @@ export function ReservarClient() {
                 <label className={uiLabel}>Horario</label>
                 {duracionEtiqueta ? (
                   <p className={`mb-2 ${uiHint}`}>
-                    Duración del servicio: <strong>{duracionEtiqueta}</strong>.
+                    Duración estimada: <strong>{duracionEtiqueta}</strong>.
                     Los turnos se ofrecen cada ese intervalo.
                   </p>
                 ) : null}
@@ -433,9 +492,9 @@ export function ReservarClient() {
                   <p className="mb-4 rounded bg-amber-50 px-3 py-2 text-sm text-amber-900">
                     {horariosError}
                   </p>
-                ) : !servicio || !fecha ? (
+                ) : !claveReserva || !fecha ? (
                   <p className="mb-4 text-sm text-ink-muted">
-                    Elegí servicio y fecha para ver horarios.
+                    Elegí servicio o combo y fecha para ver horarios.
                   </p>
                 ) : horarios.length === 0 ? (
                   <p className="mb-4 text-sm text-ink-muted">

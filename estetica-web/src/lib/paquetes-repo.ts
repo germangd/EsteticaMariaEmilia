@@ -76,6 +76,40 @@ async function attachServicios(
   return map;
 }
 
+export type PaquetePublico = {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+  precioPesos: number;
+  sesionesTotal: number;
+  serviciosIncluidos: string[];
+};
+
+/** Combos activos para reserva web (sin datos de clientes). */
+export async function listarPaquetesPublicos(): Promise<
+  PaquetePublico[] | { ok: false; reason: "no_db" }
+> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+
+  const rows = await db
+    .select()
+    .from(servicePackages)
+    .where(eq(servicePackages.activo, true))
+    .orderBy(asc(servicePackages.nombre));
+
+  const serviciosMap = await attachServicios(rows.map((r) => r.id));
+
+  return rows.map((r) => ({
+    id: r.id,
+    nombre: r.nombre,
+    descripcion: r.descripcion,
+    precioPesos: r.precioPesos,
+    sesionesTotal: r.sesionesTotal,
+    serviciosIncluidos: (serviciosMap.get(r.id) ?? []).map((s) => s.nombre),
+  }));
+}
+
 export async function listarPaquetesAdmin(): Promise<
   PaqueteConServicios[] | { ok: false; reason: "no_db" }
 > {

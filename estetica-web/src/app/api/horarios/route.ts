@@ -1,27 +1,16 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
-import { services } from "@/db/schema";
 import {
-  contarSolapamiento,
-  generarHorariosDesdeFranjas,
-  getAppTimeZone,
-  hoyIsoEnZona,
-  horaActualEnZona,
-  horaAMinutos,
-} from "@/lib/agenda";
-import {
-  evaluarReservaEnEvento,
-  listarEventosActivosEnFecha,
-  resolverVentanaReserva,
-} from "@/lib/disponibilidad-repo";
-import { listarActivosConDuracion } from "@/lib/turnos-repo";
+  calcularHorariosDisponibles,
+  parsearClaveReserva,
+  resolverItemReserva,
+} from "@/lib/reserva-catalogo";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Horarios disponibles (misma idea que `obtenerHorariosDisponibles` en `Código.gs`).
- * Query: `?servicio=Nombre exacto&fecha=YYYY-MM-DD`
+ * Horarios disponibles.
+ * Query: `?clave=s:Nombre` o `?clave=p:ID` (o legacy `?servicio=Nombre`) + `fecha` + `sedeId`
  */
 export async function GET(request: Request) {
   const db = getDb();
@@ -33,12 +22,16 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const servicioNombre = searchParams.get("servicio")?.trim() ?? "";
+  const clave =
+    searchParams.get("clave")?.trim() ??
+    (searchParams.get("servicio")?.trim()
+      ? `s:${searchParams.get("servicio")!.trim()}`
+      : "");
   const fecha = searchParams.get("fecha")?.trim() ?? "";
   const sedeId = Number(searchParams.get("sedeId"));
 
   if (
-    !servicioNombre ||
+    !clave ||
     !fecha ||
     !/^\d{4}-\d{2}-\d{2}$/.test(fecha) ||
     !Number.isFinite(sedeId) ||
@@ -48,7 +41,20 @@ export async function GET(request: Request) {
       {
         ok: false,
         error: "invalid_params",
-        mensaje: "Usá ?servicio=Nombre&fecha=YYYY-MM-DD&sedeId=1",
+        mensaje: "Usá ?clave=s:Nombre o p:ID&fecha=YYYY-MM-DD&sedeId=1",
+        horarios: [],
+      },
+      { status: 400 }
+    );
+  }
+
+  const parsed = parsearClaveReserva(clave);
+  if (!parsed) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "invalid_params",
+        mensaje: "Clave de servicio o combo inválida.",
         horarios: [],
       },
       { status: 400 }
@@ -56,79 +62,18 @@ export async function GET(request: Request) {
   }
 
   try {
-    const [servicio] = await db
-      .select()
-      .from(services)
-      .where(eq(services.nombre, servicioNombre))
-      .limit(1);
-
-    if (!servicio) {
+    const item = await resolverItemReserva(parsed);
+    if (!item) {
       return NextResponse.json({ ok: true, horarios: [] });
     }
 
-    const ventana = await resolverVentanaReserva(
-      servicio.id,
-      servicio,
+    const { horarios, mensaje } = await calcularHorariosDisponibles(
+      item,
       fecha,
       sedeId
     );
-    if (!ventana || ventana.bloqueado) {
-      return NextResponse.json({
-        ok: true,
-        horarios: [],
-        mensaje: ventana?.bloqueado ?? "Fecha no disponible.",
-      });
-    }
 
-    const eventos = await listarEventosActivosEnFecha(fecha, sedeId);
-    const duracionMin = Math.max(5, servicio.duracionMin);
-    let horariosPosibles = generarHorariosDesdeFranjas(
-      ventana.franjas,
-      duracionMin
-    );
-
-    if (eventos.length > 0) {
-      horariosPosibles = horariosPosibles.filter((h) => {
-        const ev = evaluarReservaEnEvento(servicio.id, h, eventos);
-        if (!ev.permitido) return false;
-        if (ev.ventana) {
-          const finEv = horaAMinutos(ev.ventana.horarioFin);
-          const inicio = horaAMinutos(h);
-          return inicio >= 0 && inicio + duracionMin <= finEv;
-        }
-        return true;
-      });
-    }
-
-    if (horariosPosibles.length === 0) {
-      const mensaje =
-        eventos.length > 0
-          ? "No hay horarios disponibles para este servicio en esa fecha (revisá franjas de eventos)."
-          : undefined;
-      return NextResponse.json({ ok: true, horarios: [], mensaje });
-    }
-
-    const tz = getAppTimeZone();
-    const hoyStr = hoyIsoEnZona(tz);
-    if (fecha === hoyStr) {
-      const horaActual = horaActualEnZona(tz);
-      horariosPosibles = horariosPosibles.filter((h) => h >= horaActual);
-    }
-
-    const ocupados = await listarActivosConDuracion(
-      fecha,
-      servicio.responsable,
-      sedeId
-    );
-
-    const capacidad = servicio.capacidad;
-    const disponibles = horariosPosibles.filter((hora) => {
-      const inicio = horaAMinutos(hora);
-      if (inicio < 0) return false;
-      return contarSolapamiento(inicio, duracionMin, ocupados) < capacidad;
-    });
-
-    return NextResponse.json({ ok: true, horarios: disponibles });
+    return NextResponse.json({ ok: true, horarios, mensaje });
   } catch {
     return NextResponse.json(
       { ok: false, error: "query_failed", horarios: [] },

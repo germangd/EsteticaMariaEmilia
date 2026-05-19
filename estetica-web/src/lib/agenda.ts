@@ -69,6 +69,21 @@ export function intersectarFranja(
   };
 }
 
+/** Intersección de dos listas de franjas (mismo día). */
+export function intersectarListasFranjas(
+  a: FranjaHoraria[],
+  b: FranjaHoraria[]
+): FranjaHoraria[] {
+  const out: FranjaHoraria[] = [];
+  for (const fa of a) {
+    for (const fb of b) {
+      const x = intersectarFranja(fa, fb);
+      if (x) out.push(x);
+    }
+  }
+  return out;
+}
+
 /** Cruza franjas del local con el horario del servicio (una ventana). */
 export function intersectarFranjasConVentanaServicio(
   franjasLocal: FranjaHoraria[],

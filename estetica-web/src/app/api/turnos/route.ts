@@ -1,21 +1,20 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
-import { services } from "@/db/schema";
-import {
-  esFechaHoraValida,
-  getAppTimeZone,
-  normalizarHora,
-  turnoCabeEnFranjas,
-} from "@/lib/agenda";
+import { esFechaHoraValida, getAppTimeZone, normalizarHora } from "@/lib/agenda";
 import { enviarMailsTurnoConfirmado } from "@/lib/mail-turno";
-import { resolverVentanaReserva } from "@/lib/disponibilidad-repo";
+import {
+  parsearClaveReserva,
+  resolverItemReserva,
+  validarReservaItem,
+} from "@/lib/reserva-catalogo";
 import { obtenerSedePorId } from "@/lib/sedes-repo";
 import { insertarTurnoSiHayCupo } from "@/lib/turnos-repo";
 
 export const dynamic = "force-dynamic";
 
 type Body = {
+  /** Clave `s:nombre` o `p:id` (preferido). */
+  clave?: string;
   servicio?: string;
   fecha?: string;
   hora?: string;
@@ -48,7 +47,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const servicioNombre = body.servicio?.trim() ?? "";
+  const claveRaw =
+    body.clave?.trim() ??
+    (body.servicio?.trim() ? `s:${body.servicio.trim()}` : "");
   const fecha = body.fecha?.trim() ?? "";
   const horaRaw = body.hora?.trim() ?? "";
   const hora = normalizarHora(horaRaw);
@@ -57,8 +58,10 @@ export async function POST(request: Request) {
   const email = body.email?.trim() || "";
   const sedeId = Number(body.sedeId);
 
+  const parsed = parsearClaveReserva(claveRaw);
+
   if (
-    !servicioNombre ||
+    !parsed ||
     !fecha ||
     !horaRaw ||
     !nombre ||
@@ -69,7 +72,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         exito: false,
-        mensaje: "Faltan servicio, sede, fecha, hora, nombre o teléfono.",
+        mensaje: "Faltan servicio o combo, sede, fecha, hora, nombre o teléfono.",
       },
       { status: 400 }
     );
@@ -100,40 +103,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const [servicio] = await db
-      .select()
-      .from(services)
-      .where(eq(services.nombre, servicioNombre))
-      .limit(1);
-
-    if (!servicio) {
+    const item = await resolverItemReserva(parsed);
+    if (!item) {
       return NextResponse.json({
         exito: false,
-        mensaje: "Servicio no encontrado.",
+        mensaje: "Servicio o combo no encontrado.",
       });
     }
 
-    const ventana = await resolverVentanaReserva(
-      servicio.id,
-      servicio,
-      fecha,
-      sedeId,
-      hora
-    );
-    if (!ventana || ventana.bloqueado) {
+    const validacion = await validarReservaItem(item, fecha, hora, sedeId);
+    if (!validacion.ok) {
       return NextResponse.json({
         exito: false,
-        mensaje:
-          ventana?.bloqueado ??
-          "Esta fecha no está habilitada para reservar este servicio.",
-      });
-    }
-
-    if (!turnoCabeEnFranjas(hora, servicio.duracionMin, ventana.franjas)) {
-      return NextResponse.json({
-        exito: false,
-        mensaje:
-          "Ese horario no alcanza para la duración del servicio antes del cierre.",
+        mensaje: validacion.mensaje,
       });
     }
 
@@ -143,11 +125,11 @@ export async function POST(request: Request) {
       nombre,
       telefono,
       email: email || null,
-      servicioNombre,
-      responsable: servicio.responsable,
+      servicioNombre: item.nombre,
+      responsable: item.responsable,
       sedeId,
-      capacidad: servicio.capacidad,
-      duracionMin: servicio.duracionMin,
+      capacidad: item.capacidad,
+      duracionMin: item.duracionMin,
     });
 
     if (ins.ok === false) {
@@ -160,7 +142,7 @@ export async function POST(request: Request) {
       if (ins.reason === "cupo") {
         return NextResponse.json({
           exito: false,
-          mensaje: `No hay cupo para ${servicioNombre} a las ${hora}. Capacidad: ${servicio.capacidad}.`,
+          mensaje: `No hay cupo para ${item.nombre} a las ${hora}.`,
         });
       }
       return NextResponse.json({
@@ -174,9 +156,9 @@ export async function POST(request: Request) {
         nombre,
         telefono,
         emailCliente: email || null,
-        servicio: servicioNombre,
+        servicio: item.nombre,
         sede: sede.nombre,
-        responsable: servicio.responsable,
+        responsable: item.responsable,
         fecha,
         hora,
         codigoCancelacion: ins.codigo,
@@ -185,9 +167,10 @@ export async function POST(request: Request) {
       console.error("[mail] turno:", err);
     }
 
+    const tipoEtiqueta = item.tipo === "paquete" ? "Combo" : "Servicio";
     return NextResponse.json({
       exito: true,
-      mensaje: `Turno guardado con ${servicio.responsable}. Código: ${ins.codigo}`,
+      mensaje: `${tipoEtiqueta} reservado con ${item.responsable}. Código: ${ins.codigo}`,
       codigo: ins.codigo,
     });
   } catch (e) {

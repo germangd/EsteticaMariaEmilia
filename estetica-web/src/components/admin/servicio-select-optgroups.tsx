@@ -1,5 +1,18 @@
+import { fmtPesos } from "@/lib/fmt-pesos";
+import {
+  claveReservaPaquete,
+  claveReservaServicio,
+} from "@/lib/reserva-claves";
 import type { ServicioJerarquia } from "@/lib/servicio-tree";
 import { agruparServiciosParaUi, filtrarServiciosReservables } from "@/lib/servicio-tree";
+
+export type PaqueteSelectOption = {
+  id: number;
+  nombre: string;
+  precioPesos?: number;
+  sesionesTotal?: number;
+  serviciosIncluidos?: string[];
+};
 
 type ServicioOption = ServicioJerarquia & {
   nombre: string;
@@ -13,10 +26,12 @@ type Props = {
   onChange: (value: string) => void;
   className?: string;
   required?: boolean;
+  disabled?: boolean;
   placeholder?: string;
-  /** Si true, el value de cada option es el id (string); si false, el nombre. */
-  valueMode?: "id" | "nombre";
+  /** id, nombre del servicio, o clave `s:` / `p:` para reserva con combos. */
+  valueMode?: "id" | "nombre" | "clave";
   showCupo?: boolean;
+  paquetes?: PaqueteSelectOption[];
 };
 
 function agruparPorCategoriaNombre<T extends ServicioOption>(list: T[]) {
@@ -54,9 +69,11 @@ export function ServicioSelectOptgroups({
   onChange,
   className,
   required,
+  disabled,
   placeholder = "Eleg\u00ed un servicio",
   valueMode = "nombre",
   showCupo = false,
+  paquetes = [],
 }: Props) {
   const reservables = filtrarServiciosReservables(servicios);
   const usaCategoria = reservables.some((s) => s.categoriaNombre?.trim());
@@ -64,8 +81,11 @@ export function ServicioSelectOptgroups({
     ? agruparPorCategoriaNombre(reservables)
     : agruparServiciosParaUi(servicios);
 
-  const optValue = (s: ServicioOption) =>
-    valueMode === "id" ? String(s.id) : s.nombre;
+  const optValue = (s: ServicioOption) => {
+    if (valueMode === "id") return String(s.id);
+    if (valueMode === "clave") return claveReservaServicio(s.nombre);
+    return s.nombre;
+  };
 
   const optLabel = (s: ServicioOption) => {
     const cupo =
@@ -76,6 +96,7 @@ export function ServicioSelectOptgroups({
   return (
     <select
       required={required}
+      disabled={disabled}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className={className}
@@ -106,6 +127,30 @@ export function ServicioSelectOptgroups({
             </option>
           ))
         )
+      ) : null}
+      {paquetes.length > 0 ? (
+        <optgroup label="Combos / paquetes">
+          {paquetes.map((p) => {
+            const incluye =
+              (p.serviciosIncluidos?.length ?? 0) > 0
+                ? ` — ${p.serviciosIncluidos!.join(", ")}`
+                : "";
+            const precio =
+              (p.precioPesos ?? 0) > 0 ? ` (${fmtPesos(p.precioPesos!)})` : "";
+            const sesiones =
+              (p.sesionesTotal ?? 0) > 1
+                ? ` · ${p.sesionesTotal} sesiones`
+                : "";
+            return (
+              <option key={`p-${p.id}`} value={claveReservaPaquete(p.id)}>
+                {p.nombre}
+                {sesiones}
+                {precio}
+                {incluye}
+              </option>
+            );
+          })}
+        </optgroup>
       ) : null}
     </select>
   );
