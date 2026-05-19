@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AdminCajaManager } from "@/components/admin/admin-caja-manager";
+import { adminMetadata } from "@/config/admin-metadata";
 import { AdminCajaScrollToForm } from "@/components/admin/admin-caja-scroll";
 import type { CatalogoCaja } from "@/lib/caja-repo";
 import {
@@ -13,10 +13,7 @@ import {
 import type { PrefillCobroPaquete, PrefillCobroTurno } from "@/lib/caja-repo";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
-export const metadata: Metadata = {
-  title: "Admin \u2014 Caja | Mar\u00eda Emilia Est\u00e9tica",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Caja");
 
 export const dynamic = "force-dynamic";
 

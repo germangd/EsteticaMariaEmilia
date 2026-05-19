@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { adminMetadata } from "@/config/admin-metadata";
 import { Suspense } from "react";
 import { getAppTimeZone, hoyIsoEnZona } from "@/lib/agenda";
 import {
@@ -38,10 +38,7 @@ import {
   uiSubsectionTitle,
 } from "@/lib/ui-classes";
 
-export const metadata: Metadata = {
-  title: "Admin \u2014 Turnos | Mar\u00eda Emilia Est\u00e9tica",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Turnos");
 
 export const dynamic = "force-dynamic";
 

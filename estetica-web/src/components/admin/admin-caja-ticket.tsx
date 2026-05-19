@@ -1,5 +1,6 @@
 "use client";
 
+import { getBusinessName } from "@/config/site";
 import type { VentaDetalle } from "@/lib/caja-repo";
 import { fmtPesos } from "@/lib/fmt-pesos";
 
@@ -31,7 +32,7 @@ export function AdminCajaTicket({ venta }: { venta: VentaDetalle }) {
     <div className="ticket-thermal mx-auto w-[80mm] max-w-[80mm] bg-white px-3 py-4 font-mono text-[11px] leading-snug text-black print:m-0 print:w-[80mm] print:max-w-[80mm] print:p-0">
       <div className="border-b border-dashed border-black/40 pb-2 text-center">
         <p className="text-[10px] font-bold uppercase tracking-widest">
-          Maria Emilia Estetica
+          {getBusinessName()}
         </p>
         <p className="mt-1 text-[12px] font-bold">COMPROBANTE DE VENTA</p>
         {anulada ? (

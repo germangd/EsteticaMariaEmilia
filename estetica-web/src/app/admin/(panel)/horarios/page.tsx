@@ -1,12 +1,9 @@
-import type { Metadata } from "next";
 import { AdminHorariosPorSede } from "@/components/admin/admin-horarios-por-sede";
+import { adminMetadata } from "@/config/admin-metadata";
 import { listarSedesActivas } from "@/lib/sedes-repo";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
-export const metadata: Metadata = {
-  title: "Admin — Horarios | María Emilia Estética",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Horarios");
 
 export const dynamic = "force-dynamic";
 

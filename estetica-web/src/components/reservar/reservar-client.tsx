@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { getBusinessName } from "@/config/site";
 import { MeLogo } from "@/components/landing/me-logo";
 import { ReservaCatalogoSelect } from "@/components/reservar/reserva-catalogo-select";
 import { dedupeServiciosPorNombre } from "@/lib/servicio-format";
@@ -417,7 +418,7 @@ export function ReservarClient() {
               <MeLogo gradientId="meReservarNav" className="h-11 w-[4.75rem]" />
             </span>
             <span className="text-xs font-medium uppercase tracking-[0.25em] text-gold-dark">
-              María Emilia Estética
+              {getBusinessName()}
             </span>
           </Link>
         </header>

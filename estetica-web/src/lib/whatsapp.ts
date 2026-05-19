@@ -1,12 +1,7 @@
-/** Número del salón (Argentina, sin +). Mismo que en la home si no hay env. */
-export const WHATSAPP_NUMBER_DEFAULT = "5492215918286";
+import { getBusinessName, getWhatsAppNumberDigits } from "@/config/site";
 
 export function getWhatsAppNumber(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.trim() ||
-    process.env.WHATSAPP_NUMBER?.trim();
-  const digits = raw?.replace(/\D/g, "");
-  return digits || WHATSAPP_NUMBER_DEFAULT;
+  return getWhatsAppNumberDigits();
 }
 
 function fechaLegible(fechaIso: string): string {
@@ -26,10 +21,11 @@ export function buildWhatsAppTurnoUrl(params: {
   anticipoMontoPesos?: number;
   anticipoPorcentaje?: number;
 }): string {
+  const negocio = getBusinessName();
   const lineas = [
     params.pendienteAnticipo
-      ? "Hola! Solicité un turno en María Emilia Estética (pendiente de confirmación por anticipo):"
-      : "Hola! Acabo de reservar turno en María Emilia Estética:",
+      ? `Hola! Solicité un turno en ${negocio} (pendiente de confirmación por anticipo):`
+      : `Hola! Acabo de reservar turno en ${negocio}:`,
     `• ${params.servicio}`,
     `• ${fechaLegible(params.fecha)} ${params.hora}`,
     `• A nombre de: ${params.nombre}`,

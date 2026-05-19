@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
 import { AdminReportesManager } from "@/components/admin/admin-reportes-manager";
+import { adminMetadata } from "@/config/admin-metadata";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
-export const metadata: Metadata = {
-  title: "Admin — Reportes | María Emilia Estética",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Reportes");
 
 export const dynamic = "force-dynamic";
 

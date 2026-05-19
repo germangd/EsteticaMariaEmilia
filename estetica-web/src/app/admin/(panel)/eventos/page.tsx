@@ -1,15 +1,12 @@
-import type { Metadata } from "next";
 import { AdminEventosManager } from "@/components/admin/admin-eventos-manager";
+import { adminMetadata } from "@/config/admin-metadata";
 import { listarEventosAdmin } from "@/lib/eventos-repo";
 import { listarSedesActivas } from "@/lib/sedes-repo";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import { rowToServicioApi } from "@/lib/servicio-format";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
-export const metadata: Metadata = {
-  title: "Admin — Eventos | María Emilia Estética",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Eventos");
 
 export const dynamic = "force-dynamic";
 

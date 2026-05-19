@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { ReservarClient } from "@/components/reservar/reservar-client";
+import { reservarPageTitle, siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
-  title: "Reservar turno | María Emilia Estética",
-  description:
-    "Reservá o cancelá tu turno online — Ensenada, Bartolomé Bavio y Magdalena.",
+  title: reservarPageTitle(),
+  description: siteConfig.description,
 };
 
 export default function ReservarPage() {

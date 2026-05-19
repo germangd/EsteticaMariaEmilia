@@ -1,14 +1,11 @@
-import type { Metadata } from "next";
 import { AdminServiciosManager } from "@/components/admin/admin-servicios-manager";
+import { adminMetadata } from "@/config/admin-metadata";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import { rowToServicioApi } from "@/lib/servicio-format";
 import { nombreCategoria } from "@/lib/servicio-tree";
 
-export const metadata: Metadata = {
-  title: "Admin — Servicios | María Emilia Estética",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Servicios");
 
 export const dynamic = "force-dynamic";
 

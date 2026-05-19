@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AdminClientesPanel } from "@/components/admin/admin-clientes-panel";
+import { adminMetadata } from "@/config/admin-metadata";
 import {
   listarClientesResumen,
   normalizarTelefono,
@@ -8,10 +8,7 @@ import {
 } from "@/lib/clientes-repo";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
-export const metadata: Metadata = {
-  title: "Admin — Clientes | María Emilia Estética",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Clientes");
 
 export const dynamic = "force-dynamic";
 

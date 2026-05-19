@@ -1,6 +1,7 @@
 import { existsSync } from "fs";
 import { readdir, stat } from "fs/promises";
 import path from "path";
+import { getBusinessName } from "@/config/site";
 import { HERO_SLIDES, type HeroSlide } from "@/lib/landing-media";
 import landingManifest from "./landing-media-manifest.json";
 import type { ServicioMediaFolder } from "./servicio-media-folders";
@@ -104,7 +105,7 @@ function buildHeroSlides(heroDir: string, names: string[]): HeroSlide[] {
       slides.push({
         kind: "image",
         src: publicUrl("hero", name),
-        alt: `María Emilia Estética — ${name.replace(/\.[^.]+$/, "")}`,
+        alt: `${getBusinessName()} — ${name.replace(/\.[^.]+$/, "")}`,
       });
     } else if (VIDEO_RE.test(name)) {
       slides.push({

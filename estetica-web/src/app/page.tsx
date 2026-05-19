@@ -7,68 +7,18 @@ import {
   pickServicioCardImagesByFolder,
 } from "@/lib/landing-media-scan";
 import {
-  SERVICIO_MEDIA_FOLDERS,
-  type ServicioMediaFolder,
-} from "@/lib/servicio-media-folders";
+  buildWhatsAppConsultaUrl,
+  getBusinessName,
+  getInstagramUrl,
+  getMapsUrl,
+  getWhatsAppDisplay,
+  getWhatsAppNumberDigits,
+  siteConfig,
+} from "@/config/site";
 
 export const dynamic = "force-dynamic";
 
-const MAPS_URL =
-  "https://www.google.com/maps/search/?api=1&query=Ensenada%2C+Provincia+de+Buenos+Aires%2C+Argentina";
-
-const WA_URL =
-  "https://wa.me/5492215918286?text=Hola!%20Quiero%20consultar%20sobre%20los%20servicios%20de%20Mar%C3%ADa%20Emilia%20Est%C3%A9tica";
-
-const SERVICIOS_BASE: Array<{
-  n: string;
-  icon: string;
-  name: string;
-  desc: string;
-  mediaFolder: ServicioMediaFolder;
-}> = [
-  {
-    n: "01",
-    icon: "✨",
-    name: "Depilación Láser",
-    desc: "Tecnología de última generación para una depilación definitiva, segura y sin dolor. Resultados duraderos desde la primera sesión.",
-    mediaFolder: SERVICIO_MEDIA_FOLDERS[0],
-  },
-  {
-    n: "02",
-    icon: "🌸",
-    name: "Faciales",
-    desc: "Tratamientos personalizados para limpiar, hidratar y rejuvenecer tu piel. Protocolos adaptados a cada tipo de cutis.",
-    mediaFolder: SERVICIO_MEDIA_FOLDERS[1],
-  },
-  {
-    n: "03",
-    icon: "💅",
-    name: "Uñas & Esculpidas",
-    desc: "Manicuría, esmaltado semipermanente y uñas esculpidas en acrílico o gel. Diseños únicos para cada ocasión.",
-    mediaFolder: SERVICIO_MEDIA_FOLDERS[2],
-  },
-  {
-    n: "04",
-    icon: "🦶",
-    name: "Podología",
-    desc: "Cuidado profesional de pies para tu salud y bienestar. Tratamientos preventivos y estéticos a cargo de especialistas.",
-    mediaFolder: SERVICIO_MEDIA_FOLDERS[3],
-  },
-  {
-    n: "05",
-    icon: "🎨",
-    name: "Coloración",
-    desc: "Tintura, mechas, balayage y técnicas de color actuales. Transformá tu look con los mejores productos del mercado.",
-    mediaFolder: SERVICIO_MEDIA_FOLDERS[4],
-  },
-  {
-    n: "06",
-    icon: "💫",
-    name: "Alisado",
-    desc: "Alisado progresivo y keratinas para un cabello liso, brillante y sin frizz. Resultados que duran meses.",
-    mediaFolder: SERVICIO_MEDIA_FOLDERS[5],
-  },
-];
+const { landing } = siteConfig;
 
 function WaIcon({ className }: { className?: string }) {
   return (
@@ -89,10 +39,10 @@ export default async function Home() {
   const [heroSlides, cardImages] = await Promise.all([
     loadHeroSlidesFromPublic(),
     pickServicioCardImagesByFolder(
-      SERVICIOS_BASE.map((s) => s.mediaFolder)
+      landing.servicios.map((s) => s.mediaFolder)
     ),
   ]);
-  const servicios = SERVICIOS_BASE.map((s, i) => ({
+  const servicios = landing.servicios.map((s, i) => ({
     n: s.n,
     icon: s.icon,
     name: s.name,
@@ -114,7 +64,7 @@ export default async function Home() {
           href="/#inicio"
           className="cursor-pointer font-serif text-[1.05rem] font-semibold uppercase tracking-[0.15em] text-gold-dark"
         >
-          ME Estética
+          {landing.navBrand}
         </Link>
         <ul className="hidden list-none items-center gap-9 md:flex">
           <li>
@@ -178,17 +128,22 @@ export default async function Home() {
         <section className="relative grid min-h-screen grid-cols-1 overflow-hidden md:grid-cols-12 md:items-stretch">
           <div className="relative z-[2] flex flex-col justify-center px-8 pb-12 pt-28 md:col-span-5 md:px-10 md:pb-16 md:pt-32 lg:col-span-4 lg:px-12 xl:pl-20 xl:pr-10">
             <p className="mb-6 text-[0.68rem] font-medium uppercase tracking-[0.3em] text-gold motion-safe:animate-[fadeUp_0.8s_ease_both] motion-reduce:opacity-100">
-              Estética profesional
+              {landing.hero.kicker}
             </p>
             <h1 className="mb-4 font-serif text-[clamp(2.5rem,5vw,5rem)] font-light leading-[1.05] text-ink-dark motion-safe:animate-[fadeUp_0.8s_ease_0.15s_both] motion-reduce:opacity-100">
-              María
-              <br />
-              <em className="font-serif not-italic text-gold">Emilia</em>
-              <br />
-              Estética
+              {landing.hero.titleLines.map((line, i) => (
+                <span key={line}>
+                  {i > 0 ? <br /> : null}
+                  {i === 1 ? (
+                    <em className="font-serif not-italic text-gold">{line}</em>
+                  ) : (
+                    line
+                  )}
+                </span>
+              ))}
             </h1>
             <p className="mb-10 max-w-md font-serif text-xl font-light italic text-ink-muted motion-safe:animate-[fadeUp_0.8s_ease_0.3s_both] motion-reduce:opacity-100">
-              Tu espacio de belleza y bienestar
+              {landing.hero.subtitle}
             </p>
             <div className="mb-10 flex flex-wrap items-center gap-4 motion-safe:animate-[fadeUp_0.8s_ease_0.45s_both] motion-reduce:opacity-100">
               <Link
@@ -211,7 +166,7 @@ export default async function Home() {
               </a>
             </div>
             <p className="text-[0.65rem] font-medium uppercase tracking-[0.25em] text-ink-muted motion-safe:animate-[fadeUp_0.8s_ease_0.6s_both] motion-reduce:opacity-100">
-              Ensenada · Bartolomé Bavio · Magdalena
+              {landing.hero.locationsLine}
             </p>
           </div>
 
@@ -285,37 +240,19 @@ export default async function Home() {
               para <em className="font-serif not-italic text-gold">vos</em>
             </h2>
             <p className="mb-8 text-[0.95rem] font-light leading-[1.9] text-ink-muted">
-              En María Emilia Estética creemos que el cuidado personal es una forma
-              de amor propio. Ofrecemos un ambiente cálido, profesional y
-              personalizado donde cada cliente recibe la atención que merece.
-              Trabajamos con los mejores productos y técnicas actualizadas para
-              que salgas sintiéndote increíble.
+              {landing.about.paragraph}
             </p>
             <div className="grid grid-cols-3 gap-6 border-t border-gold/20 py-8">
-              <div>
-                <div className="mb-1 font-serif text-4xl font-light text-gold">
-                  7+
+              {landing.about.stats.map((stat) => (
+                <div key={stat.label}>
+                  <div className="mb-1 font-serif text-4xl font-light text-gold">
+                    {stat.value}
+                  </div>
+                  <div className="text-[0.68rem] uppercase tracking-[0.15em] text-ink-muted">
+                    {stat.label}
+                  </div>
                 </div>
-                <div className="text-[0.68rem] uppercase tracking-[0.15em] text-ink-muted">
-                  Servicios
-                </div>
-              </div>
-              <div>
-                <div className="mb-1 font-serif text-4xl font-light text-gold">
-                  3
-                </div>
-                <div className="text-[0.68rem] uppercase tracking-[0.15em] text-ink-muted">
-                  Zonas
-                </div>
-              </div>
-              <div>
-                <div className="mb-1 font-serif text-4xl font-light text-gold">
-                  100%
-                </div>
-                <div className="text-[0.68rem] uppercase tracking-[0.15em] text-ink-muted">
-                  Profesional
-                </div>
-              </div>
+              ))}
             </div>
           </div>
           <div className="relative">
@@ -324,10 +261,10 @@ export default async function Home() {
                 <MeLogo gradientId="meCardGrad" className="w-[110px]" />
               </div>
               <p className="relative z-[1] mb-2 font-serif text-2xl italic text-ink-dark">
-                María Emilia
+                {landing.about.cardTitle}
               </p>
               <p className="relative z-[1] text-[0.7rem] uppercase tracking-[0.2em] text-gold-dark">
-                Estética profesional
+                {landing.about.cardKicker}
               </p>
             </div>
           </div>
@@ -344,25 +281,21 @@ export default async function Home() {
             Atendemos en <em className="font-serif not-italic text-gold-light">tu zona</em>
           </h2>
           <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-10 md:gap-16">
-            {[
-              ["Ensenada", "Provincia de Buenos Aires"],
-              ["Bartolomé Bavio", "Provincia de Buenos Aires"],
-              ["Magdalena", "Provincia de Buenos Aires"],
-            ].map(([name, sub]) => (
-              <div key={name} className="text-center">
+            {landing.zones.map((z) => (
+              <div key={z.name} className="text-center">
                 <div className="mx-auto mb-4 h-2 w-2 rounded-full bg-gold" />
                 <p className="mb-1 font-serif text-xl font-light text-white">
-                  {name}
+                  {z.name}
                 </p>
                 <p className="text-[0.65rem] uppercase tracking-[0.2em] text-white/40">
-                  {sub}
+                  {z.region}
                 </p>
               </div>
             ))}
           </div>
           <p className="mt-10">
             <a
-              href={MAPS_URL}
+              href={getMapsUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-[2px] border border-gold-light/45 px-6 py-3 text-[0.68rem] font-medium uppercase tracking-[0.18em] text-gold-light transition-colors hover:bg-gold/15 hover:text-white"
@@ -402,7 +335,7 @@ export default async function Home() {
               ✦ &nbsp;Reservar turno online
             </Link>
             <a
-              href={MAPS_URL}
+              href={getMapsUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-[2px] border border-gold-dark/35 px-6 py-3 text-[0.68rem] font-medium uppercase tracking-[0.18em] text-gold-dark transition-colors hover:bg-white/50"
@@ -410,7 +343,7 @@ export default async function Home() {
               Cómo llegar
             </a>
             <a
-              href={WA_URL}
+              href={buildWhatsAppConsultaUrl()}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 rounded-[2px] bg-[#25D366] px-8 py-4 text-[0.72rem] font-medium uppercase tracking-[0.15em] text-white transition-all hover:-translate-y-0.5 hover:bg-[#1da851]"
@@ -425,11 +358,10 @@ export default async function Home() {
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-10 border-b border-gold/15 pb-10 md:grid-cols-3 md:gap-16">
             <div>
               <span className="mb-4 block font-serif text-[1.1rem] font-semibold uppercase tracking-[0.15em] text-gold-light">
-                ME Estética
+                {landing.navBrand}
               </span>
               <p className="text-[0.8rem] font-light leading-relaxed text-white/40">
-                Tu espacio de belleza y bienestar profesional en la zona de
-                Ensenada, Bartolomé Bavio y Magdalena.
+                {landing.footer.blurb}
               </p>
             </div>
             <div>
@@ -437,12 +369,9 @@ export default async function Home() {
                 Servicios
               </h4>
               <ul className="list-none space-y-2.5 text-[0.78rem] tracking-wide text-white/45">
-                <li>Depilación Láser</li>
-                <li>Faciales</li>
-                <li>Uñas & Esculpidas</li>
-                <li>Podología</li>
-                <li>Coloración</li>
-                <li>Alisado</li>
+                {landing.footer.serviceList.map((nombre) => (
+                  <li key={nombre}>{nombre}</li>
+                ))}
               </ul>
             </div>
             <div>
@@ -452,7 +381,7 @@ export default async function Home() {
               <ul className="list-none space-y-2.5 text-[0.78rem]">
                 <li>
                   <a
-                    href={MAPS_URL}
+                    href={getMapsUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-white/45 transition-colors hover:text-gold-light"
@@ -462,22 +391,22 @@ export default async function Home() {
                 </li>
                 <li>
                   <a
-                    href="https://wa.me/5492215918286"
+                    href={`https://wa.me/${getWhatsAppNumberDigits()}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-white/45 transition-colors hover:text-gold-light"
                   >
-                    📱 +54 9 221 591-8286
+                    📱 {getWhatsAppDisplay()}
                   </a>
                 </li>
                 <li>
                   <a
-                    href="https://instagram.com/mariaemilia_estetica_"
+                    href={getInstagramUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-white/45 transition-colors hover:text-gold-light"
                   >
-                    📸 @mariaemilia_estetica_
+                    📸 {siteConfig.contact.instagramHandle}
                   </a>
                 </li>
                 <li className="pt-4">
@@ -492,8 +421,11 @@ export default async function Home() {
             </div>
           </div>
           <div className="mx-auto mt-10 flex max-w-6xl flex-col items-center justify-between gap-3 text-[0.68rem] tracking-wide text-white/25 md:flex-row">
-            <span>© {new Date().getFullYear()} María Emilia Estética. Todos los derechos reservados.</span>
-            <span>Ensenada · Bartolomé Bavio · Magdalena</span>
+            <span>
+              © {new Date().getFullYear()} {getBusinessName()}. Todos los
+              derechos reservados.
+            </span>
+            <span>{siteConfig.locationsLine}</span>
           </div>
           <div className="mx-auto mt-8 max-w-6xl border-t border-gold/10 pt-6 text-center">
             <a

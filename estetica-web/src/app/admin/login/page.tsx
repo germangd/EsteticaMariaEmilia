@@ -1,19 +1,16 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
+import { adminMetadata } from "@/config/admin-metadata";
 import {
   ADMIN_SESSION_COOKIE,
   adminAuthConfigured,
   verifySignedSessionValue,
 } from "@/lib/admin-session";
 
-export const metadata: Metadata = {
-  title: "Admin — Ingreso | María Emilia Estética",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Ingreso");
 
 export const dynamic = "force-dynamic";
 

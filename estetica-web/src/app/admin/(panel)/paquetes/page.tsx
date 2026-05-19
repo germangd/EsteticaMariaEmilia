@@ -1,14 +1,11 @@
-import type { Metadata } from "next";
 import { AdminPaquetesManager } from "@/components/admin/admin-paquetes-manager";
+import { adminMetadata } from "@/config/admin-metadata";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import { rowToServicioApi } from "@/lib/servicio-format";
 import { listarAsignacionesPaquete, listarPaquetesAdmin } from "@/lib/paquetes-repo";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
-export const metadata: Metadata = {
-  title: "Admin — Paquetes | María Emilia Estética",
-  robots: { index: false, follow: false },
-};
+export const metadata = adminMetadata("Paquetes");
 
 export const dynamic = "force-dynamic";
 

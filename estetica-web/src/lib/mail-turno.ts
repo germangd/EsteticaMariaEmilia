@@ -1,5 +1,11 @@
 import nodemailer from "nodemailer";
 import { Resend } from "resend";
+import {
+  getBusinessName,
+  getMailAccentColor,
+  getMailFooterLine,
+} from "@/config/site";
+import { siteConfig } from "@/config/site.config";
 
 export type TurnoMailPayload = {
   nombre: string;
@@ -37,6 +43,9 @@ function fechaLegible(fechaIso: string): string {
 }
 
 function htmlCliente(p: TurnoMailPayload): string {
+  const brand = escapeHtml(getBusinessName());
+  const accent = getMailAccentColor();
+  const footer = escapeHtml(getMailFooterLine());
   const nombre = escapeHtml(p.nombre);
   const servicio = escapeHtml(p.servicio);
   const sede = p.sede ? escapeHtml(p.sede) : "";
@@ -47,7 +56,7 @@ function htmlCliente(p: TurnoMailPayload): string {
   return `
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;border:1px solid #eee;border-radius:12px;overflow:hidden;">
           <div style="background:linear-gradient(135deg,#F2D9DF,#E8D9F0);padding:32px;text-align:center;">
-            <p style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#A07830;margin:0 0 8px;">María Emilia Estética</p>
+            <p style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:${accent};margin:0 0 8px;">${brand}</p>
             <h1 style="font-family:Georgia,serif;font-size:28px;font-weight:300;color:#2C2420;margin:0;">✅ ¡Turno confirmado!</h1>
           </div>
           <div style="padding:32px;">
@@ -67,12 +76,14 @@ function htmlCliente(p: TurnoMailPayload): string {
             <p style="color:#8A7A74;font-size:13px;line-height:1.7;">Para cancelar, ingresá a la web y usá la sección <strong>❌ Cancelar turno</strong> con este código.</p>
           </div>
           <div style="background:#f9f0f0;padding:20px;text-align:center;border-top:1px solid #eee;">
-            <p style="color:#aaa;font-size:11px;margin:0;">© María Emilia Estética · Ensenada · Bartolomé Bavio · Magdalena</p>
+            <p style="color:#aaa;font-size:11px;margin:0;">${footer}</p>
           </div>
         </div>`;
 }
 
 function htmlPendienteCliente(p: TurnoMailPayload): string {
+  const brand = escapeHtml(getBusinessName());
+  const accent = getMailAccentColor();
   const nombre = escapeHtml(p.nombre);
   const servicio = escapeHtml(p.servicio);
   const sede = p.sede ? escapeHtml(p.sede) : "";
@@ -88,7 +99,7 @@ function htmlPendienteCliente(p: TurnoMailPayload): string {
   return `
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;border:1px solid #eee;border-radius:12px;overflow:hidden;">
           <div style="background:linear-gradient(135deg,#F2D9DF,#E8D9F0);padding:32px;text-align:center;">
-            <p style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#A07830;margin:0 0 8px;">María Emilia Estética</p>
+            <p style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:${accent};margin:0 0 8px;">${brand}</p>
             <h1 style="font-family:Georgia,serif;font-size:26px;font-weight:300;color:#2C2420;margin:0;">Solicitud de turno recibida</h1>
           </div>
           <div style="padding:32px;">
@@ -108,6 +119,7 @@ function htmlPendienteCliente(p: TurnoMailPayload): string {
 }
 
 function htmlPendienteDuenio(p: TurnoMailPayload): string {
+  const accent = getMailAccentColor();
   const nombre = escapeHtml(p.nombre);
   const telefono = escapeHtml(p.telefono);
   const servicio = escapeHtml(p.servicio);
@@ -122,7 +134,7 @@ function htmlPendienteDuenio(p: TurnoMailPayload): string {
         : "—";
   return `
         <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:20px;">
-          <h2 style="color:#A07830;">Turno pendiente de anticipo</h2>
+          <h2 style="color:${accent};">Turno pendiente de anticipo</h2>
           <p><strong>${nombre}</strong> · ${telefono}</p>
           <p>${servicio} · ${fechaL} ${hora}</p>
           <p>Anticipo: <strong>${anticipo}</strong></p>
@@ -226,7 +238,7 @@ export function resendFromDiagnostics(): {
     return {
       set: false,
       fromOk: false,
-      hint: "Definí EMAIL_FROM (ej. María Emilia Estética <onboarding@resend.dev>).",
+      hint: `Definí EMAIL_FROM (ej. ${siteConfig.mail.emailFromExample}).`,
     };
   }
   const invalid = resendFromAddressInvalid(from);
@@ -249,7 +261,7 @@ function resolveFromAddress(): string | null {
   const from = envVar("EMAIL_FROM");
   if (from) return from;
   const user = envVar("SMTP_USER");
-  if (user) return `María Emilia Estética <${user}>`;
+  if (user) return `${getBusinessName()} <${user}>`;
   return null;
 }
 
