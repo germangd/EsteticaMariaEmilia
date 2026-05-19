@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ServicioPasosSelect,
   type ServicioPasosOpt,
@@ -81,6 +82,7 @@ export function AdminCajaNuevaVentaForm({
   pending: boolean;
   setPending: (v: boolean) => void;
 }) {
+  const router = useRouter();
   const [catalogoState, setCatalogoState] = useState(catalogo);
   const [borrador, setBorrador] = useState<LineaForm>(() => nuevaLinea());
   const [cola, setCola] = useState<LineaForm[]>([]);
@@ -368,8 +370,7 @@ export function AdminCajaNuevaVentaForm({
       setLinkAppointmentId(undefined);
       setLinkClientPackageId(undefined);
       await onVentaRegistrada?.();
-      onMensaje("Venta registrada.");
-      window.open(urlTicketVenta(data.id), "_blank", "noopener");
+      router.push(urlTicketVenta(data.id, { imprimir: true }));
     } finally {
       setPending(false);
     }

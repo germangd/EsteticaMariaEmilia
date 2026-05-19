@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { VentaDetalle } from "@/lib/caja-repo";
 import { fmtPesos } from "@/lib/fmt-pesos";
 
@@ -23,9 +24,21 @@ function fmtFecha(iso: string): string {
   });
 }
 
-export function AdminCajaTicket({ venta }: { venta: VentaDetalle }) {
+export function AdminCajaTicket({
+  venta,
+  autoPrint = false,
+}: {
+  venta: VentaDetalle;
+  autoPrint?: boolean;
+}) {
   const anulada = venta.estado === "anulada";
   const ticketNum = String(venta.numeroTicket).padStart(6, "0");
+
+  useEffect(() => {
+    if (!autoPrint) return;
+    const t = window.setTimeout(() => window.print(), 400);
+    return () => window.clearTimeout(t);
+  }, [autoPrint]);
 
   return (
     <div className="ticket-thermal mx-auto w-[80mm] max-w-[80mm] bg-white px-3 py-4 font-mono text-[11px] leading-snug text-black print:m-0 print:w-[80mm] print:max-w-[80mm] print:p-0">
