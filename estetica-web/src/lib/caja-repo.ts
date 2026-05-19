@@ -1,4 +1,5 @@
 import { and, desc, eq, ilike, max, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/db/client";
 import {
   appointments,
@@ -897,7 +898,12 @@ export async function modificarVenta(
 }
 
 export type CatalogoCaja = {
-  servicios: { id: number; nombre: string; precioPesos: number }[];
+  servicios: {
+    id: number;
+    nombre: string;
+    precioPesos: number;
+    categoriaNombre: string | null;
+  }[];
   paquetes: { id: number; nombre: string; precioPesos: number }[];
 };
 
@@ -907,15 +913,19 @@ export async function obtenerCatalogoCaja(): Promise<
   const db = getDb();
   if (!db) return { ok: false, reason: "no_db" };
 
+  const categoria = alias(services, "categoria_caja");
+
   const servs = await db
     .select({
       id: services.id,
       nombre: services.nombre,
       precioPesos: services.precioPesos,
+      categoriaNombre: categoria.nombre,
     })
     .from(services)
+    .leftJoin(categoria, eq(services.parentId, categoria.id))
     .where(eq(services.esGrupo, false))
-    .orderBy(services.nombre);
+    .orderBy(categoria.nombre, services.nombre);
 
   const packs = await db
     .select({

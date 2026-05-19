@@ -1,6 +1,10 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ServicioPasosSelect,
+  type ServicioPasosOpt,
+} from "@/components/admin/servicio-pasos-select";
 import type {
   CatalogoCaja,
   PrefillCobroPaquete,
@@ -100,6 +104,17 @@ export function AdminCajaManager({
   useEffect(() => {
     setCatalogoState(catalogo);
   }, [catalogo]);
+
+  const serviciosParaPasos: ServicioPasosOpt[] = useMemo(
+    () =>
+      catalogoState.servicios.map((s) => ({
+        id: s.id,
+        nombre: s.nombre,
+        categoriaNombre: s.categoriaNombre,
+        precioPesos: s.precioPesos,
+      })),
+    [catalogoState.servicios]
+  );
 
   useEffect(() => {
     if (!initialPrefillTurno) return;
@@ -672,25 +687,25 @@ export function AdminCajaManager({
                         </select>
                       </div>
                       {l.tipo === "servicio" ? (
-                        <div>
-                          <label className={uiLabel}>Servicio</label>
-                          <select
-                            value={l.serviceId ?? ""}
-                            onChange={(e) =>
-                              onPickServicio(l.key, Number(e.target.value))
-                            }
-                            className={uiInput}
-                          >
-                            <option value="">Elegir...</option>
-                            {catalogoState.servicios.map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.nombre}
-                                {s.precioPesos > 0
-                                  ? ` (${fmtPesos(s.precioPesos)})`
-                                  : ""}
-                              </option>
-                            ))}
-                          </select>
+                        <div className="md:col-span-2 lg:col-span-2">
+                          <ServicioPasosSelect
+                            servicios={serviciosParaPasos}
+                            value={l.serviceId ? String(l.serviceId) : ""}
+                            onChange={(id) => {
+                              if (!id) {
+                                updateLinea(l.key, {
+                                  serviceId: undefined,
+                                  descripcion: "",
+                                  precioUnitarioPesos: 0,
+                                });
+                                return;
+                              }
+                              onPickServicio(l.key, Number(id));
+                            }}
+                            showPrecio
+                            selectClassName={uiInput}
+                            className="space-y-3"
+                          />
                         </div>
                       ) : l.tipo === "paquete" ? (
                         <div>

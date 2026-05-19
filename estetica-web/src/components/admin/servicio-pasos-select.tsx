@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { fmtPesos } from "@/lib/fmt-pesos";
 import { uiLabel, uiSelect } from "@/lib/ui-classes";
 
 export const SUELTOS_CATEGORIA_KEY = "__sueltos__";
@@ -10,6 +11,7 @@ export type ServicioPasosOpt = {
   nombre: string;
   categoriaNombre?: string | null;
   capacidad?: number;
+  precioPesos?: number;
 };
 
 type Props = {
@@ -19,6 +21,7 @@ type Props = {
   /** Valor del select: id del servicio o nombre. */
   valueMode?: "id" | "nombre";
   showCupo?: boolean;
+  showPrecio?: boolean;
   className?: string;
   selectClassName?: string;
   disabled?: boolean;
@@ -55,6 +58,7 @@ export function ServicioPasosSelect({
   onChange,
   valueMode = "id",
   showCupo = false,
+  showPrecio = false,
   className,
   selectClassName,
   disabled,
@@ -80,7 +84,11 @@ export function ServicioPasosSelect({
   const optLabel = (s: ServicioPasosOpt) => {
     const cupo =
       showCupo && s.capacidad != null ? ` (cupo ${s.capacidad})` : "";
-    return `${s.nombre}${cupo}`;
+    const precio =
+      showPrecio && s.precioPesos != null && s.precioPesos > 0
+        ? ` (${fmtPesos(s.precioPesos)})`
+        : "";
+    return `${s.nombre}${cupo}${precio}`;
   };
 
   useEffect(() => {
