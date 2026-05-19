@@ -445,7 +445,6 @@ export function ReservarClient() {
                   ))}
                 </select>
 
-                <label className={uiLabel}>Servicio o combo</label>
                 <ReservaCatalogoSelect
                   servicios={servicios.map((s) => ({
                     id: s.id,
@@ -462,8 +461,7 @@ export function ReservarClient() {
                   }))}
                   value={claveReserva}
                   onChange={setClaveReserva}
-                  className={`mb-4 ${uiSelect}`}
-                  required
+                  selectClassName={uiSelect}
                 />
 
                 <label className={uiLabel}>Fecha</label>
@@ -494,7 +492,7 @@ export function ReservarClient() {
                   </p>
                 ) : !claveReserva || !fecha ? (
                   <p className="mb-4 text-sm text-ink-muted">
-                    Elegí servicio o combo y fecha para ver horarios.
+                    Completá la selección y la fecha para ver horarios.
                   </p>
                 ) : horarios.length === 0 ? (
                   <p className="mb-4 text-sm text-ink-muted">
