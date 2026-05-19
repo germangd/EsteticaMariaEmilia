@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ServicioSelectOptgroups } from "@/components/admin/servicio-select-optgroups";
+import { ServicioPasosSelect } from "@/components/admin/servicio-pasos-select";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
 import { filtrarServiciosReservables } from "@/lib/servicio-tree";
 import {
@@ -25,11 +25,7 @@ export function AdminCargarTurnoForm({
 }) {
   const serviciosReservablesInit = filtrarServiciosReservables(servicios);
   const [sedeId, setSedeId] = useState(sedes[0]?.id ?? 0);
-  const [servicioId, setServicioId] = useState(
-    serviciosReservablesInit[0]?.id
-      ? String(serviciosReservablesInit[0].id)
-      : ""
-  );
+  const [servicioId, setServicioId] = useState("");
   const [fecha, setFecha] = useState(fechaDefault);
   const [hora, setHora] = useState("");
   const [horarios, setHorarios] = useState<string[]>([]);
@@ -186,13 +182,16 @@ export function AdminCargarTurnoForm({
         </select>
       </div>
       <div className="md:col-span-2">
-        <label className={uiLabel}>Servicio</label>
-        <ServicioSelectOptgroups
-          servicios={serviciosReservables}
+        <ServicioPasosSelect
+          servicios={serviciosReservables.map((s) => ({
+            id: s.id,
+            nombre: s.nombre,
+            categoriaNombre: s.categoriaNombre,
+            capacidad: s.capacidad,
+          }))}
           value={servicioId}
           onChange={setServicioId}
-          className={selectClass}
-          required
+          selectClassName={selectClass}
           valueMode="id"
           showCupo
         />
@@ -223,7 +222,7 @@ export function AdminCargarTurnoForm({
           </p>
         ) : !servicioSel || !fecha ? (
           <p className="text-sm font-medium text-ink-muted">
-            Elegí servicio y fecha.
+            Elegí categoría, servicio y fecha.
           </p>
         ) : horarios.length === 0 ? (
           <p className="text-sm font-medium text-ink-muted">
