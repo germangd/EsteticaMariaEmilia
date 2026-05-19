@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ServicioPasosSelect,
@@ -14,6 +14,11 @@ import type {
 import { METODOS_PAGO } from "@/lib/caja-repo";
 import { urlTicketVenta } from "@/lib/caja-url";
 import { fmtPesos } from "@/lib/fmt-pesos";
+import {
+  lineasColaDesdePrefillPaquete,
+  lineasColaDesdePrefillTurno,
+  mensajePrefillTurno,
+} from "@/lib/caja-prefill-form";
 import { calcularAnticipoPesos } from "@/lib/servicio-anticipo";
 import {
   uiBtnPrimary,
@@ -63,6 +68,48 @@ function etiquetaTipo(tipo: LineaForm["tipo"]): string {
   return "Otro";
 }
 
+function estadoInicialDesdePrefillTurno(
+  prefill: PrefillCobroTurno | null | undefined
+) {
+  if (!prefill || prefill.yaCobrado) {
+    return {
+      cola: [] as LineaForm[],
+      clienteNombre: "",
+      clienteTel: "",
+      linkAppointmentId: undefined as number | undefined,
+      linkClientPackageId: undefined as number | undefined,
+    };
+  }
+  return {
+    cola: lineasColaDesdePrefillTurno(prefill) as LineaForm[],
+    clienteNombre: prefill.clienteNombre,
+    clienteTel: prefill.clienteTelefono,
+    linkAppointmentId: prefill.appointmentId,
+    linkClientPackageId: undefined as number | undefined,
+  };
+}
+
+function estadoInicialDesdePrefillPaquete(
+  prefill: PrefillCobroPaquete | null | undefined
+) {
+  if (!prefill || prefill.yaCobrado) {
+    return {
+      cola: [] as LineaForm[],
+      clienteNombre: "",
+      clienteTel: "",
+      linkAppointmentId: undefined as number | undefined,
+      linkClientPackageId: undefined as number | undefined,
+    };
+  }
+  return {
+    cola: lineasColaDesdePrefillPaquete(prefill) as LineaForm[],
+    clienteNombre: prefill.clienteNombre,
+    clienteTel: prefill.clienteTelefono,
+    linkAppointmentId: undefined as number | undefined,
+    linkClientPackageId: prefill.clientPackageId,
+  };
+}
+
 export function AdminCajaNuevaVentaForm({
   sessionId,
   catalogo,
@@ -83,20 +130,31 @@ export function AdminCajaNuevaVentaForm({
   setPending: (v: boolean) => void;
 }) {
   const router = useRouter();
+  const prefillInicial = initialPrefillTurno
+    ? estadoInicialDesdePrefillTurno(initialPrefillTurno)
+    : initialPrefillPaquete
+      ? estadoInicialDesdePrefillPaquete(initialPrefillPaquete)
+      : estadoInicialDesdePrefillTurno(null);
+
+  const prefillAplicadoRef = useRef(false);
   const [catalogoState, setCatalogoState] = useState(catalogo);
   const [borrador, setBorrador] = useState<LineaForm>(() => nuevaLinea());
-  const [cola, setCola] = useState<LineaForm[]>([]);
+  const [cola, setCola] = useState<LineaForm[]>(() => prefillInicial.cola);
   const [modalCobroAbierto, setModalCobroAbierto] = useState(false);
 
-  const [clienteNombre, setClienteNombre] = useState("");
-  const [clienteTel, setClienteTel] = useState("");
+  const [clienteNombre, setClienteNombre] = useState(
+    () => prefillInicial.clienteNombre
+  );
+  const [clienteTel, setClienteTel] = useState(() => prefillInicial.clienteTel);
   const [descuento, setDescuento] = useState("0");
   const [metodoPago, setMetodoPago] = useState<string>("efectivo");
   const [notasVenta, setNotasVenta] = useState("");
-  const [linkAppointmentId, setLinkAppointmentId] = useState<number | undefined>();
+  const [linkAppointmentId, setLinkAppointmentId] = useState<
+    number | undefined
+  >(() => prefillInicial.linkAppointmentId);
   const [linkClientPackageId, setLinkClientPackageId] = useState<
     number | undefined
-  >();
+  >(() => prefillInicial.linkClientPackageId);
 
   useEffect(() => {
     setCatalogoState(catalogo);
@@ -127,62 +185,79 @@ export function AdminCajaNuevaVentaForm({
     return { porcentaje: s.anticipoPorcentaje, monto };
   }, [borrador.serviceId, borrador.tipo, catalogoState.servicios]);
 
-  useEffect(() => {
-    if (!initialPrefillTurno || initialPrefillTurno.yaCobrado) return;
-    setClienteNombre(initialPrefillTurno.clienteNombre);
-    setClienteTel(initialPrefillTurno.clienteTelefono);
-    setLinkAppointmentId(initialPrefillTurno.appointmentId);
+  function aplicarPrefillTurno(prefill: PrefillCobroTurno) {
+    if (prefill.yaCobrado) return;
+    const lineas = lineasColaDesdePrefillTurno(prefill) as LineaForm[];
+    if (lineas.length === 0) return;
+    setClienteNombre(prefill.clienteNombre);
+    setClienteTel(prefill.clienteTelefono);
+    setLinkAppointmentId(prefill.appointmentId);
     setLinkClientPackageId(undefined);
-    const importeSugerido =
-      initialPrefillTurno.pendienteAnticipo &&
-      initialPrefillTurno.anticipoSugeridoPesos > 0
-        ? initialPrefillTurno.anticipoSugeridoPesos
-        : initialPrefillTurno.precioSugeridoPesos;
-    setCola([
-      {
-        key: crypto.randomUUID(),
-        tipo: "servicio",
-        descripcion: `${initialPrefillTurno.servicioNombre} (${initialPrefillTurno.fecha} ${initialPrefillTurno.hora})`,
-        cantidad: 1,
-        precioUnitarioPesos: importeSugerido,
-        serviceId: initialPrefillTurno.serviceId ?? undefined,
-      },
-    ]);
-    const ant = initialPrefillTurno.anticipoRequerido
-      ? initialPrefillTurno.anticipoSugeridoPesos > 0
-        ? ` Anticipo configurado: ${initialPrefillTurno.anticipoPorcentaje}% (${fmtPesos(initialPrefillTurno.anticipoSugeridoPesos)}).`
-        : ` Anticipo configurado: ${initialPrefillTurno.anticipoPorcentaje}% (sin precio de referencia).`
-      : "";
-    const baseMsg = initialPrefillTurno.pendienteAnticipo
-      ? `Cobro de anticipo del turno #${initialPrefillTurno.appointmentId}: revisá el importe y confirmá. Luego confirmá el turno en Agenda.`
-      : importeSugerido > 0
-        ? `Cobro del turno #${initialPrefillTurno.appointmentId}: revisá el importe sugerido y confirmá.`
-        : `Cobro del turno #${initialPrefillTurno.appointmentId}: indicá el importe y confirmá.`;
-    onMensaje(baseMsg + ant);
-  }, [initialPrefillTurno, onMensaje]);
+    setCola(lineas);
+    onMensaje(mensajePrefillTurno(prefill));
+    prefillAplicadoRef.current = true;
+  }
+
+  function aplicarPrefillPaquete(prefill: PrefillCobroPaquete) {
+    if (prefill.yaCobrado) return;
+    const lineas = lineasColaDesdePrefillPaquete(prefill) as LineaForm[];
+    if (lineas.length === 0) return;
+    setClienteNombre(prefill.clienteNombre);
+    setClienteTel(prefill.clienteTelefono);
+    setLinkAppointmentId(undefined);
+    setLinkClientPackageId(prefill.clientPackageId);
+    setCola(lineas);
+    onMensaje(
+      prefill.precioSugeridoPesos > 0
+        ? `Cobro del paquete asignado #${prefill.clientPackageId}: revisá el importe y confirmá.`
+        : `Cobro del paquete #${prefill.clientPackageId}: indicá el importe.`
+    );
+    prefillAplicadoRef.current = true;
+  }
 
   useEffect(() => {
-    if (!initialPrefillPaquete || initialPrefillPaquete.yaCobrado) return;
-    setClienteNombre(initialPrefillPaquete.clienteNombre);
-    setClienteTel(initialPrefillPaquete.clienteTelefono);
-    setLinkAppointmentId(undefined);
-    setLinkClientPackageId(initialPrefillPaquete.clientPackageId);
-    setCola([
-      {
-        key: crypto.randomUUID(),
-        tipo: "paquete",
-        descripcion: `Paquete: ${initialPrefillPaquete.paqueteNombre} (desde ${initialPrefillPaquete.fechaCompra})`,
-        cantidad: 1,
-        precioUnitarioPesos: initialPrefillPaquete.precioSugeridoPesos,
-        servicePackageId: initialPrefillPaquete.packageId,
-      },
-    ]);
-    onMensaje(
-      initialPrefillPaquete.precioSugeridoPesos > 0
-        ? `Cobro del paquete asignado #${initialPrefillPaquete.clientPackageId}: revisá el importe y confirmá.`
-        : `Cobro del paquete #${initialPrefillPaquete.clientPackageId}: indicá el importe.`
-    );
-  }, [initialPrefillPaquete, onMensaje]);
+    if (prefillAplicadoRef.current) return;
+    if (initialPrefillTurno && !initialPrefillTurno.yaCobrado) {
+      aplicarPrefillTurno(initialPrefillTurno);
+      return;
+    }
+    if (initialPrefillPaquete && !initialPrefillPaquete.yaCobrado) {
+      aplicarPrefillPaquete(initialPrefillPaquete);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar / cambio de prefill servidor
+  }, [initialPrefillTurno, initialPrefillPaquete]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || prefillAplicadoRef.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const turnoId = Number(params.get("turno"));
+    const paqueteId = Number(params.get("paquete"));
+
+    if (turnoId > 0 && cola.length === 0) {
+      void (async () => {
+        try {
+          const r = await fetch(
+            `/api/admin/caja/prefill-turno?appointmentId=${turnoId}`,
+            { credentials: "same-origin" }
+          );
+          const data = (await r.json()) as {
+            ok?: boolean;
+            prefill?: PrefillCobroTurno;
+          };
+          if (data.ok && data.prefill) aplicarPrefillTurno(data.prefill);
+        } catch {
+          /* ignorar */
+        }
+      })();
+      return;
+    }
+
+    if (paqueteId > 0 && cola.length === 0 && initialPrefillPaquete) {
+      aplicarPrefillPaquete(initialPrefillPaquete);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   const subtotal = useMemo(
     () => cola.reduce((s, l) => s + totalLinea(l), 0),

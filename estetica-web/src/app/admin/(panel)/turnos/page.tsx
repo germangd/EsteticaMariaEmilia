@@ -191,7 +191,7 @@ export default async function AdminTurnosPage({
       <Suspense fallback={null}>
         <AdminTurnosScrollToList />
       </Suspense>
-      <div className="mx-auto max-w-6xl px-5 md:px-8">
+      <div className="mx-auto max-w-[min(100%,88rem)] px-4 md:px-6">
         <div className="mb-8 border-b border-gold/35 pb-8">
           <p className={uiPanelKicker}>Turnos</p>
           <h1 className={uiPanelTitle}>Agenda</h1>

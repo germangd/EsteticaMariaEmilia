@@ -33,7 +33,7 @@ export function AdminTurnosPendientesTable({
         envía el aviso al cliente y lo muestra como confirmado en la agenda.
       </p>
       <div className={uiTableWrap}>
-        <table className="min-w-[780px] w-full text-left text-sm">
+        <table className="w-full table-fixed text-left text-[0.8125rem] leading-snug">
           <thead className={uiTableHead}>
             <tr>
               <th className="px-3 py-3 pl-4">Fecha</th>

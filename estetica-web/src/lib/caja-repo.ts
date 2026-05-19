@@ -60,6 +60,12 @@ export type PrefillCobroTurno = {
   anticipoSugeridoPesos: number;
   /** Turno web aún sin confirmar: sugerir cobrar solo el anticipo. */
   pendienteAnticipo: boolean;
+  /** Suma de ventas completadas vinculadas al turno. */
+  totalAbonadoPesos: number;
+  /** Precio del tratamiento menos lo ya cobrado. */
+  saldoPendientePesos: number;
+  /** Importe sugerido para la línea en caja (anticipo, saldo o total). */
+  importeCobroSugeridoPesos: number;
   yaCobrado: boolean;
   ventaId: number | null;
 };
@@ -1106,13 +1112,64 @@ export async function obtenerPrefillCobroTurno(
       anticipoPorcentaje: services.anticipoPorcentaje,
     })
     .from(services)
-    .where(eq(services.nombre, turno.servicioNombre))
+    .where(
+      sql`lower(trim(${services.nombre})) = lower(trim(${turno.servicioNombre}))`
+    )
     .limit(1);
 
-  const venta = await ventaActivaPorReferencia({ appointmentId });
+  const [abonadoRow] = await db
+    .select({ total: sum(sales.totalPesos) })
+    .from(sales)
+    .where(
+      and(
+        eq(sales.appointmentId, appointmentId),
+        eq(sales.estado, "completada")
+      )
+    );
+
+  const [ultimaVenta] = await db
+    .select({ id: sales.id })
+    .from(sales)
+    .where(
+      and(
+        eq(sales.appointmentId, appointmentId),
+        eq(sales.estado, "completada")
+      )
+    )
+    .orderBy(desc(sales.id))
+    .limit(1);
+
   const precioSugeridoPesos = svc?.precioPesos ?? 0;
   const anticipoRequerido = Boolean(svc?.anticipoRequerido);
   const anticipoPorcentaje = svc?.anticipoPorcentaje ?? 0;
+  const anticipoSugeridoPesos = calcularAnticipoPesos(
+    precioSugeridoPesos,
+    anticipoRequerido,
+    anticipoPorcentaje
+  );
+  const pendienteAnticipo =
+    turno.estado === ESTADO_TURNO.PENDIENTE_ANTICIPO;
+  const totalAbonadoPesos = pesos(abonadoRow?.total ?? 0);
+  const saldoPendientePesos = Math.max(
+    0,
+    precioSugeridoPesos - totalAbonadoPesos
+  );
+
+  let importeCobroSugeridoPesos = precioSugeridoPesos;
+  if (pendienteAnticipo) {
+    importeCobroSugeridoPesos =
+      anticipoSugeridoPesos > 0 ? anticipoSugeridoPesos : precioSugeridoPesos;
+  } else if (anticipoRequerido && totalAbonadoPesos > 0 && saldoPendientePesos > 0) {
+    importeCobroSugeridoPesos = saldoPendientePesos;
+  } else if (totalAbonadoPesos > 0 && saldoPendientePesos <= 0) {
+    importeCobroSugeridoPesos = 0;
+  }
+
+  const yaCobrado = pendienteAnticipo
+    ? totalAbonadoPesos > 0 &&
+      (anticipoSugeridoPesos <= 0 ||
+        totalAbonadoPesos >= anticipoSugeridoPesos)
+    : totalAbonadoPesos > 0 && saldoPendientePesos <= 0;
 
   return {
     appointmentId: turno.id,
@@ -1125,14 +1182,13 @@ export async function obtenerPrefillCobroTurno(
     precioSugeridoPesos,
     anticipoRequerido,
     anticipoPorcentaje,
-    anticipoSugeridoPesos: calcularAnticipoPesos(
-      precioSugeridoPesos,
-      anticipoRequerido,
-      anticipoPorcentaje
-    ),
-    pendienteAnticipo: turno.estado === ESTADO_TURNO.PENDIENTE_ANTICIPO,
-    yaCobrado: Boolean(venta),
-    ventaId: venta?.id ?? null,
+    anticipoSugeridoPesos,
+    pendienteAnticipo,
+    totalAbonadoPesos,
+    saldoPendientePesos,
+    importeCobroSugeridoPesos,
+    yaCobrado,
+    ventaId: ultimaVenta?.id ?? null,
   };
 }
 

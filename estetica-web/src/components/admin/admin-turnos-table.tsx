@@ -27,65 +27,68 @@ export function AdminTurnosTable({
     );
   }
   return (
-    <div className={uiTableWrap}>
-      <table className="min-w-[780px] w-full text-left text-sm">
+    <div className={`${uiTableWrap} -mx-1 px-1`}>
+      <table className="w-full table-fixed text-left text-[0.8125rem] leading-snug">
         <thead className={uiTableHead}>
           <tr>
-            <th className="px-3 py-3 pl-4">Fecha</th>
-            <th className="px-3 py-3">Hora</th>
-            <th className="px-3 py-3">Sede</th>
-            <th className="px-3 py-3">Servicio</th>
-            <th className="px-3 py-3">Cliente</th>
-            <th className="px-3 py-3">Teléfono</th>
-            <th className="px-3 py-3">Email</th>
-            <th className="px-3 py-3">Responsable</th>
-            <th className="px-3 py-3">Código</th>
+            <th className="w-[12%] px-2 py-2.5 pl-3">Fecha</th>
+            <th className="w-[6%] px-2 py-2.5">Hora</th>
+            <th className="w-[11%] px-2 py-2.5">Sede</th>
+            <th className="w-[14%] px-2 py-2.5">Servicio</th>
+            <th className="w-[9%] px-2 py-2.5">Cliente</th>
+            <th className="w-[10%] px-2 py-2.5">Teléfono</th>
+            <th className="w-[14%] px-2 py-2.5">Email</th>
+            <th className="w-[11%] px-2 py-2.5">Responsable</th>
+            <th className="w-[7%] px-2 py-2.5">Código</th>
             {showActions ? (
-              <th className="px-3 py-3 pr-4 text-right">Acciones</th>
+              <th className="w-[10%] px-2 py-2 pr-3 text-right">Acciones</th>
             ) : null}
           </tr>
         </thead>
         <tbody className="divide-y divide-gold/10">
           {rows.map((r) => (
             <tr key={r.id} className="font-medium text-ink hover:bg-cream/80">
-              <td className="whitespace-nowrap px-3 py-2.5 pl-4 text-ink">
+              <td className="px-2 py-2 pl-3 align-top text-ink">
                 {fmtFechaEtiqueta(r.fecha, tz)}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 font-semibold text-ink-dark">
+              <td className="whitespace-nowrap px-2 py-2 align-top font-semibold text-ink-dark">
                 {r.hora}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">
+              <td className="break-words px-2 py-2 align-top text-ink-muted">
                 {r.sedeNombre}
               </td>
               <td
-                className="max-w-[140px] truncate px-3 py-2.5"
+                className="break-words px-2 py-2 align-top"
                 title={r.servicioNombre}
               >
                 {r.servicioNombre}
               </td>
               <td
-                className="max-w-[120px] truncate px-3 py-2.5"
+                className="break-words px-2 py-2 align-top"
                 title={r.nombreCliente}
               >
                 {r.nombreCliente}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 text-ink">
+              <td className="whitespace-nowrap px-2 py-2 align-top tabular-nums text-ink">
                 {r.telefono}
               </td>
-              <td className="max-w-[160px] truncate px-3 py-2.5 text-ink">
+              <td
+                className="break-all px-2 py-2 align-top text-[0.75rem] text-ink"
+                title={r.email ?? undefined}
+              >
                 {r.email ?? "—"}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 text-ink">
+              <td className="break-words px-2 py-2 align-top text-ink">
                 {r.responsable}
               </td>
-              <td className="whitespace-nowrap px-3 py-2.5 font-mono text-xs font-semibold text-gold-dark">
+              <td className="whitespace-nowrap px-2 py-2 align-top font-mono text-[0.7rem] font-semibold text-gold-dark">
                 {r.codigoCancelacion}
               </td>
               {showActions ? (
-                <td className="px-3 py-2 pr-4 text-right whitespace-nowrap">
+                <td className="px-2 py-2 pr-3 text-right align-top whitespace-nowrap">
                   <a
                     href={urlCobrarTurno(r.id)}
-                    className="mr-3 text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark underline"
+                    className="mr-2 text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark underline"
                   >
                     Cobrar
                   </a>
