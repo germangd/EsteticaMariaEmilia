@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { uiLabel, uiSelect } from "@/lib/ui-classes";
 
 const links = [
   { href: "/admin/turnos", label: "Agenda" },
@@ -12,30 +12,37 @@ const links = [
   { href: "/admin/eventos", label: "Eventos" },
   { href: "/admin/clientes", label: "Clientes" },
   { href: "/admin/caja", label: "Caja" },
+  { href: "/admin/reportes", label: "Reportes" },
 ] as const;
+
+function hrefActivo(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function AdminNav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const current =
+    links.find((l) => hrefActivo(pathname, l.href))?.href ?? "/admin/turnos";
 
   return (
-    <nav className="flex flex-wrap gap-2 border-t border-gold/15 pt-3">
-      {links.map(({ href, label }) => {
-        const active =
-          pathname === href || pathname.startsWith(`${href}/`);
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={`rounded-sm px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-wider transition ${
-              active
-                ? "bg-gold text-white shadow-sm"
-                : "border border-gold/55 bg-white/90 text-gold-dark shadow-sm hover:border-gold hover:bg-white"
-            }`}
-          >
+    <nav className="border-t border-gold/15 pt-3">
+      <label htmlFor="admin-nav-select" className={`${uiLabel} mb-1.5`}>
+        Sección del panel
+      </label>
+      <select
+        id="admin-nav-select"
+        className={uiSelect}
+        value={current}
+        onChange={(e) => router.push(e.target.value)}
+      >
+        {links.map(({ href, label }) => (
+          <option key={href} value={href}>
             {label}
-          </Link>
-        );
-      })}
+          </option>
+        ))}
+      </select>
     </nav>
   );
 }

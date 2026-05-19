@@ -1459,3 +1459,170 @@ export async function crearVentaDesdeTurno(params: {
   }
   return { ok: false, reason: "sin_monto" };
 }
+
+export type ResumenVentasBucket = {
+  periodo: string;
+  etiqueta: string;
+  totalPesos: number;
+  cantidad: number;
+};
+
+export type ResumenVentasPeriodo = {
+  agrupacion: "dia" | "semana" | "mes";
+  fechaDesde: string;
+  fechaHasta: string;
+  buckets: ResumenVentasBucket[];
+  totalPesos: number;
+  cantidad: number;
+  anuladas: number;
+  porMetodo: ArqueoMetodo[];
+};
+
+function condicionesFechaVentasCompletadas(
+  fechaDesde?: string,
+  fechaHasta?: string
+) {
+  const parts = [eq(sales.estado, "completada")];
+  if (fechaDesde?.trim()) {
+    parts.push(sql`(${sales.createdAt}::date >= ${fechaDesde.trim()}::date)`);
+  }
+  if (fechaHasta?.trim()) {
+    parts.push(sql`(${sales.createdAt}::date <= ${fechaHasta.trim()}::date)`);
+  }
+  return and(...parts);
+}
+
+function condicionesFechaSesiones(fechaDesde?: string, fechaHasta?: string) {
+  const parts = [];
+  if (fechaDesde?.trim()) {
+    parts.push(
+      sql`(${cashSessions.openedAt}::date >= ${fechaDesde.trim()}::date)`
+    );
+  }
+  if (fechaHasta?.trim()) {
+    parts.push(
+      sql`(${cashSessions.openedAt}::date <= ${fechaHasta.trim()}::date)`
+    );
+  }
+  return parts.length > 0 ? and(...parts) : undefined;
+}
+
+export async function obtenerResumenVentasPeriodo(params: {
+  fechaDesde: string;
+  fechaHasta: string;
+  agrupacion: "dia" | "semana" | "mes";
+  etiquetaBucket: (
+    periodo: string,
+    agrupacion: "dia" | "semana" | "mes"
+  ) => string;
+}): Promise<ResumenVentasPeriodo | { ok: false; reason: "no_db" }> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+
+  const trunc =
+    params.agrupacion === "dia"
+      ? "day"
+      : params.agrupacion === "semana"
+        ? "week"
+        : "month";
+  const truncSql = sql.raw(`'${trunc}'`);
+
+  const whereVentas = condicionesFechaVentasCompletadas(
+    params.fechaDesde,
+    params.fechaHasta
+  );
+
+  const bucketRows = await db
+    .select({
+      periodo: sql<string>`date_trunc(${truncSql}, ${sales.createdAt})::date::text`,
+      totalPesos: sql<number>`coalesce(sum(${sales.totalPesos}), 0)::int`,
+      cantidad: sql<number>`count(*)::int`,
+    })
+    .from(sales)
+    .where(whereVentas)
+    .groupBy(sql`date_trunc(${truncSql}, ${sales.createdAt})`)
+    .orderBy(sql`date_trunc(${truncSql}, ${sales.createdAt})`);
+
+  const [totRow] = await db
+    .select({
+      totalPesos: sql<number>`coalesce(sum(${sales.totalPesos}), 0)::int`,
+      cantidad: sql<number>`count(*)::int`,
+    })
+    .from(sales)
+    .where(whereVentas);
+
+  const metodoRows = await db
+    .select({
+      metodoPago: sales.metodoPago,
+      totalPesos: sql<number>`coalesce(sum(${sales.totalPesos}), 0)::int`,
+      cantidad: sql<number>`count(*)::int`,
+    })
+    .from(sales)
+    .where(whereVentas)
+    .groupBy(sales.metodoPago)
+    .orderBy(sales.metodoPago);
+
+  const anuladasParts = [eq(sales.estado, "anulada")];
+  if (params.fechaDesde?.trim()) {
+    anuladasParts.push(
+      sql`(${sales.createdAt}::date >= ${params.fechaDesde.trim()}::date)`
+    );
+  }
+  if (params.fechaHasta?.trim()) {
+    anuladasParts.push(
+      sql`(${sales.createdAt}::date <= ${params.fechaHasta.trim()}::date)`
+    );
+  }
+  const [anulRow] = await db
+    .select({ c: sql<number>`count(*)::int` })
+    .from(sales)
+    .where(and(...anuladasParts));
+
+  return {
+    agrupacion: params.agrupacion,
+    fechaDesde: params.fechaDesde,
+    fechaHasta: params.fechaHasta,
+    buckets: bucketRows.map((r) => ({
+      periodo: r.periodo,
+      etiqueta: params.etiquetaBucket(r.periodo, params.agrupacion),
+      totalPesos: Number(r.totalPesos ?? 0),
+      cantidad: Number(r.cantidad ?? 0),
+    })),
+    totalPesos: Number(totRow?.totalPesos ?? 0),
+    cantidad: Number(totRow?.cantidad ?? 0),
+    anuladas: Number(anulRow?.c ?? 0),
+    porMetodo: metodoRows.map((r) => ({
+      metodoPago: r.metodoPago,
+      totalPesos: Number(r.totalPesos ?? 0),
+      cantidad: Number(r.cantidad ?? 0),
+    })),
+  };
+}
+
+export async function listarSesionesCaja(params: {
+  fechaDesde?: string;
+  fechaHasta?: string;
+  limite?: number;
+}): Promise<SesionCaja[] | { ok: false; reason: "no_db" }> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+
+  const limite = Math.min(80, Math.max(1, Math.round(params.limite ?? 30)));
+  const whereSes = condicionesFechaSesiones(
+    params.fechaDesde,
+    params.fechaHasta
+  );
+
+  const rows = await db
+    .select()
+    .from(cashSessions)
+    .where(whereSes)
+    .orderBy(desc(cashSessions.openedAt))
+    .limit(limite);
+
+  const out: SesionCaja[] = [];
+  for (const row of rows) {
+    out.push(await buildSesionStats(row));
+  }
+  return out;
+}
