@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, max, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, max, or, sql, sum } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/db/client";
 import {
@@ -137,10 +137,22 @@ export type VentaAuditoria = {
   datosDespues: unknown | null;
 };
 
+/** Desglose de anticipo / saldo cuando la venta está vinculada a un turno con anticipo. */
+export type ResumenAnticipoTicket = {
+  servicioNombre: string;
+  precioTratamientoPesos: number;
+  anticipoPorcentaje: number;
+  anticipoReferenciaPesos: number;
+  totalAbonadoPesos: number;
+  importeEsteComprobantePesos: number;
+  saldoPendientePesos: number;
+};
+
 export type VentaDetalle = VentaResumen & {
   lineas: VentaLinea[];
   sessionOpenedAt: string;
   auditoria: VentaAuditoria[];
+  resumenAnticipo: ResumenAnticipoTicket | null;
 };
 
 export type ModificarVentaInput = {
@@ -734,6 +746,68 @@ export async function crearVenta(
   return { ok: true, id: venta.id, numero, numeroTicket };
 }
 
+async function resolverResumenAnticipoTicket(
+  db: Db,
+  appointmentId: number,
+  ventaId: number,
+  ventaEstado: string,
+  ventaTotalPesos: number
+): Promise<ResumenAnticipoTicket | null> {
+  const [turno] = await db
+    .select({
+      servicioNombre: appointments.servicioNombre,
+    })
+    .from(appointments)
+    .where(eq(appointments.id, appointmentId))
+    .limit(1);
+
+  if (!turno) return null;
+
+  const [svc] = await db
+    .select({
+      precioPesos: services.precioPesos,
+      anticipoRequerido: services.anticipoRequerido,
+      anticipoPorcentaje: services.anticipoPorcentaje,
+    })
+    .from(services)
+    .where(eq(services.nombre, turno.servicioNombre))
+    .limit(1);
+
+  const precioTratamientoPesos = svc?.precioPesos ?? 0;
+  if (!svc?.anticipoRequerido || precioTratamientoPesos <= 0) {
+    return null;
+  }
+
+  const [abonadoRow] = await db
+    .select({ total: sum(sales.totalPesos) })
+    .from(sales)
+    .where(
+      and(
+        eq(sales.appointmentId, appointmentId),
+        eq(sales.estado, "completada")
+      )
+    );
+
+  const totalAbonadoPesos = pesos(abonadoRow?.total ?? 0);
+  const anticipoPorcentaje = svc.anticipoPorcentaje ?? 0;
+  const importeEsteComprobantePesos =
+    ventaEstado === "completada" ? ventaTotalPesos : 0;
+
+  return {
+    servicioNombre: turno.servicioNombre,
+    precioTratamientoPesos,
+    anticipoPorcentaje,
+    anticipoReferenciaPesos: calcularAnticipoPesos(
+      precioTratamientoPesos,
+      true,
+      anticipoPorcentaje
+    ),
+    totalAbonadoPesos,
+    importeEsteComprobantePesos,
+    saldoPendientePesos: Math.max(0, precioTratamientoPesos - totalAbonadoPesos),
+  };
+}
+
 export async function obtenerVentaDetalle(
   id: number
 ): Promise<VentaDetalle | null | { ok: false; reason: "no_db" }> {
@@ -762,6 +836,17 @@ export async function obtenerVentaDetalle(
   const auditoria = Array.isArray(auditoriaRaw) ? auditoriaRaw : [];
 
   const s = venta.sale;
+  const resumenAnticipo =
+    s.appointmentId != null && s.appointmentId > 0
+      ? await resolverResumenAnticipoTicket(
+          db,
+          s.appointmentId,
+          s.id,
+          s.estado,
+          s.totalPesos
+        )
+      : null;
+
   return {
     ...mapSaleRow(s),
     sessionOpenedAt: venta.sessionOpenedAt.toISOString(),
@@ -774,6 +859,7 @@ export async function obtenerVentaDetalle(
       totalLineaPesos: l.totalLineaPesos,
     })),
     auditoria,
+    resumenAnticipo,
   };
 }
 

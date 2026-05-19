@@ -74,10 +74,54 @@ export function AdminCajaTicket({ venta }: { venta: VentaDetalle }) {
           <Row label="Descuento" value={`-${fmtPesos(venta.descuentoPesos)}`} />
         ) : null}
         <p className="flex justify-between border-t border-black/30 pt-1 text-[13px] font-bold">
-          <span>TOTAL</span>
+          <span>TOTAL (este comprobante)</span>
           <span>{fmtPesos(venta.totalPesos)}</span>
         </p>
       </div>
+
+      {venta.resumenAnticipo ? (
+        <div className="mt-2 space-y-0.5 border-t border-dashed border-black/40 pt-2 tabular-nums">
+          <p className="mb-1 text-center text-[9px] font-bold uppercase">
+            Reserva con anticipo
+          </p>
+          <Row
+            label="Valor del tratamiento"
+            value={fmtPesos(venta.resumenAnticipo.precioTratamientoPesos)}
+          />
+          {venta.resumenAnticipo.anticipoReferenciaPesos > 0 ? (
+            <Row
+              label={`Anticipo ref. (${venta.resumenAnticipo.anticipoPorcentaje}%)`}
+              value={fmtPesos(venta.resumenAnticipo.anticipoReferenciaPesos)}
+            />
+          ) : null}
+          <Row
+            label="Total abonado (turno)"
+            value={fmtPesos(venta.resumenAnticipo.totalAbonadoPesos)}
+            bold
+          />
+          {venta.resumenAnticipo.importeEsteComprobantePesos > 0 &&
+          venta.resumenAnticipo.importeEsteComprobantePesos !==
+            venta.resumenAnticipo.totalAbonadoPesos ? (
+            <Row
+              label="En este comprobante"
+              value={fmtPesos(venta.resumenAnticipo.importeEsteComprobantePesos)}
+            />
+          ) : null}
+          <p className="flex justify-between border-t border-black/30 pt-1 text-[12px] font-bold">
+            <span>Saldo a abonar</span>
+            <span>
+              {venta.resumenAnticipo.saldoPendientePesos > 0
+                ? fmtPesos(venta.resumenAnticipo.saldoPendientePesos)
+                : "$ 0"}
+            </span>
+          </p>
+          {venta.resumenAnticipo.saldoPendientePesos <= 0 ? (
+            <p className="text-center text-[9px] leading-tight">
+              Tratamiento abonado en su totalidad.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       {venta.notas ? (
         <p className="mt-2 text-[10px]">Notas: {venta.notas}</p>
