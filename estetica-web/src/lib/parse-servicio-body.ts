@@ -23,6 +23,8 @@ export function parseServicioBody(body: unknown): ServicioInput | null {
       : b.precio != null
         ? Number(b.precio)
         : 0;
+  const anticipoRequerido = b.anticipoRequerido === true;
+  const anticipoPorcentaje = Number(b.anticipoPorcentaje ?? 0);
 
   let parentId: number | null = null;
   if (esSub) {
@@ -49,6 +51,16 @@ export function parseServicioBody(body: unknown): ServicioInput | null {
 
   if (!Number.isFinite(duracionMin) || !Number.isFinite(capacidad)) return null;
 
+  if (anticipoRequerido) {
+    if (
+      !Number.isFinite(anticipoPorcentaje) ||
+      anticipoPorcentaje < 1 ||
+      anticipoPorcentaje > 100
+    ) {
+      return null;
+    }
+  }
+
   return {
     nombre,
     duracionMin,
@@ -59,6 +71,8 @@ export function parseServicioBody(body: unknown): ServicioInput | null {
     precioPesos: Number.isFinite(precioPesos) ? precioPesos : 0,
     parentId,
     esGrupo: false,
+    anticipoRequerido,
+    anticipoPorcentaje: anticipoRequerido ? anticipoPorcentaje : 0,
   };
 }
 

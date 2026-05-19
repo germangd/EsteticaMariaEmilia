@@ -12,6 +12,7 @@ import {
   services,
 } from "@/db/schema";
 import { normalizarTelefono } from "@/lib/clientes-repo";
+import { calcularAnticipoPesos } from "@/lib/servicio-anticipo";
 
 export const METODOS_PAGO = [
   "efectivo",
@@ -53,6 +54,9 @@ export type PrefillCobroTurno = {
   hora: string;
   serviceId: number | null;
   precioSugeridoPesos: number;
+  anticipoRequerido: boolean;
+  anticipoPorcentaje: number;
+  anticipoSugeridoPesos: number;
   yaCobrado: boolean;
   ventaId: number | null;
 };
@@ -903,6 +907,8 @@ export type CatalogoCaja = {
     nombre: string;
     precioPesos: number;
     categoriaNombre: string | null;
+    anticipoRequerido: boolean;
+    anticipoPorcentaje: number;
   }[];
   paquetes: { id: number; nombre: string; precioPesos: number }[];
 };
@@ -921,6 +927,8 @@ export async function obtenerCatalogoCaja(): Promise<
       nombre: services.nombre,
       precioPesos: services.precioPesos,
       categoriaNombre: categoria.nombre,
+      anticipoRequerido: services.anticipoRequerido,
+      anticipoPorcentaje: services.anticipoPorcentaje,
     })
     .from(services)
     .leftJoin(categoria, eq(services.parentId, categoria.id))
@@ -997,12 +1005,20 @@ export async function obtenerPrefillCobroTurno(
   if (!turno || turno.estado !== "activo") return null;
 
   const [svc] = await db
-    .select({ id: services.id, precioPesos: services.precioPesos })
+    .select({
+      id: services.id,
+      precioPesos: services.precioPesos,
+      anticipoRequerido: services.anticipoRequerido,
+      anticipoPorcentaje: services.anticipoPorcentaje,
+    })
     .from(services)
     .where(eq(services.nombre, turno.servicioNombre))
     .limit(1);
 
   const venta = await ventaActivaPorReferencia({ appointmentId });
+  const precioSugeridoPesos = svc?.precioPesos ?? 0;
+  const anticipoRequerido = Boolean(svc?.anticipoRequerido);
+  const anticipoPorcentaje = svc?.anticipoPorcentaje ?? 0;
 
   return {
     appointmentId: turno.id,
@@ -1012,7 +1028,14 @@ export async function obtenerPrefillCobroTurno(
     fecha: turno.fecha,
     hora: turno.hora,
     serviceId: svc?.id ?? null,
-    precioSugeridoPesos: svc?.precioPesos ?? 0,
+    precioSugeridoPesos,
+    anticipoRequerido,
+    anticipoPorcentaje,
+    anticipoSugeridoPesos: calcularAnticipoPesos(
+      precioSugeridoPesos,
+      anticipoRequerido,
+      anticipoPorcentaje
+    ),
     yaCobrado: Boolean(venta),
     ventaId: venta?.id ?? null,
   };

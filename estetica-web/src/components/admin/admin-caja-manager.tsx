@@ -1,10 +1,7 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ServicioPasosSelect,
-  type ServicioPasosOpt,
-} from "@/components/admin/servicio-pasos-select";
+import { useCallback, useState } from "react";
+import { AdminCajaNuevaVentaForm } from "@/components/admin/admin-caja-nueva-venta-form";
 import type {
   CatalogoCaja,
   PrefillCobroPaquete,
@@ -12,7 +9,6 @@ import type {
   SesionCaja,
   VentaResumen,
 } from "@/lib/caja-repo";
-import { METODOS_PAGO } from "@/lib/caja-repo";
 import { AdminCajaHistorial } from "@/components/admin/admin-caja-historial";
 import { urlTicketVenta } from "@/lib/caja-url";
 import { fmtPesos } from "@/lib/fmt-pesos";
@@ -26,16 +22,6 @@ import {
   uiTableWrap,
 } from "@/lib/ui-classes";
 
-type LineaForm = {
-  key: string;
-  tipo: "servicio" | "paquete" | "otro";
-  descripcion: string;
-  cantidad: number;
-  precioUnitarioPesos: number;
-  serviceId?: number;
-  servicePackageId?: number;
-};
-
 const METODO_LABEL: Record<string, string> = {
   efectivo: "Efectivo",
   transferencia: "Transferencia",
@@ -43,16 +29,6 @@ const METODO_LABEL: Record<string, string> = {
   credito: "Cr\u00e9dito",
   otro: "Otro",
 };
-
-function nuevaLinea(): LineaForm {
-  return {
-    key: crypto.randomUUID(),
-    tipo: "otro",
-    descripcion: "",
-    cantidad: 1,
-    precioUnitarioPesos: 0,
-  };
-}
 
 function fmtHora(iso: string): string {
   const d = new Date(iso);
@@ -78,107 +54,14 @@ export function AdminCajaManager({
 }) {
   const [sesion, setSesion] = useState(initialSesion);
   const [ventas, setVentas] = useState(initialVentas);
-  const [catalogoState, setCatalogoState] = useState(catalogo);
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const [aperturaMonto, setAperturaMonto] = useState("0");
   const [cierreMonto, setCierreMonto] = useState("");
-
-  const [lineas, setLineas] = useState<LineaForm[]>([nuevaLinea()]);
-  const [clienteNombre, setClienteNombre] = useState("");
-  const [clienteTel, setClienteTel] = useState("");
-  const [descuento, setDescuento] = useState("0");
-  const [metodoPago, setMetodoPago] = useState<string>("efectivo");
-  const [notasVenta, setNotasVenta] = useState("");
-  const [linkAppointmentId, setLinkAppointmentId] = useState<number | undefined>(
-    undefined
-  );
-  const [linkClientPackageId, setLinkClientPackageId] = useState<
-    number | undefined
-  >(undefined);
   const [ultimaSesionCerradaId, setUltimaSesionCerradaId] = useState<number | null>(
     null
   );
-
-  useEffect(() => {
-    setCatalogoState(catalogo);
-  }, [catalogo]);
-
-  const serviciosParaPasos: ServicioPasosOpt[] = useMemo(
-    () =>
-      catalogoState.servicios.map((s) => ({
-        id: s.id,
-        nombre: s.nombre,
-        categoriaNombre: s.categoriaNombre,
-        precioPesos: s.precioPesos,
-      })),
-    [catalogoState.servicios]
-  );
-
-  useEffect(() => {
-    if (!initialPrefillTurno) return;
-    if (initialPrefillTurno.yaCobrado) return;
-
-    setClienteNombre(initialPrefillTurno.clienteNombre);
-    setClienteTel(initialPrefillTurno.clienteTelefono);
-    setLinkAppointmentId(initialPrefillTurno.appointmentId);
-    setLinkClientPackageId(undefined);
-    setLineas([
-      {
-        key: crypto.randomUUID(),
-        tipo: "servicio",
-        descripcion: `${initialPrefillTurno.servicioNombre} (${initialPrefillTurno.fecha} ${initialPrefillTurno.hora})`,
-        cantidad: 1,
-        precioUnitarioPesos: initialPrefillTurno.precioSugeridoPesos,
-        serviceId: initialPrefillTurno.serviceId ?? undefined,
-      },
-    ]);
-    setMsg(
-      initialPrefillTurno.precioSugeridoPesos > 0
-        ? `Cobro del turno #${initialPrefillTurno.appointmentId}: revis\u00e1 el importe sugerido y confirm\u00e1.`
-        : `Cobro del turno #${initialPrefillTurno.appointmentId}: indic\u00e1 el importe y confirm\u00e1.`
-    );
-  }, [initialPrefillTurno]);
-
-  useEffect(() => {
-    if (!initialPrefillPaquete) return;
-    if (initialPrefillPaquete.yaCobrado) return;
-
-    setClienteNombre(initialPrefillPaquete.clienteNombre);
-    setClienteTel(initialPrefillPaquete.clienteTelefono);
-    setLinkAppointmentId(undefined);
-    setLinkClientPackageId(initialPrefillPaquete.clientPackageId);
-    setLineas([
-      {
-        key: crypto.randomUUID(),
-        tipo: "paquete",
-        descripcion: `Paquete: ${initialPrefillPaquete.paqueteNombre} (desde ${initialPrefillPaquete.fechaCompra})`,
-        cantidad: 1,
-        precioUnitarioPesos: initialPrefillPaquete.precioSugeridoPesos,
-        servicePackageId: initialPrefillPaquete.packageId,
-      },
-    ]);
-    setMsg(
-      initialPrefillPaquete.precioSugeridoPesos > 0
-        ? `Cobro del paquete asignado #${initialPrefillPaquete.clientPackageId}: revis\u00e1 el importe y confirm\u00e1.`
-        : `Cobro del paquete #${initialPrefillPaquete.clientPackageId}: indic\u00e1 el importe.`
-    );
-  }, [initialPrefillPaquete]);
-
-  const subtotal = useMemo(
-    () =>
-      lineas.reduce(
-        (s, l) => s + Math.max(1, l.cantidad) * Math.max(0, l.precioUnitarioPesos),
-        0
-      ),
-    [lineas]
-  );
-  const descuentoNum = Math.min(
-    subtotal,
-    Math.max(0, Math.round(Number(descuento) || 0))
-  );
-  const total = subtotal - descuentoNum;
 
   const refreshSesion = useCallback(async () => {
     const r = await fetch("/api/admin/caja/sesion", {
@@ -261,162 +144,6 @@ export function AdminCajaManager({
         setUltimaSesionCerradaId(data.sesion.id);
       }
       setMsg("Caja cerrada. Pod\u00e9s descargar el reporte de cierre.");
-    } finally {
-      setPending(false);
-    }
-  }
-
-  function updateLinea(key: string, patch: Partial<LineaForm>) {
-    setLineas((prev) =>
-      prev.map((l) => (l.key === key ? { ...l, ...patch } : l))
-    );
-  }
-
-  function onTipoChange(key: string, tipo: LineaForm["tipo"]) {
-    setLineas((prev) =>
-      prev.map((l) => {
-        if (l.key !== key) return l;
-        return {
-          ...l,
-          tipo,
-          descripcion: "",
-          precioUnitarioPesos: 0,
-          serviceId: undefined,
-          servicePackageId: undefined,
-        };
-      })
-    );
-  }
-
-  function onPickServicio(key: string, serviceId: number) {
-    const s = catalogoState.servicios.find((x) => x.id === serviceId);
-    if (!s) return;
-    updateLinea(key, {
-      serviceId,
-      servicePackageId: undefined,
-      descripcion: s.nombre,
-      precioUnitarioPesos: s.precioPesos,
-    });
-  }
-
-  function onPickPaquete(key: string, packageId: number) {
-    const p = catalogoState.paquetes.find((x) => x.id === packageId);
-    if (!p) return;
-    updateLinea(key, {
-      servicePackageId: packageId,
-      serviceId: undefined,
-      descripcion: p.nombre,
-      precioUnitarioPesos: p.precioPesos,
-    });
-  }
-
-  function precioCatalogoLinea(l: LineaForm): number | null {
-    if (l.tipo === "servicio" && l.serviceId) {
-      return catalogoState.servicios.find((s) => s.id === l.serviceId)?.precioPesos ?? null;
-    }
-    if (l.tipo === "paquete" && l.servicePackageId) {
-      return catalogoState.paquetes.find((p) => p.id === l.servicePackageId)?.precioPesos ?? null;
-    }
-    return null;
-  }
-
-  async function guardarPrecioEnCatalogo(l: LineaForm) {
-    const precio = Math.max(0, Math.round(l.precioUnitarioPesos));
-    if (l.tipo === "servicio" && l.serviceId) {
-      const r = await fetch(`/api/admin/servicios/${l.serviceId}/precio`, {
-        method: "PATCH",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ precioPesos: precio }),
-      });
-      const data = (await r.json()) as { ok?: boolean };
-      if (!r.ok || !data.ok) {
-        setMsg("No se pudo guardar el precio del servicio en el cat\u00e1logo.");
-        return;
-      }
-      setCatalogoState((c) => ({
-        ...c,
-        servicios: c.servicios.map((s) =>
-          s.id === l.serviceId ? { ...s, precioPesos: precio } : s
-        ),
-      }));
-      setMsg(`Precio del servicio actualizado a ${fmtPesos(precio)}.`);
-      return;
-    }
-    if (l.tipo === "paquete" && l.servicePackageId) {
-      const r = await fetch(`/api/admin/paquetes/${l.servicePackageId}/precio`, {
-        method: "PATCH",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ precioPesos: precio }),
-      });
-      const data = (await r.json()) as { ok?: boolean };
-      if (!r.ok || !data.ok) {
-        setMsg("No se pudo guardar el precio del paquete en el cat\u00e1logo.");
-        return;
-      }
-      setCatalogoState((c) => ({
-        ...c,
-        paquetes: c.paquetes.map((p) =>
-          p.id === l.servicePackageId ? { ...p, precioPesos: precio } : p
-        ),
-      }));
-      setMsg(`Precio del paquete actualizado a ${fmtPesos(precio)}.`);
-    }
-  }
-
-  async function onRegistrarVenta(e: React.FormEvent) {
-    e.preventDefault();
-    if (!sesion) {
-      setMsg("Abr\u00ed la caja antes de cobrar.");
-      return;
-    }
-    setPending(true);
-    setMsg(null);
-    try {
-      const r = await fetch("/api/admin/caja/ventas", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: sesion.id,
-          clienteNombre,
-          clienteTelefono: clienteTel,
-          descuentoPesos: descuentoNum,
-          metodoPago,
-          notas: notasVenta,
-          appointmentId: linkAppointmentId,
-          clientPackageId: linkClientPackageId,
-          lineas: lineas.map((l) => ({
-            tipo: l.tipo,
-            descripcion: l.descripcion,
-            cantidad: l.cantidad,
-            precioUnitarioPesos: l.precioUnitarioPesos,
-            serviceId: l.serviceId,
-            servicePackageId: l.servicePackageId,
-          })),
-        }),
-      });
-      const data = (await r.json()) as {
-        ok?: boolean;
-        mensaje?: string;
-        id?: number;
-      };
-      if (!r.ok || !data.ok || !data.id) {
-        setMsg(data.mensaje ?? "No se pudo registrar la venta.");
-        return;
-      }
-      await refreshVentas(sesion.id);
-      await refreshSesion();
-      setLineas([nuevaLinea()]);
-      setClienteNombre("");
-      setClienteTel("");
-      setDescuento("0");
-      setNotasVenta("");
-      setLinkAppointmentId(undefined);
-      setLinkClientPackageId(undefined);
-      setMsg("Venta registrada.");
-      window.open(urlTicketVenta(data.id), "_blank", "noopener");
     } finally {
       setPending(false);
     }
@@ -635,259 +362,19 @@ export function AdminCajaManager({
             <h2 className="mb-4 font-serif text-lg text-ink-dark">
               Nueva venta / cobro
             </h2>
-            {linkAppointmentId ? (
-              <p className="mb-4 text-sm font-medium text-gold-dark">
-                {`Vinculado al turno #${linkAppointmentId} de la agenda.`}
-              </p>
-            ) : null}
-            {linkClientPackageId ? (
-              <p className="mb-4 text-sm font-medium text-gold-dark">
-                {`Vinculado al paquete asignado #${linkClientPackageId}.`}
-              </p>
-            ) : null}
-            <form onSubmit={onRegistrarVenta} className="space-y-6">
-              <div className="space-y-4">
-                {lineas.map((l, idx) => (
-                  <div
-                    key={l.key}
-                    className="rounded-sm border border-gold/25 bg-white/60 p-4"
-                  >
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                        {"\u00cdtem"} {idx + 1}
-                      </span>
-                      {lineas.length > 1 ? (
-                        <button
-                          type="button"
-                          className="text-xs text-red-700 underline"
-                          onClick={() =>
-                            setLineas((p) => p.filter((x) => x.key !== l.key))
-                          }
-                        >
-                          Quitar
-                        </button>
-                      ) : null}
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-                      <div>
-                        <label className={uiLabel}>Tipo</label>
-                        <select
-                          value={l.tipo}
-                          onChange={(e) =>
-                            onTipoChange(
-                              l.key,
-                              e.target.value as LineaForm["tipo"]
-                            )
-                          }
-                          className={uiInput}
-                        >
-                          <option value="servicio">Servicio</option>
-                          <option value="paquete">Paquete</option>
-                          <option value="otro">Otro</option>
-                        </select>
-                      </div>
-                      {l.tipo === "servicio" ? (
-                        <div className="md:col-span-2 lg:col-span-2">
-                          <ServicioPasosSelect
-                            servicios={serviciosParaPasos}
-                            value={l.serviceId ? String(l.serviceId) : ""}
-                            onChange={(id) => {
-                              if (!id) {
-                                updateLinea(l.key, {
-                                  serviceId: undefined,
-                                  descripcion: "",
-                                  precioUnitarioPesos: 0,
-                                });
-                                return;
-                              }
-                              onPickServicio(l.key, Number(id));
-                            }}
-                            showPrecio
-                            selectClassName={uiInput}
-                            className="space-y-3"
-                          />
-                        </div>
-                      ) : l.tipo === "paquete" ? (
-                        <div>
-                          <label className={uiLabel}>Paquete</label>
-                          <select
-                            value={l.servicePackageId ?? ""}
-                            onChange={(e) =>
-                              onPickPaquete(l.key, Number(e.target.value))
-                            }
-                            className={uiInput}
-                          >
-                            <option value="">Elegir...</option>
-                            {catalogoState.paquetes.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.nombre} ({fmtPesos(p.precioPesos)})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      ) : (
-                        <div className="md:col-span-2">
-                          <label className={uiLabel}>Concepto</label>
-                          <input
-                            value={l.descripcion}
-                            onChange={(e) =>
-                              updateLinea(l.key, {
-                                descripcion: e.target.value,
-                              })
-                            }
-                            className={uiInput}
-                            placeholder={"Descripci\u00f3n"}
-                          />
-                        </div>
-                      )}
-                      <div>
-                        <label className={uiLabel}>Cant.</label>
-                        <input
-                          type="number"
-                          min={1}
-                          value={l.cantidad}
-                          onChange={(e) =>
-                            updateLinea(l.key, {
-                              cantidad: Number(e.target.value) || 1,
-                            })
-                          }
-                          className={uiInput}
-                        />
-                      </div>
-                      <div>
-                        <label className={uiLabel}>Precio unit. (ARS)</label>
-                        <input
-                          type="number"
-                          min={0}
-                          value={l.precioUnitarioPesos}
-                          onChange={(e) =>
-                            updateLinea(l.key, {
-                              precioUnitarioPesos: Number(e.target.value) || 0,
-                            })
-                          }
-                          className={uiInput}
-                        />
-                        {l.tipo === "servicio" || l.tipo === "paquete" ? (
-                          <p className="mt-1 text-xs text-ink-muted">
-                            {(() => {
-                              const ref = precioCatalogoLinea(l);
-                              if (ref == null) return null;
-                              if (ref === l.precioUnitarioPesos) {
-                                return ref > 0
-                                  ? "Coincide con el precio del cat\u00e1logo."
-                                  : "Sin precio en cat\u00e1logo (0).";
-                              }
-                              if (ref === 0 && l.precioUnitarioPesos > 0) {
-                                return (
-                                  <button
-                                    type="button"
-                                    disabled={pending}
-                                    className="underline"
-                                    onClick={() => void guardarPrecioEnCatalogo(l)}
-                                  >
-                                    Guardar {fmtPesos(l.precioUnitarioPesos)} como
-                                    precio del cat\u00e1logo
-                                  </button>
-                                );
-                              }
-                              return (
-                                <>
-                                  Cat\u00e1logo: {fmtPesos(ref)}.{" "}
-                                  <button
-                                    type="button"
-                                    disabled={pending}
-                                    className="underline"
-                                    onClick={() => void guardarPrecioEnCatalogo(l)}
-                                  >
-                                    Guardar {fmtPesos(l.precioUnitarioPesos)} en
-                                    cat\u00e1logo
-                                  </button>
-                                </>
-                              );
-                            })()}
-                          </p>
-                        ) : null}
-                      </div>
-                    </div>
-                    {l.tipo !== "otro" && l.descripcion ? (
-                      <p className="mt-2 text-sm text-ink-muted">{l.descripcion}</p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={() => setLineas((p) => [...p, nuevaLinea()])}
-                className={uiBtnSecondary}
-              >
-                {"+ Agregar \u00edtem"}
-              </button>
-
-              <div className="grid gap-4 border-t border-gold/20 pt-4 md:grid-cols-2">
-                <div>
-                  <label className={uiLabel}>Cliente (opcional)</label>
-                  <input
-                    value={clienteNombre}
-                    onChange={(e) => setClienteNombre(e.target.value)}
-                    className={uiInput}
-                    placeholder="Nombre"
-                  />
-                </div>
-                <div>
-                  <label className={uiLabel}>{"Tel\u00e9fono"}</label>
-                  <input
-                    value={clienteTel}
-                    onChange={(e) => setClienteTel(e.target.value)}
-                    className={uiInput}
-                    placeholder="11..."
-                  />
-                </div>
-                <div>
-                  <label className={uiLabel}>Descuento (ARS)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={descuento}
-                    onChange={(e) => setDescuento(e.target.value)}
-                    className={uiInput}
-                  />
-                </div>
-                <div>
-                  <label className={uiLabel}>Forma de pago</label>
-                  <select
-                    value={metodoPago}
-                    onChange={(e) => setMetodoPago(e.target.value)}
-                    className={uiInput}
-                  >
-                    {METODOS_PAGO.map((m) => (
-                      <option key={m} value={m}>
-                        {METODO_LABEL[m] ?? m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className={uiLabel}>Notas</label>
-                  <input
-                    value={notasVenta}
-                    onChange={(e) => setNotasVenta(e.target.value)}
-                    className={uiInput}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-4 border-t border-gold/20 pt-4">
-                <p className="text-lg font-semibold tabular-nums">
-                  Total: {fmtPesos(total)}
-                  <span className="ml-2 text-sm font-normal text-ink-muted">
-                    (subtotal {fmtPesos(subtotal)})
-                  </span>
-                </p>
-                <button type="submit" disabled={pending} className={uiBtnPrimary}>
-                  Cobrar e imprimir ticket
-                </button>
-              </div>
-            </form>
+            <AdminCajaNuevaVentaForm
+              sessionId={sesion.id}
+              catalogo={catalogo}
+              initialPrefillTurno={initialPrefillTurno}
+              initialPrefillPaquete={initialPrefillPaquete}
+              onMensaje={setMsg}
+              onVentaRegistrada={async () => {
+                await refreshVentas(sesion.id);
+                await refreshSesion();
+              }}
+              pending={pending}
+              setPending={setPending}
+            />
           </section>
 
           <section>

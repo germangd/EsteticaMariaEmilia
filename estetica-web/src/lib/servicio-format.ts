@@ -46,7 +46,14 @@ export function rowToServicioApi(row: {
   precioPesos?: number;
   parentId?: number | null;
   esGrupo?: boolean;
+  anticipoRequerido?: boolean;
+  anticipoPorcentaje?: number;
 }) {
+  const esGrupo = Boolean(row.esGrupo);
+  const anticipoRequerido = !esGrupo && Boolean(row.anticipoRequerido);
+  const anticipoPorcentaje = anticipoRequerido
+    ? Math.min(100, Math.max(1, Math.round(row.anticipoPorcentaje ?? 0)))
+    : 0;
   return {
     nombre: row.nombre.trim(),
     duracion: row.duracionMin,
@@ -56,6 +63,8 @@ export function rowToServicioApi(row: {
     horarioFin: padHoraHHmm(row.horarioFin || "18:00"),
     precioPesos: Math.max(0, Math.round(row.precioPesos ?? 0)),
     parentId: row.parentId ?? null,
-    esGrupo: Boolean(row.esGrupo),
+    esGrupo,
+    anticipoRequerido,
+    anticipoPorcentaje,
   };
 }

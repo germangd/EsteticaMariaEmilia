@@ -21,6 +21,8 @@ import {
   uiTimeSlotActive,
 } from "@/lib/ui-classes";
 import { buildWhatsAppTurnoUrl } from "@/lib/whatsapp";
+import { calcularAnticipoPesos } from "@/lib/servicio-anticipo";
+import { fmtPesos } from "@/lib/fmt-pesos";
 
 type ServicioApi = {
   id: number;
@@ -33,6 +35,9 @@ type ServicioApi = {
   parentId?: number | null;
   esGrupo?: boolean;
   categoriaNombre?: string | null;
+  anticipoRequerido?: boolean;
+  anticipoPorcentaje?: number;
+  precioPesos?: number;
 };
 
 type PaqueteApi = {
@@ -123,6 +128,22 @@ export function ReservarClient() {
       sesionesTotal: p.sesionesTotal,
     };
   }, [claveReserva, servicios, paquetes]);
+
+  const anticipoEtiqueta = useMemo(() => {
+    const parsed = parsearClaveReserva(claveReserva);
+    if (!parsed || parsed.tipo !== "servicio") return null;
+    const s = servicios.find((x) => x.nombre === parsed.nombre);
+    if (!s?.anticipoRequerido || (s.anticipoPorcentaje ?? 0) < 1) return null;
+    const monto = calcularAnticipoPesos(
+      s.precioPesos ?? 0,
+      true,
+      s.anticipoPorcentaje ?? 0
+    );
+    if (monto > 0) {
+      return `Este servicio requiere un anticipo del ${s.anticipoPorcentaje}% (${fmtPesos(monto)}). Te contactaremos para coordinar el pago.`;
+    }
+    return `Este servicio requiere un anticipo del ${s.anticipoPorcentaje}% sobre el valor del tratamiento. Te contactaremos para coordinar el pago.`;
+  }, [claveReserva, servicios]);
 
   const duracionEtiqueta = useMemo(() => {
     const min = itemSel?.duracion;
@@ -451,6 +472,9 @@ export function ReservarClient() {
                     nombre: s.nombre,
                     parentId: s.parentId ?? null,
                     categoriaNombre: s.categoriaNombre,
+                    precioPesos: s.precioPesos,
+                    anticipoRequerido: s.anticipoRequerido,
+                    anticipoPorcentaje: s.anticipoPorcentaje,
                   }))}
                   paquetes={paquetes.map((p) => ({
                     id: p.id,
@@ -480,6 +504,11 @@ export function ReservarClient() {
                   <p className={`mb-2 ${uiHint}`}>
                     Duración estimada: <strong>{duracionEtiqueta}</strong>.
                     Los turnos se ofrecen cada ese intervalo.
+                  </p>
+                ) : null}
+                {anticipoEtiqueta ? (
+                  <p className="mb-2 rounded-sm border border-gold/35 bg-cream/80 px-3 py-2 text-sm text-ink-dark">
+                    {anticipoEtiqueta}
                   </p>
                 ) : null}
                 {loadingHorarios ? (

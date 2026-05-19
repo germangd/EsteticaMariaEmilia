@@ -146,6 +146,7 @@ export function ReservaCatalogoSelect({
             onChange(nombre ? claveReservaServicio(nombre) : "")
           }
           valueMode="nombre"
+          showAnticipo
           selectClassName={selectCls}
           disabled={disabled}
         />

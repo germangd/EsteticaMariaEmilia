@@ -5,6 +5,11 @@ import { AdminServicioFechas } from "@/components/admin/admin-servicio-fechas";
 import { PrecioInlineEditor } from "@/components/admin/precio-inline-editor";
 import { ordenarServiciosArbol } from "@/lib/servicio-tree";
 import {
+  calcularAnticipoPesos,
+  etiquetaAnticipo,
+} from "@/lib/servicio-anticipo";
+import { fmtPesos } from "@/lib/fmt-pesos";
+import {
   uiBtnPrimary,
   uiBtnSecondary,
   uiCard,
@@ -25,6 +30,8 @@ export type ServicioAdmin = {
   horarioInicio: string;
   horarioFin: string;
   precioPesos: number;
+  anticipoRequerido: boolean;
+  anticipoPorcentaje: number;
   parentId: number | null;
   esGrupo: boolean;
   categoriaNombre?: string | null;
@@ -53,6 +60,8 @@ const emptyForm = (): FormState => ({
   horarioInicio: "09:00",
   horarioFin: "18:00",
   precioPesos: 0,
+  anticipoRequerido: false,
+  anticipoPorcentaje: 30,
 });
 
 export function AdminServiciosManager({
@@ -107,6 +116,8 @@ export function AdminServiciosManager({
       horarioInicio: form.horarioInicio,
       horarioFin: form.horarioFin,
       precioPesos: form.precioPesos,
+      anticipoRequerido: form.anticipoRequerido,
+      anticipoPorcentaje: form.anticipoRequerido ? form.anticipoPorcentaje : 0,
     };
 
     try {
@@ -145,6 +156,8 @@ export function AdminServiciosManager({
       horarioInicio: s.horarioInicio,
       horarioFin: s.horarioFin,
       precioPesos: s.precioPesos ?? 0,
+      anticipoRequerido: s.anticipoRequerido ?? false,
+      anticipoPorcentaje: s.anticipoPorcentaje ?? 30,
     });
     setMsg(null);
   }
@@ -336,6 +349,60 @@ export function AdminServiciosManager({
               }
             />
           </div>
+          <div className="md:col-span-2">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-dark">
+              <input
+                type="checkbox"
+                checked={form.anticipoRequerido}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    anticipoRequerido: e.target.checked,
+                  })
+                }
+                className="size-4 rounded border-gold/40"
+              />
+              Solicitar anticipo al reservar / cobrar
+            </label>
+          </div>
+          {form.anticipoRequerido ? (
+            <div>
+              <label className={uiLabel}>Anticipo (% del precio)</label>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                step={1}
+                required
+                className={inputClass}
+                value={form.anticipoPorcentaje}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    anticipoPorcentaje: Number(e.target.value) || 1,
+                  })
+                }
+              />
+              {form.precioPesos > 0 ? (
+                <p className="mt-1 text-xs text-ink-muted">
+                  Monto de referencia:{" "}
+                  {fmtPesos(
+                    calcularAnticipoPesos(
+                      form.precioPesos,
+                      true,
+                      form.anticipoPorcentaje
+                    )
+                  )}{" "}
+                  ({form.anticipoPorcentaje}% de {fmtPesos(form.precioPesos)})
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-ink-muted">
+                  Definí un precio sugerido para calcular el monto del anticipo
+                  en caja y reservas.
+                </p>
+              )}
+            </div>
+          ) : null}
           </>
           ) : null}
           <div className="flex flex-wrap gap-2 md:col-span-2">
@@ -388,6 +455,7 @@ export function AdminServiciosManager({
                   <th className="px-3 py-3">Tipo</th>
                   <th className="px-3 py-3">Duración</th>
                   <th className="px-3 py-3">Precio</th>
+                  <th className="px-3 py-3">Anticipo</th>
                   <th className="px-3 py-3">Cupo</th>
                   <th className="px-3 py-3">Responsable</th>
                   <th className="px-3 py-3">Horario</th>
@@ -428,6 +496,31 @@ export function AdminServiciosManager({
                           disabled={pending}
                           onSave={(precio) => guardarPrecio(s.id, precio)}
                         />
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-ink-muted">
+                      {s.esGrupo ? (
+                        "\u2014"
+                      ) : s.anticipoRequerido ? (
+                        <span title={etiquetaAnticipo(
+                          s.precioPesos,
+                          s.anticipoRequerido,
+                          s.anticipoPorcentaje
+                        ) ?? undefined}
+                        >
+                          {s.anticipoPorcentaje}%
+                          {(s.precioPesos ?? 0) > 0
+                            ? ` (${fmtPesos(
+                                calcularAnticipoPesos(
+                                  s.precioPesos,
+                                  true,
+                                  s.anticipoPorcentaje
+                                )
+                              )})`
+                            : ""}
+                        </span>
+                      ) : (
+                        "\u2014"
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-ink-muted">

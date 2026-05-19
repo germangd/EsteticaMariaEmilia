@@ -12,6 +12,8 @@ export type ServicioPasosOpt = {
   categoriaNombre?: string | null;
   capacidad?: number;
   precioPesos?: number;
+  anticipoRequerido?: boolean;
+  anticipoPorcentaje?: number;
 };
 
 type Props = {
@@ -22,6 +24,7 @@ type Props = {
   valueMode?: "id" | "nombre";
   showCupo?: boolean;
   showPrecio?: boolean;
+  showAnticipo?: boolean;
   className?: string;
   selectClassName?: string;
   disabled?: boolean;
@@ -59,6 +62,7 @@ export function ServicioPasosSelect({
   valueMode = "id",
   showCupo = false,
   showPrecio = false,
+  showAnticipo = false,
   className,
   selectClassName,
   disabled,
@@ -88,7 +92,11 @@ export function ServicioPasosSelect({
       showPrecio && s.precioPesos != null && s.precioPesos > 0
         ? ` (${fmtPesos(s.precioPesos)})`
         : "";
-    return `${s.nombre}${cupo}${precio}`;
+    const anticipo =
+      showAnticipo && s.anticipoRequerido && (s.anticipoPorcentaje ?? 0) > 0
+        ? ` · ant. ${s.anticipoPorcentaje}%`
+        : "";
+    return `${s.nombre}${cupo}${precio}${anticipo}`;
   };
 
   useEffect(() => {

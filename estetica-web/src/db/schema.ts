@@ -38,6 +38,10 @@ export const services = pgTable("services", {
   parentId: integer("parent_id"),
   /** true = agrupa otros servicios; no se reserva ni entra en paquetes como ítem. */
   esGrupo: boolean("es_grupo").notNull().default(false),
+  /** Si true, el servicio solicita un anticipo (% en `anticipo_porcentaje`). */
+  anticipoRequerido: boolean("anticipo_requerido").notNull().default(false),
+  /** Porcentaje del precio de referencia (1–100); 0 si no aplica. */
+  anticipoPorcentaje: integer("anticipo_porcentaje").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

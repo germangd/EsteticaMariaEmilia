@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { services, type ServiceRow } from "@/db/schema";
 import { padHoraHHmm } from "@/lib/servicio-format";
+import { normalizarAnticipoPorcentaje } from "@/lib/servicio-anticipo";
 
 export type ServicioInput = {
   nombre: string;
@@ -13,6 +14,8 @@ export type ServicioInput = {
   precioPesos?: number;
   parentId?: number | null;
   esGrupo?: boolean;
+  anticipoRequerido?: boolean;
+  anticipoPorcentaje?: number;
 };
 
 function normalizeInput(input: ServicioInput): ServicioInput {
@@ -27,6 +30,13 @@ function normalizeInput(input: ServicioInput): ServicioInput {
     precioPesos: Math.max(0, Math.round(input.precioPesos ?? 0)),
     parentId: esGrupo ? null : input.parentId ?? null,
     esGrupo,
+    anticipoRequerido: esGrupo ? false : input.anticipoRequerido === true,
+    anticipoPorcentaje: esGrupo
+      ? 0
+      : normalizarAnticipoPorcentaje(
+          input.anticipoRequerido === true,
+          input.anticipoPorcentaje ?? 0
+        ),
   };
 }
 
@@ -124,6 +134,8 @@ export async function crearServicio(
       precioPesos: data.precioPesos ?? 0,
       parentId: data.parentId,
       esGrupo: data.esGrupo ?? false,
+      anticipoRequerido: data.anticipoRequerido,
+      anticipoPorcentaje: data.anticipoPorcentaje,
     })
     .returning({ id: services.id });
 
@@ -173,6 +185,8 @@ export async function actualizarServicio(
       precioPesos: data.precioPesos ?? 0,
       parentId: data.parentId,
       esGrupo: data.esGrupo ?? false,
+      anticipoRequerido: data.anticipoRequerido,
+      anticipoPorcentaje: data.anticipoPorcentaje,
     })
     .where(eq(services.id, id))
     .returning({ id: services.id });
