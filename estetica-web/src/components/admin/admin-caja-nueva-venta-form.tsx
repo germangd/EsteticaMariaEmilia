@@ -13,6 +13,11 @@ import type {
 } from "@/lib/caja-repo";
 import { METODOS_PAGO } from "@/lib/caja-repo";
 import { urlTicketVenta } from "@/lib/caja-url";
+import {
+  alertarCajaNoAbierta,
+  esErrorCajaCerrada,
+  haySesionCajaAbierta,
+} from "@/lib/caja-sesion-client";
 import { fmtPesos } from "@/lib/fmt-pesos";
 import {
   lineasColaDesdePrefillPaquete,
@@ -396,9 +401,14 @@ export function AdminCajaNuevaVentaForm({
     onMensaje(null);
   }
 
-  function abrirModalCobro() {
+  async function abrirModalCobro() {
     if (cola.length === 0) {
       onMensaje("Agregá al menos un ítem a la venta.");
+      return;
+    }
+    const abierta = await haySesionCajaAbierta();
+    if (!abierta) {
+      alertarCajaNoAbierta();
       return;
     }
     setModalCobroAbierto(true);
@@ -438,7 +448,11 @@ export function AdminCajaNuevaVentaForm({
         id?: number;
       };
       if (!r.ok || !data.ok || !data.id) {
-        onMensaje(data.mensaje ?? "No se pudo registrar la venta.");
+        const mensaje = data.mensaje ?? "No se pudo registrar la venta.";
+        onMensaje(mensaje);
+        if (esErrorCajaCerrada(mensaje)) {
+          alertarCajaNoAbierta();
+        }
         return;
       }
       setBorrador(nuevaLinea());
@@ -723,7 +737,7 @@ export function AdminCajaNuevaVentaForm({
         <button
           type="button"
           disabled={pending || cola.length === 0}
-          onClick={abrirModalCobro}
+          onClick={() => void abrirModalCobro()}
           className={uiBtnPrimary}
         >
           Cobrar e imprimir ticket

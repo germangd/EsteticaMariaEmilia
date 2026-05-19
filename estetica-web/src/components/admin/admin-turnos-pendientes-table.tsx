@@ -2,6 +2,7 @@ import { DateTime } from "luxon";
 import type { TurnoListado } from "@/lib/turnos-repo";
 import { AdminConfirmarAnticipoButton } from "@/components/admin/admin-confirmar-anticipo-button";
 import { AdminCancelCell } from "@/components/admin/admin-cancel-cell";
+import { AdminLinkCobrarCaja } from "@/components/admin/admin-link-cobrar-caja";
 import { urlCobrarTurno } from "@/lib/caja-url";
 import { uiTableHead, uiTableWrap } from "@/lib/ui-classes";
 
@@ -70,12 +71,12 @@ export function AdminTurnosPendientesTable({
                 <td className="px-3 py-2 pr-4 text-right whitespace-nowrap">
                   <div className="flex flex-col items-end gap-1.5">
                     <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-                      <a
+                      <AdminLinkCobrarCaja
                         href={urlCobrarTurno(r.id)}
                         className="text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark underline"
                       >
                         Cobrar en caja
-                      </a>
+                      </AdminLinkCobrarCaja>
                       <AdminCancelCell codigo={r.codigoCancelacion} />
                     </div>
                     <AdminConfirmarAnticipoButton appointmentId={r.id} />

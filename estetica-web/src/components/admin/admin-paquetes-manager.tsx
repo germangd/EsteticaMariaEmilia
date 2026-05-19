@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { PrecioInlineEditor } from "@/components/admin/precio-inline-editor";
 import { ServiciosCheckboxGrupos } from "@/components/admin/servicios-checkbox-grupos";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
+import { AdminLinkCobrarCaja } from "@/components/admin/admin-link-cobrar-caja";
 import { urlCobrarPaquete, urlTicketVenta } from "@/lib/caja-url";
 import {
   uiBtnPrimary,
@@ -599,12 +600,12 @@ export function AdminPaquetesManager({
                           Ticket
                         </a>
                       ) : (
-                        <a
+                        <AdminLinkCobrarCaja
                           href={urlCobrarPaquete(a.id)}
                           className="mr-3 text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark underline"
                         >
                           Cobrar en caja
-                        </a>
+                        </AdminLinkCobrarCaja>
                       )}
                       <button
                         type="button"

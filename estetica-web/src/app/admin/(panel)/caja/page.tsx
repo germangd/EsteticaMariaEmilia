@@ -101,6 +101,10 @@ export default async function AdminCajaPage({
           catalogo={catalogo}
           initialPrefillTurno={prefillTurno}
           initialPrefillPaquete={prefillPaquete}
+          intentoCobro={
+            (Number.isFinite(turnoId) && turnoId > 0) ||
+            (Number.isFinite(paqueteId) && paqueteId > 0)
+          }
         />
       </div>
     </main>

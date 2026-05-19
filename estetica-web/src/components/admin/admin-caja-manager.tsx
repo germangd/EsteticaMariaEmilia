@@ -9,6 +9,7 @@ import type {
   SesionCaja,
   VentaResumen,
 } from "@/lib/caja-repo";
+import { AdminCajaAlertaSinSesion } from "@/components/admin/admin-caja-alerta-sin-sesion";
 import { AdminCajaHistorial } from "@/components/admin/admin-caja-historial";
 import { urlTicketVenta } from "@/lib/caja-url";
 import { fmtPesos } from "@/lib/fmt-pesos";
@@ -45,12 +46,14 @@ export function AdminCajaManager({
   catalogo,
   initialPrefillTurno,
   initialPrefillPaquete,
+  intentoCobro,
 }: {
   initialSesion: SesionCaja | null;
   initialVentas: VentaResumen[];
   catalogo: CatalogoCaja;
   initialPrefillTurno?: PrefillCobroTurno | null;
   initialPrefillPaquete?: PrefillCobroPaquete | null;
+  intentoCobro?: boolean;
 }) {
   const [sesion, setSesion] = useState(initialSesion);
   const [ventas, setVentas] = useState(initialVentas);
@@ -185,6 +188,14 @@ export function AdminCajaManager({
 
   return (
     <div className="space-y-10">
+      <AdminCajaAlertaSinSesion
+        sesionAbierta={Boolean(sesion)}
+        intentoCobro={Boolean(
+          intentoCobro ||
+            initialPrefillTurno ||
+            initialPrefillPaquete
+        )}
+      />
       {initialPrefillTurno?.yaCobrado && initialPrefillTurno.ventaId ? (
         <p className="rounded-sm border border-gold/50 bg-cream px-4 py-2 text-sm text-ink-dark">
           {"Este turno ya tiene cobro registrado. "}
@@ -217,7 +228,7 @@ export function AdminCajaManager({
         </p>
       ) : null}
 
-      <section className={uiCard}>
+      <section id="estado-caja" className={`scroll-mt-6 ${uiCard}`}>
         <h2 className="mb-4 font-serif text-lg text-ink-dark">Estado de caja</h2>
         {!sesion ? (
           <form onSubmit={onAbrirCaja} className="flex flex-wrap items-end gap-4">
