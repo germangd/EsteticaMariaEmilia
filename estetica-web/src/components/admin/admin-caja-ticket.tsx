@@ -25,7 +25,7 @@ function fmtFecha(iso: string): string {
 
 export function AdminCajaTicket({ venta }: { venta: VentaDetalle }) {
   const anulada = venta.estado === "anulada";
-  const ticketNum = `${venta.sessionId}-${String(venta.numero).padStart(4, "0")}`;
+  const ticketNum = String(venta.numeroTicket).padStart(6, "0");
 
   return (
     <div className="ticket-thermal mx-auto w-[80mm] max-w-[80mm] bg-white px-3 py-4 font-mono text-[11px] leading-snug text-black print:m-0 print:w-[80mm] print:max-w-[80mm] print:p-0">
@@ -81,6 +81,25 @@ export function AdminCajaTicket({ venta }: { venta: VentaDetalle }) {
 
       {venta.notas ? (
         <p className="mt-2 text-[10px]">Notas: {venta.notas}</p>
+      ) : null}
+
+      {venta.auditoria.length > 0 ? (
+        <div className="mt-3 border-t border-dashed border-black/30 pt-2 text-[9px]">
+          <p className="mb-1 font-bold uppercase">Registro de cambios</p>
+          {[...venta.auditoria].reverse().map((a) => (
+            <p key={a.id} className="leading-tight">
+              {fmtFecha(a.createdAt)} —{" "}
+              {a.accion === "creada"
+                ? "Alta"
+                : a.accion === "modificada"
+                  ? "Modificación"
+                  : a.accion === "anulada"
+                    ? "Anulación"
+                    : a.accion}
+              {a.detalle ? `: ${a.detalle}` : ""}
+            </p>
+          ))}
+        </div>
       ) : null}
 
       <p className="mt-3 border-t border-dashed border-black/30 pt-2 text-center text-[9px] leading-tight">

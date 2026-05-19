@@ -1,8 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ServicioPasosSelect } from "@/components/admin/servicio-pasos-select";
+import {
+  AdminTurnoCatalogoSelect,
+  type AdminTurnoSeleccion,
+} from "@/components/admin/admin-turno-catalogo-select";
+import type { PaqueteSelectOption } from "@/components/admin/servicio-select-optgroups";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
+import { claveReservaPaquete, claveReservaServicio } from "@/lib/reserva-claves";
 import { filtrarServiciosReservables } from "@/lib/servicio-tree";
 import {
   uiBtnPrimary,
@@ -16,16 +21,17 @@ import {
 
 export function AdminCargarTurnoForm({
   servicios,
+  paquetes,
   sedes,
   fechaDefault,
 }: {
   servicios: ServicioAdmin[];
+  paquetes: PaqueteSelectOption[];
   sedes: { id: number; nombre: string }[];
   fechaDefault: string;
 }) {
-  const serviciosReservablesInit = filtrarServiciosReservables(servicios);
   const [sedeId, setSedeId] = useState(sedes[0]?.id ?? 0);
-  const [servicioId, setServicioId] = useState("");
+  const [seleccion, setSeleccion] = useState<AdminTurnoSeleccion | null>(null);
   const [fecha, setFecha] = useState(fechaDefault);
   const [hora, setHora] = useState("");
   const [horarios, setHorarios] = useState<string[]>([]);
@@ -46,23 +52,54 @@ export function AdminCargarTurnoForm({
     [servicios]
   );
 
-  const servicioSel = useMemo(
-    () => serviciosReservables.find((s) => String(s.id) === servicioId),
-    [serviciosReservables, servicioId]
-  );
+  const servicioSel = useMemo(() => {
+    if (seleccion?.tipo !== "servicio") return undefined;
+    return serviciosReservables.find((s) => s.id === seleccion.servicioId);
+  }, [seleccion, serviciosReservables]);
+
+  const paqueteSel = useMemo(() => {
+    if (seleccion?.tipo !== "paquete") return undefined;
+    return paquetes.find((p) => p.id === seleccion.paqueteId);
+  }, [seleccion, paquetes]);
+
+  const claveHorarios = useMemo(() => {
+    if (seleccion?.tipo === "servicio" && servicioSel) {
+      return claveReservaServicio(servicioSel.nombre);
+    }
+    if (seleccion?.tipo === "paquete") {
+      return claveReservaPaquete(seleccion.paqueteId);
+    }
+    return "";
+  }, [seleccion, servicioSel]);
+
+  const duracionMin = useMemo(() => {
+    if (seleccion?.tipo === "servicio") return servicioSel?.duracion;
+    if (seleccion?.tipo === "paquete") return paqueteSel?.duracion;
+    return undefined;
+  }, [seleccion, servicioSel, paqueteSel]);
 
   const duracionEtiqueta = useMemo(() => {
-    const min = servicioSel?.duracion;
+    const min = duracionMin;
     if (!min) return null;
-    if (min < 60) return `${min} min`;
-    const h = Math.floor(min / 60);
-    const m = min % 60;
-    return m > 0 ? `${h} h ${m} min` : `${h} h`;
-  }, [servicioSel]);
+    let base: string;
+    if (min < 60) base = `${min} min`;
+    else {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      base = m > 0 ? `${h} h ${m} min` : `${h} h`;
+    }
+    if (
+      seleccion?.tipo === "paquete" &&
+      paqueteSel &&
+      (paqueteSel.sesionesTotal ?? 0) > 1
+    ) {
+      return `${base} por sesión · paquete de ${paqueteSel.sesionesTotal} sesiones`;
+    }
+    return base;
+  }, [duracionMin, seleccion, paqueteSel]);
 
   const cargarHorarios = useCallback(async () => {
-    const nombre = servicioSel?.nombre;
-    if (!nombre || !fecha) {
+    if (!claveHorarios || !fecha) {
       setHorarios([]);
       setHora("");
       setHorariosError(null);
@@ -73,7 +110,7 @@ export function AdminCargarTurnoForm({
     setHora("");
     try {
       const q = new URLSearchParams({
-        servicio: nombre,
+        clave: claveHorarios,
         fecha,
         sedeId: String(sedeId),
       });
@@ -99,7 +136,7 @@ export function AdminCargarTurnoForm({
     } finally {
       setLoadingHorarios(false);
     }
-  }, [servicioSel?.nombre, fecha, sedeId]);
+  }, [claveHorarios, fecha, sedeId]);
 
   useEffect(() => {
     void cargarHorarios();
@@ -107,27 +144,41 @@ export function AdminCargarTurnoForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!hora) {
-      setMsg("Elegí un horario disponible.");
+    if (!hora || !seleccion) {
+      setMsg("Elegí servicio o combo y un horario disponible.");
       return;
     }
     setPending(true);
     setMsg(null);
     try {
+      const body =
+        seleccion.tipo === "paquete"
+          ? {
+              paqueteId: seleccion.paqueteId,
+              sedeId,
+              fecha,
+              hora,
+              nombre,
+              telefono,
+              email: email.trim() || undefined,
+              enviarMail,
+            }
+          : {
+              servicioId: seleccion.servicioId,
+              sedeId,
+              fecha,
+              hora,
+              nombre,
+              telefono,
+              email: email.trim() || undefined,
+              enviarMail,
+            };
+
       const r = await fetch("/api/admin/turnos/crear", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          servicioId: Number(servicioId),
-          sedeId,
-          fecha,
-          hora,
-          nombre,
-          telefono,
-          email: email.trim() || undefined,
-          enviarMail,
-        }),
+        body: JSON.stringify(body),
       });
       const data = (await r.json()) as {
         ok?: boolean;
@@ -152,12 +203,19 @@ export function AdminCargarTurnoForm({
     }
   }
 
-  if (serviciosReservables.length === 0) {
+  const tieneCatalogo =
+    serviciosReservables.length > 0 || paquetes.length > 0;
+
+  if (!tieneCatalogo) {
     return (
       <p className="text-sm font-medium text-ink">
         Primero cargá servicios en{" "}
         <a href="/admin/servicios" className="text-gold-dark underline">
           Servicios
+        </a>{" "}
+        o combos en{" "}
+        <a href="/admin/paquetes" className="text-gold-dark underline">
+          Paquetes
         </a>
         .
       </p>
@@ -182,18 +240,17 @@ export function AdminCargarTurnoForm({
         </select>
       </div>
       <div className="md:col-span-2">
-        <ServicioPasosSelect
+        <AdminTurnoCatalogoSelect
           servicios={serviciosReservables.map((s) => ({
             id: s.id,
             nombre: s.nombre,
             categoriaNombre: s.categoriaNombre,
             capacidad: s.capacidad,
           }))}
-          value={servicioId}
-          onChange={setServicioId}
+          paquetes={paquetes}
+          seleccion={seleccion}
+          onSeleccionChange={setSeleccion}
           selectClassName={selectClass}
-          valueMode="id"
-          showCupo
         />
       </div>
       <div>
@@ -210,8 +267,8 @@ export function AdminCargarTurnoForm({
         <label className={uiLabel}>Horario disponible</label>
         {duracionEtiqueta ? (
           <p className={`mb-2 ${uiHint}`}>
-            Duración: <strong>{duracionEtiqueta}</strong>. Solo se muestran
-            turnos libres según cupo y reservas ya cargadas.
+            Duración estimada: <strong>{duracionEtiqueta}</strong>. Solo se
+            muestran turnos libres según cupo y reservas ya cargadas.
           </p>
         ) : null}
         {loadingHorarios ? (
@@ -220,13 +277,13 @@ export function AdminCargarTurnoForm({
           <p className="rounded-sm bg-amber-50 px-3 py-2 text-sm text-amber-900">
             {horariosError}
           </p>
-        ) : !servicioSel || !fecha ? (
+        ) : !seleccion || !fecha ? (
           <p className="text-sm font-medium text-ink-muted">
-            Elegí categoría, servicio y fecha.
+            Elegí servicio o combo, categoría si aplica, y fecha.
           </p>
         ) : horarios.length === 0 ? (
           <p className="text-sm font-medium text-ink-muted">
-            No hay horarios libres para este servicio en esa fecha.
+            No hay horarios libres para esta combinación en esa fecha.
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -282,7 +339,7 @@ export function AdminCargarTurnoForm({
       <div className="md:col-span-2">
         <button
           type="submit"
-          disabled={pending || !hora}
+          disabled={pending || !hora || !seleccion}
           className={uiBtnPrimary}
         >
           {pending ? "Guardando…" : "Cargar turno"}

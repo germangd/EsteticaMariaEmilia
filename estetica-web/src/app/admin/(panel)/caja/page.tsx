@@ -6,10 +6,11 @@ import type { CatalogoCaja } from "@/lib/caja-repo";
 import {
   listarVentasSesion,
   obtenerCatalogoCaja,
+  obtenerPrefillCobroPaquete,
   obtenerPrefillCobroTurno,
   obtenerSesionAbierta,
 } from "@/lib/caja-repo";
-import type { PrefillCobroTurno } from "@/lib/caja-repo";
+import type { PrefillCobroPaquete, PrefillCobroTurno } from "@/lib/caja-repo";
 import { uiPanelDesc, uiPanelKicker, uiPanelTitle } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
@@ -22,10 +23,11 @@ export const dynamic = "force-dynamic";
 export default async function AdminCajaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ turno?: string }>;
+  searchParams: Promise<{ turno?: string; paquete?: string }>;
 }) {
   const sp = await searchParams;
   const turnoId = Number(sp.turno);
+  const paqueteId = Number(sp.paquete);
   const sesionRaw = await obtenerSesionAbierta();
   const catalogoRaw = await obtenerCatalogoCaja();
 
@@ -57,11 +59,23 @@ export default async function AdminCajaPage({
   const ventas = Array.isArray(ventasRaw) ? ventasRaw : [];
   const catalogo = catalogoRaw as CatalogoCaja;
 
-  let prefill: PrefillCobroTurno | null = null;
+  let prefillTurno: PrefillCobroTurno | null = null;
   if (Number.isFinite(turnoId) && turnoId > 0) {
     const prefillRaw = await obtenerPrefillCobroTurno(turnoId);
     if (prefillRaw && typeof prefillRaw === "object" && "appointmentId" in prefillRaw) {
-      prefill = prefillRaw;
+      prefillTurno = prefillRaw;
+    }
+  }
+
+  let prefillPaquete: PrefillCobroPaquete | null = null;
+  if (Number.isFinite(paqueteId) && paqueteId > 0) {
+    const prefillRaw = await obtenerPrefillCobroPaquete(paqueteId);
+    if (
+      prefillRaw &&
+      typeof prefillRaw === "object" &&
+      "clientPackageId" in prefillRaw
+    ) {
+      prefillPaquete = prefillRaw;
     }
   }
 
@@ -72,7 +86,9 @@ export default async function AdminCajaPage({
           <p className={uiPanelKicker}>{"Facturaci\u00f3n"}</p>
           <h1 className={uiPanelTitle}>Caja</h1>
           <p className={uiPanelDesc}>
-            {"Abr\u00ed el turno de caja, registr\u00e1 cobros con ticket imprimible y cerr\u00e1 al final del d\u00eda. Comprobante interno (no factura fiscal AFIP)."}
+            {
+              "Abr\u00ed el turno de caja, registr\u00e1 cobros con ticket imprimible y cerr\u00e1 al final del d\u00eda. Todas las ventas quedan guardadas en el historial. Comprobante interno (no factura fiscal AFIP)."
+            }
           </p>
         </div>
 
@@ -83,7 +99,8 @@ export default async function AdminCajaPage({
           initialSesion={sesion}
           initialVentas={ventas}
           catalogo={catalogo}
-          initialPrefill={prefill}
+          initialPrefillTurno={prefillTurno}
+          initialPrefillPaquete={prefillPaquete}
         />
       </div>
     </main>

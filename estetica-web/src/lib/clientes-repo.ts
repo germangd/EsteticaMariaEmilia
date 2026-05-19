@@ -1,10 +1,11 @@
-import { desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import type { AnyColumn } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   appointments,
   clientPackages,
   clientProfiles,
+  sales,
   servicePackages,
   type AppointmentRow,
 } from "@/db/schema";
@@ -166,9 +167,17 @@ export async function obtenerClienteDetalle(
       notas: clientPackages.notas,
       estado: clientPackages.estado,
       fechaCompra: clientPackages.fechaCompra,
+      ventaId: sales.id,
     })
     .from(clientPackages)
     .innerJoin(servicePackages, eq(clientPackages.packageId, servicePackages.id))
+    .leftJoin(
+      sales,
+      and(
+        eq(sales.clientPackageId, clientPackages.id),
+        eq(sales.estado, "completada")
+      )
+    )
     .where(telefonoCoincide(clientPackages.telefono, telefono));
 
   const paquetes = paquetesRows

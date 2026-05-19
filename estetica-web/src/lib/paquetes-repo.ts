@@ -3,6 +3,7 @@ import { getDb } from "@/db/client";
 import {
   clientPackages,
   packageServices,
+  sales,
   servicePackages,
   services,
 } from "@/db/schema";
@@ -38,6 +39,8 @@ export type AsignacionPaquete = {
   notas: string | null;
   estado: string;
   fechaCompra: string;
+  /** Venta en caja vinculada a esta asignación, si ya se cobró. */
+  ventaId: number | null;
 };
 
 function normalizePaqueteInput(input: PaqueteInput): PaqueteInput {
@@ -302,9 +305,17 @@ export async function listarAsignacionesPaquete(
       notas: clientPackages.notas,
       estado: clientPackages.estado,
       fechaCompra: clientPackages.fechaCompra,
+      ventaId: sales.id,
     })
     .from(clientPackages)
-    .innerJoin(servicePackages, eq(clientPackages.packageId, servicePackages.id));
+    .innerJoin(servicePackages, eq(clientPackages.packageId, servicePackages.id))
+    .leftJoin(
+      sales,
+      and(
+        eq(sales.clientPackageId, clientPackages.id),
+        eq(sales.estado, "completada")
+      )
+    );
 
   const rows = await (soloActivas
     ? q.where(eq(clientPackages.estado, "activo"))

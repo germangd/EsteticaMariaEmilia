@@ -1,17 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PrecioInlineEditor } from "@/components/admin/precio-inline-editor";
 import { ServiciosCheckboxGrupos } from "@/components/admin/servicios-checkbox-grupos";
 import type { ServicioAdmin } from "@/components/admin/admin-servicios-manager";
-import { METODOS_PAGO } from "@/lib/caja-repo";
-import { urlTicketVenta } from "@/lib/caja-url";
+import { urlCobrarPaquete, urlTicketVenta } from "@/lib/caja-url";
 import {
   uiBtnPrimary,
   uiCard,
   uiInput,
   uiLabel,
-  uiSelect,
   uiTableHead,
   uiTableWrap,
 } from "@/lib/ui-classes";
@@ -38,6 +36,7 @@ export type AsignacionAdmin = {
   notas: string | null;
   estado: string;
   fechaCompra: string;
+  ventaId: number | null;
 };
 
 function fmtPesos(n: number): string {
@@ -83,26 +82,12 @@ export function AdminPaquetesManager({
   const [asigNombre, setAsigNombre] = useState("");
   const [asigTel, setAsigTel] = useState("");
   const [asigFecha, setAsigFecha] = useState(hoyIso());
-  const [asigPrecio, setAsigPrecio] = useState("");
   const [asigNotas, setAsigNotas] = useState("");
-  const [asigRegistrarCaja, setAsigRegistrarCaja] = useState(true);
-  const [asigMetodoPago, setAsigMetodoPago] = useState("efectivo");
-
-  const paqueteSel = useMemo(
-    () => paquetes.find((p) => String(p.id) === asigPackageId),
-    [paquetes, asigPackageId]
-  );
 
   useEffect(() => {
     setPaquetes(initialPaquetes);
     setAsignaciones(initialAsignaciones);
   }, [initialPaquetes, initialAsignaciones]);
-
-  useEffect(() => {
-    if (paqueteSel && !asigPrecio) {
-      setAsigPrecio(String(paqueteSel.precioPesos));
-    }
-  }, [paqueteSel, asigPrecio]);
 
   const inputClass = uiInput;
 
@@ -234,34 +219,20 @@ export function AdminPaquetesManager({
           nombreCliente: asigNombre,
           telefono: asigTel,
           fechaCompra: asigFecha,
-          precioCobradoPesos: Number(asigPrecio) || undefined,
           notas: asigNotas || null,
-          registrarEnCaja: asigRegistrarCaja,
-          metodoPago: asigMetodoPago,
         }),
       });
       const data = (await r.json()) as {
         ok?: boolean;
         mensaje?: string;
-        ventaCaja?: { id: number; numero: number };
-        avisoCaja?: string;
       };
       if (!r.ok || !data.ok) {
         setMsg(data.mensaje ?? "No se pudo asignar.");
         return;
       }
-      if (data.ventaCaja?.id) {
-        window.open(urlTicketVenta(data.ventaCaja.id), "_blank", "noopener");
-        setMsg(
-          data.avisoCaja ??
-            "Paquete asignado y ticket de caja emitido."
-        );
-      } else {
-        setMsg(
-          data.avisoCaja ??
-            "Paquete asignado al cliente (control de cobro registrado)."
-        );
-      }
+      setMsg(
+        "Paquete asignado. El cobro y el ticket se registran en Admin → Caja."
+      );
       setAsigNombre("");
       setAsigTel("");
       setAsigNotas("");
@@ -488,11 +459,15 @@ export function AdminPaquetesManager({
 
       <section className={uiCard}>
         <h2 className="mb-1 font-serif text-lg font-normal text-ink-dark">
-          Vender / asignar paquete a cliente
+          Asignar paquete a cliente
         </h2>
         <p className="mb-4 text-sm text-ink-muted">
-          Registrá el cobro (control interno). Descontá una sesión cuando la
-          clienta asista.
+          Activá el combo para controlar sesiones. El cobro y el comprobante se
+          hacen en{" "}
+          <a href="/admin/caja" className="text-gold-dark underline">
+            Caja
+          </a>{" "}
+          (ítem tipo Paquete). Descontá una sesión cuando la clienta asista.
         </p>
         {paquetes.length === 0 ? (
           <p className="text-sm text-ink-muted">Creá un paquete primero.</p>
@@ -506,11 +481,7 @@ export function AdminPaquetesManager({
                 required
                 className={inputClass}
                 value={asigPackageId}
-                onChange={(e) => {
-                  setAsigPackageId(e.target.value);
-                  const p = paquetes.find((x) => String(x.id) === e.target.value);
-                  if (p) setAsigPrecio(String(p.precioPesos));
-                }}
+                onChange={(e) => setAsigPackageId(e.target.value)}
               >
                 {paquetes
                   .filter((p) => p.activo)
@@ -546,7 +517,7 @@ export function AdminPaquetesManager({
             </div>
             <div>
               <label className={uiLabel}>
-                Fecha de cobro
+                Fecha de compra / inicio
               </label>
               <input
                 type="date"
@@ -554,19 +525,6 @@ export function AdminPaquetesManager({
                 className={inputClass}
                 value={asigFecha}
                 onChange={(e) => setAsigFecha(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className={uiLabel}>
-                Monto cobrado (ARS)
-              </label>
-              <input
-                type="number"
-                min={0}
-                required
-                className={inputClass}
-                value={asigPrecio}
-                onChange={(e) => setAsigPrecio(e.target.value)}
               />
             </div>
             <div className="md:col-span-2">
@@ -579,38 +537,13 @@ export function AdminPaquetesManager({
                 onChange={(e) => setAsigNotas(e.target.value)}
               />
             </div>
-            <div>
-              <label className={uiLabel}>Forma de pago (caja)</label>
-              <select
-                className={uiSelect}
-                value={asigMetodoPago}
-                onChange={(e) => setAsigMetodoPago(e.target.value)}
-                disabled={!asigRegistrarCaja}
-              >
-                {METODOS_PAGO.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm text-ink">
-                <input
-                  type="checkbox"
-                  checked={asigRegistrarCaja}
-                  onChange={(e) => setAsigRegistrarCaja(e.target.checked)}
-                />
-                Emitir ticket en caja
-              </label>
-            </div>
             <div className="md:col-span-2">
               <button
                 type="submit"
                 disabled={pending}
                 className={uiBtnPrimary}
               >
-                Registrar venta
+                Asignar paquete
               </button>
             </div>
           </form>
@@ -631,7 +564,7 @@ export function AdminPaquetesManager({
                   <th className="px-3 py-3 pl-4">Cliente</th>
                   <th className="px-3 py-3">Paquete</th>
                   <th className="px-3 py-3">Sesiones</th>
-                  <th className="px-3 py-3">Cobrado</th>
+                  <th className="px-3 py-3">Precio ref.</th>
                   <th className="px-3 py-3">Fecha</th>
                   <th className="px-3 py-3 pr-4 text-right">Acciones</th>
                 </tr>
@@ -656,6 +589,23 @@ export function AdminPaquetesManager({
                     </td>
                     <td className="px-3 py-2.5 text-ink-muted">{a.fechaCompra}</td>
                     <td className="space-x-2 px-3 py-2 pr-4 text-right whitespace-nowrap">
+                      {a.ventaId ? (
+                        <a
+                          href={urlTicketVenta(a.ventaId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mr-3 text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark underline"
+                        >
+                          Ticket
+                        </a>
+                      ) : (
+                        <a
+                          href={urlCobrarPaquete(a.id)}
+                          className="mr-3 text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark underline"
+                        >
+                          Cobrar en caja
+                        </a>
+                      )}
                       <button
                         type="button"
                         disabled={pending || a.sesionesRestantes <= 0}

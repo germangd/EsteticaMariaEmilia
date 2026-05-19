@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   CatalogoCaja,
+  PrefillCobroPaquete,
   PrefillCobroTurno,
   SesionCaja,
   VentaResumen,
 } from "@/lib/caja-repo";
 import { METODOS_PAGO } from "@/lib/caja-repo";
+import { AdminCajaHistorial } from "@/components/admin/admin-caja-historial";
 import { urlTicketVenta } from "@/lib/caja-url";
 import { fmtPesos } from "@/lib/fmt-pesos";
 import {
@@ -61,12 +63,14 @@ export function AdminCajaManager({
   initialSesion,
   initialVentas,
   catalogo,
-  initialPrefill,
+  initialPrefillTurno,
+  initialPrefillPaquete,
 }: {
   initialSesion: SesionCaja | null;
   initialVentas: VentaResumen[];
   catalogo: CatalogoCaja;
-  initialPrefill?: PrefillCobroTurno | null;
+  initialPrefillTurno?: PrefillCobroTurno | null;
+  initialPrefillPaquete?: PrefillCobroPaquete | null;
 }) {
   const [sesion, setSesion] = useState(initialSesion);
   const [ventas, setVentas] = useState(initialVentas);
@@ -86,6 +90,9 @@ export function AdminCajaManager({
   const [linkAppointmentId, setLinkAppointmentId] = useState<number | undefined>(
     undefined
   );
+  const [linkClientPackageId, setLinkClientPackageId] = useState<
+    number | undefined
+  >(undefined);
   const [ultimaSesionCerradaId, setUltimaSesionCerradaId] = useState<number | null>(
     null
   );
@@ -95,28 +102,54 @@ export function AdminCajaManager({
   }, [catalogo]);
 
   useEffect(() => {
-    if (!initialPrefill) return;
-    if (initialPrefill.yaCobrado) return;
+    if (!initialPrefillTurno) return;
+    if (initialPrefillTurno.yaCobrado) return;
 
-    setClienteNombre(initialPrefill.clienteNombre);
-    setClienteTel(initialPrefill.clienteTelefono);
-    setLinkAppointmentId(initialPrefill.appointmentId);
+    setClienteNombre(initialPrefillTurno.clienteNombre);
+    setClienteTel(initialPrefillTurno.clienteTelefono);
+    setLinkAppointmentId(initialPrefillTurno.appointmentId);
+    setLinkClientPackageId(undefined);
     setLineas([
       {
         key: crypto.randomUUID(),
         tipo: "servicio",
-        descripcion: `${initialPrefill.servicioNombre} (${initialPrefill.fecha} ${initialPrefill.hora})`,
+        descripcion: `${initialPrefillTurno.servicioNombre} (${initialPrefillTurno.fecha} ${initialPrefillTurno.hora})`,
         cantidad: 1,
-        precioUnitarioPesos: initialPrefill.precioSugeridoPesos,
-        serviceId: initialPrefill.serviceId ?? undefined,
+        precioUnitarioPesos: initialPrefillTurno.precioSugeridoPesos,
+        serviceId: initialPrefillTurno.serviceId ?? undefined,
       },
     ]);
     setMsg(
-      initialPrefill.precioSugeridoPesos > 0
-        ? `Cobro del turno #${initialPrefill.appointmentId}: revis\u00e1 el importe sugerido y confirm\u00e1.`
-        : `Cobro del turno #${initialPrefill.appointmentId}: indic\u00e1 el importe y confirm\u00e1.`
+      initialPrefillTurno.precioSugeridoPesos > 0
+        ? `Cobro del turno #${initialPrefillTurno.appointmentId}: revis\u00e1 el importe sugerido y confirm\u00e1.`
+        : `Cobro del turno #${initialPrefillTurno.appointmentId}: indic\u00e1 el importe y confirm\u00e1.`
     );
-  }, [initialPrefill]);
+  }, [initialPrefillTurno]);
+
+  useEffect(() => {
+    if (!initialPrefillPaquete) return;
+    if (initialPrefillPaquete.yaCobrado) return;
+
+    setClienteNombre(initialPrefillPaquete.clienteNombre);
+    setClienteTel(initialPrefillPaquete.clienteTelefono);
+    setLinkAppointmentId(undefined);
+    setLinkClientPackageId(initialPrefillPaquete.clientPackageId);
+    setLineas([
+      {
+        key: crypto.randomUUID(),
+        tipo: "paquete",
+        descripcion: `Paquete: ${initialPrefillPaquete.paqueteNombre} (desde ${initialPrefillPaquete.fechaCompra})`,
+        cantidad: 1,
+        precioUnitarioPesos: initialPrefillPaquete.precioSugeridoPesos,
+        servicePackageId: initialPrefillPaquete.packageId,
+      },
+    ]);
+    setMsg(
+      initialPrefillPaquete.precioSugeridoPesos > 0
+        ? `Cobro del paquete asignado #${initialPrefillPaquete.clientPackageId}: revis\u00e1 el importe y confirm\u00e1.`
+        : `Cobro del paquete #${initialPrefillPaquete.clientPackageId}: indic\u00e1 el importe.`
+    );
+  }, [initialPrefillPaquete]);
 
   const subtotal = useMemo(
     () =>
@@ -338,6 +371,7 @@ export function AdminCajaManager({
           metodoPago,
           notas: notasVenta,
           appointmentId: linkAppointmentId,
+          clientPackageId: linkClientPackageId,
           lineas: lineas.map((l) => ({
             tipo: l.tipo,
             descripcion: l.descripcion,
@@ -365,6 +399,7 @@ export function AdminCajaManager({
       setDescuento("0");
       setNotasVenta("");
       setLinkAppointmentId(undefined);
+      setLinkClientPackageId(undefined);
       setMsg("Venta registrada.");
       window.open(urlTicketVenta(data.id), "_blank", "noopener");
     } finally {
@@ -372,14 +407,24 @@ export function AdminCajaManager({
     }
   }
 
-  async function onAnular(id: number) {
-    if (!confirm("\u00bfAnular este comprobante?")) return;
+  async function onAnular(id: number, numeroTicket: number) {
+    const motivo = window.prompt(
+      `Motivo de anulaci\u00f3n del ticket #${numeroTicket}:`,
+      ""
+    );
+    if (motivo === null) return;
+    if (!motivo.trim()) {
+      setMsg("La anulaci\u00f3n requiere un motivo.");
+      return;
+    }
     setPending(true);
     setMsg(null);
     try {
       const r = await fetch(`/api/admin/caja/ventas/${id}`, {
         method: "DELETE",
         credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ motivo }),
       });
       const data = (await r.json()) as { ok?: boolean; mensaje?: string };
       if (!r.ok || !data.ok) {
@@ -398,11 +443,24 @@ export function AdminCajaManager({
 
   return (
     <div className="space-y-10">
-      {initialPrefill?.yaCobrado && initialPrefill.ventaId ? (
+      {initialPrefillTurno?.yaCobrado && initialPrefillTurno.ventaId ? (
         <p className="rounded-sm border border-gold/50 bg-cream px-4 py-2 text-sm text-ink-dark">
           {"Este turno ya tiene cobro registrado. "}
           <a
-            href={urlTicketVenta(initialPrefill.ventaId)}
+            href={urlTicketVenta(initialPrefillTurno.ventaId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-gold-dark underline"
+          >
+            Ver ticket
+          </a>
+        </p>
+      ) : null}
+      {initialPrefillPaquete?.yaCobrado && initialPrefillPaquete.ventaId ? (
+        <p className="rounded-sm border border-gold/50 bg-cream px-4 py-2 text-sm text-ink-dark">
+          {"Este paquete ya tiene cobro registrado en caja. "}
+          <a
+            href={urlTicketVenta(initialPrefillPaquete.ventaId)}
             target="_blank"
             rel="noopener noreferrer"
             className="font-semibold text-gold-dark underline"
@@ -565,6 +623,11 @@ export function AdminCajaManager({
             {linkAppointmentId ? (
               <p className="mb-4 text-sm font-medium text-gold-dark">
                 {`Vinculado al turno #${linkAppointmentId} de la agenda.`}
+              </p>
+            ) : null}
+            {linkClientPackageId ? (
+              <p className="mb-4 text-sm font-medium text-gold-dark">
+                {`Vinculado al paquete asignado #${linkClientPackageId}.`}
               </p>
             ) : null}
             <form onSubmit={onRegistrarVenta} className="space-y-6">
@@ -823,7 +886,7 @@ export function AdminCajaManager({
                 <table className="w-full min-w-[640px] text-sm">
                   <thead>
                     <tr className={uiTableHead}>
-                      <th className="px-3 py-2 text-left">{"N\u00b0"}</th>
+                      <th className="px-3 py-2 text-left">Ticket</th>
                       <th className="px-3 py-2 text-left">Hora</th>
                       <th className="px-3 py-2 text-left">Cliente</th>
                       <th className="px-3 py-2 text-left">Pago</th>
@@ -839,8 +902,8 @@ export function AdminCajaManager({
                           v.estado === "anulada" ? "opacity-50" : ""
                         }`}
                       >
-                        <td className="px-3 py-2 font-mono text-xs">
-                          {v.numero}
+                        <td className="px-3 py-2 font-mono text-xs font-semibold">
+                          #{String(v.numeroTicket).padStart(6, "0")}
                         </td>
                         <td className="px-3 py-2">{fmtHora(v.createdAt)}</td>
                         <td className="px-3 py-2">
@@ -864,7 +927,7 @@ export function AdminCajaManager({
                           {v.estado === "completada" ? (
                             <button
                               type="button"
-                              onClick={() => onAnular(v.id)}
+                              onClick={() => onAnular(v.id, v.numeroTicket)}
                               disabled={pending}
                               className="text-red-700 underline"
                             >
@@ -885,6 +948,13 @@ export function AdminCajaManager({
           </section>
         </>
       ) : null}
+
+      <AdminCajaHistorial
+        onVentaChanged={async () => {
+          if (sesion) await refreshVentas(sesion.id);
+          await refreshSesion();
+        }}
+      />
     </div>
   );
 }

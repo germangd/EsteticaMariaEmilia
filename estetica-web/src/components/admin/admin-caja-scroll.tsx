@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-/** Al llegar desde agenda (?turno=), scroll al formulario de cobro. */
+/** Al llegar desde agenda (?turno=) o paquetes (?paquete=), scroll al cobro. */
 export function AdminCajaScrollToForm() {
   useEffect(() => {
     if (typeof window === "undefined") return;

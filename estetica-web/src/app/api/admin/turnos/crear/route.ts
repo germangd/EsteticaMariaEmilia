@@ -6,14 +6,12 @@ import {
   adminUnauthorizedResponse,
   isAdminRequest,
 } from "@/lib/admin-api-auth";
-import {
-  esFechaHoraValida,
-  getAppTimeZone,
-  normalizarHora,
-  turnoCabeEnFranjas,
-} from "@/lib/agenda";
+import { esFechaHoraValida, getAppTimeZone, normalizarHora } from "@/lib/agenda";
 import { enviarMailsTurnoConfirmado } from "@/lib/mail-turno";
-import { resolverVentanaReserva } from "@/lib/disponibilidad-repo";
+import {
+  resolverItemReserva,
+  validarReservaItem,
+} from "@/lib/reserva-catalogo";
 import { obtenerSedePorId } from "@/lib/sedes-repo";
 import { insertarTurnoSiHayCupo } from "@/lib/turnos-repo";
 
@@ -21,6 +19,7 @@ export const dynamic = "force-dynamic";
 
 type Body = {
   servicioId?: number;
+  paqueteId?: number;
   sedeId?: number;
   servicio?: string;
   fecha?: string;
@@ -33,14 +32,6 @@ type Body = {
 
 export async function POST(request: NextRequest) {
   if (!isAdminRequest(request)) return adminUnauthorizedResponse();
-
-  const db = getDb();
-  if (!db) {
-    return NextResponse.json(
-      { ok: false, mensaje: "Base de datos no configurada." },
-      { status: 503 }
-    );
-  }
 
   let body: Body;
   try {
@@ -56,6 +47,8 @@ export async function POST(request: NextRequest) {
   const telefono = body.telefono?.trim() ?? "";
   const email = body.email?.trim() || "";
   const sedeId = Number(body.sedeId);
+  const paqueteId = Number(body.paqueteId);
+  const servicioId = Number(body.servicioId);
 
   if (!fecha || !horaRaw || !nombre || !telefono || !Number.isFinite(sedeId) || sedeId < 1) {
     return NextResponse.json(
@@ -76,33 +69,35 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  let servicioRow: (typeof services.$inferSelect) | undefined;
-
-  if (body.servicioId && Number.isFinite(body.servicioId)) {
-    [servicioRow] = await db
-      .select()
-      .from(services)
-      .where(eq(services.id, body.servicioId))
-      .limit(1);
+  let item = null;
+  if (Number.isFinite(paqueteId) && paqueteId > 0) {
+    item = await resolverItemReserva({ tipo: "paquete", id: paqueteId });
+  } else if (Number.isFinite(servicioId) && servicioId > 0) {
+    const db = getDb();
+    if (db) {
+      const [row] = await db
+        .select({ nombre: services.nombre, esGrupo: services.esGrupo })
+        .from(services)
+        .where(eq(services.id, servicioId))
+        .limit(1);
+      if (row && !row.esGrupo) {
+        item = await resolverItemReserva({
+          tipo: "servicio",
+          nombre: row.nombre,
+        });
+      }
+    }
   } else {
     const nombreServ = body.servicio?.trim() ?? "";
-    if (!nombreServ) {
-      return NextResponse.json(
-        { ok: false, mensaje: "Elegí un servicio." },
-        { status: 400 }
-      );
+    if (nombreServ) {
+      item = await resolverItemReserva({ tipo: "servicio", nombre: nombreServ });
     }
-    [servicioRow] = await db
-      .select()
-      .from(services)
-      .where(eq(services.nombre, nombreServ))
-      .limit(1);
   }
 
-  if (!servicioRow) {
+  if (!item) {
     return NextResponse.json(
-      { ok: false, mensaje: "Servicio no encontrado." },
-      { status: 404 }
+      { ok: false, mensaje: "Elegí un servicio o combo válido." },
+      { status: 400 }
     );
   }
 
@@ -111,28 +106,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, mensaje: "Sede no válida." }, { status: 400 });
   }
 
-  const ventana = await resolverVentanaReserva(
-    servicioRow.id,
-    servicioRow,
-    fecha,
-    sedeId,
-    hora
-  );
-  if (!ventana || ventana.bloqueado) {
-    return NextResponse.json({
-      ok: false,
-      mensaje:
-        ventana?.bloqueado ??
-        "Esta fecha no está habilitada para este servicio.",
-    });
-  }
-
-  if (!turnoCabeEnFranjas(hora, servicioRow.duracionMin, ventana.franjas)) {
-    return NextResponse.json({
-      ok: false,
-      mensaje:
-        "Ese horario no alcanza para la duración del servicio antes del cierre.",
-    });
+  const validacion = await validarReservaItem(item, fecha, hora, sedeId);
+  if (!validacion.ok) {
+    return NextResponse.json({ ok: false, mensaje: validacion.mensaje });
   }
 
   const ins = await insertarTurnoSiHayCupo({
@@ -141,18 +117,18 @@ export async function POST(request: NextRequest) {
     nombre,
     telefono,
     email: email || null,
-    servicioNombre: servicioRow.nombre,
-    responsable: servicioRow.responsable,
+    servicioNombre: item.nombre,
+    responsable: item.responsable,
     sedeId,
-    capacidad: servicioRow.capacidad,
-    duracionMin: servicioRow.duracionMin,
+    capacidad: item.capacidad,
+    duracionMin: item.duracionMin,
   });
 
   if (ins.ok === false) {
     if (ins.reason === "cupo") {
       return NextResponse.json({
         ok: false,
-        mensaje: `No hay cupo (${servicioRow.capacidad} cliente(s) por turno en ese horario).`,
+        mensaje: `No hay cupo para ${item.nombre} a las ${hora}.`,
       });
     }
     return NextResponse.json({
@@ -167,9 +143,9 @@ export async function POST(request: NextRequest) {
         nombre,
         telefono,
         emailCliente: email || null,
-        servicio: servicioRow.nombre,
+        servicio: item.nombre,
         sede: sede.nombre,
-        responsable: servicioRow.responsable,
+        responsable: item.responsable,
         fecha,
         hora,
         codigoCancelacion: ins.codigo,
@@ -179,9 +155,10 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const tipoEtiqueta = item.tipo === "paquete" ? "Combo" : "Servicio";
   return NextResponse.json({
     ok: true,
-    mensaje: "Turno cargado.",
+    mensaje: `${tipoEtiqueta} cargado.`,
     codigo: ins.codigo,
   });
 }

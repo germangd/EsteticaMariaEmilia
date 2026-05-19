@@ -210,6 +210,8 @@ export const sales = pgTable("sales", {
     .notNull()
     .references(() => cashSessions.id),
   numero: integer("numero").notNull(),
+  /** Número de ticket global secuencial (comprobante). */
+  numeroTicket: integer("numero_ticket").notNull(),
   clienteTelefono: text("cliente_telefono"),
   clienteNombre: text("cliente_nombre"),
   subtotalPesos: integer("subtotal_pesos").notNull().default(0),
@@ -225,6 +227,21 @@ export const sales = pgTable("sales", {
     () => clientPackages.id,
     { onDelete: "set null" }
   ),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/** Historial de cambios en ventas (modificación, anulación). */
+export const saleAuditLog = pgTable("sale_audit_log", {
+  id: serial("id").primaryKey(),
+  saleId: integer("sale_id")
+    .notNull()
+    .references(() => sales.id, { onDelete: "cascade" }),
+  accion: text("accion").notNull(),
+  detalle: text("detalle"),
+  datosAntes: text("datos_antes"),
+  datosDespues: text("datos_despues"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -252,4 +269,5 @@ export const saleLines = pgTable("sale_lines", {
 export type AgendaEventRow = typeof agendaEvents.$inferSelect;
 export type CashSessionRow = typeof cashSessions.$inferSelect;
 export type SaleRow = typeof sales.$inferSelect;
+export type SaleAuditLogRow = typeof saleAuditLog.$inferSelect;
 export type SaleLineRow = typeof saleLines.$inferSelect;

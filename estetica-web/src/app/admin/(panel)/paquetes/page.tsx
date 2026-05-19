@@ -36,8 +36,8 @@ export default async function AdminPaquetesPage() {
           <h1 className={uiPanelTitle}>Paquetes</h1>
           <p className={uiPanelDesc}>
             Armá combos eligiendo sub-servicios (ej. cavado, axilas dentro de
-            Depilación). Vendelos en el salón y controlá cuántas sesiones quedan
-            por cliente.
+            Depilación). Asignálos a clientas para controlar sesiones; el cobro
+            se registra en Caja.
           </p>
         </div>
 

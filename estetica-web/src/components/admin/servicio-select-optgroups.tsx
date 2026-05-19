@@ -12,6 +12,7 @@ export type PaqueteSelectOption = {
   precioPesos?: number;
   sesionesTotal?: number;
   serviciosIncluidos?: string[];
+  duracion?: number;
 };
 
 type ServicioOption = ServicioJerarquia & {

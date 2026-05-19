@@ -13,6 +13,8 @@ import { AdminCargarTurnoForm } from "@/components/admin/admin-cargar-turno-form
 import { AdminTurnosScrollToList } from "@/components/admin/admin-turnos-scroll";
 import { AdminTurnosTable } from "@/components/admin/admin-turnos-table";
 import { rowToServicioApi } from "@/lib/servicio-format";
+import { listarPaquetesPublicos } from "@/lib/paquetes-repo";
+import { resolverItemReserva } from "@/lib/reserva-catalogo";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import { listarSedesActivas } from "@/lib/sedes-repo";
 import {
@@ -144,6 +146,29 @@ export default async function AdminTurnosPage({
       }))
     : [];
 
+  const paquetesRaw = await listarPaquetesPublicos();
+  const paquetesAdmin = Array.isArray(paquetesRaw)
+    ? (
+        await Promise.all(
+          paquetesRaw.map(async (p) => {
+            const item = await resolverItemReserva({
+              tipo: "paquete",
+              id: p.id,
+            });
+            if (!item) return null;
+            return {
+              id: p.id,
+              nombre: p.nombre,
+              precioPesos: p.precioPesos,
+              sesionesTotal: p.sesionesTotal,
+              serviciosIncluidos: p.serviciosIncluidos,
+              duracion: item.duracionMin,
+            };
+          })
+        )
+      ).filter((p): p is NonNullable<typeof p> => p != null)
+    : [];
+
   const turnos = await listarTurnosActivosFiltrados({
     fechaDesde: desde,
     fechaHasta: hasta,
@@ -173,10 +198,11 @@ export default async function AdminTurnosPage({
         <section className={`mb-10 ${uiCard}`}>
           <h2 className={uiSubsectionTitle}>Cargar turno manual</h2>
           <p className="mb-4 text-sm font-medium text-ink">
-            {"Para reservas por tel\u00e9fono o WhatsApp. Respeta el cupo configurado en cada servicio."}
+            {"Para reservas por tel\u00e9fono o WhatsApp. Eleg\u00ed combo o servicio (por categor\u00eda). Respeta el cupo y la agenda compartida entre sedes."}
           </p>
           <AdminCargarTurnoForm
             servicios={serviciosAdmin}
+            paquetes={paquetesAdmin}
             sedes={sedes}
             fechaDefault={hoy}
           />
