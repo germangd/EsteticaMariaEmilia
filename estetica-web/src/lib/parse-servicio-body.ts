@@ -77,11 +77,14 @@ export function parseServicioBody(body: unknown): ServicioInput | null {
 }
 
 export function mensajeErrorServicio(
-  reason: string | undefined
+  reason: string | undefined,
+  conflicto?: { id: number; nombre: string } | null
 ): string {
   switch (reason) {
     case "duplicado":
-      return "Ya existe un servicio con ese nombre.";
+      return conflicto
+        ? `Ya existe «${conflicto.nombre}» en esta categoría. No podés renombrar a ese nombre: editá el registro existente o eliminá el duplicado (por ejemplo el que tiene el error de tipeo).`
+        : "Ya existe un servicio con ese nombre en la misma categoría.";
     case "parent_invalido":
       return "Elegí una categoría válida (servicio tipo grupo).";
     case "tiene_hijos":

@@ -53,7 +53,11 @@ export async function PATCH(
             ? 400
             : 503;
     return NextResponse.json(
-      { ok: false, mensaje: mensajeErrorServicio(res.reason) },
+      {
+        ok: false,
+        mensaje: mensajeErrorServicio(res.reason, res.conflicto),
+        conflicto: res.conflicto ?? null,
+      },
       { status }
     );
   }

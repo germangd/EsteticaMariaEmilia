@@ -1,12 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminServicioFechas } from "@/components/admin/admin-servicio-fechas";
-import { PrecioInlineEditor } from "@/components/admin/precio-inline-editor";
-import { ordenarServiciosArbol } from "@/lib/servicio-tree";
+import { AdminServiciosCatalogo } from "@/components/admin/admin-servicios-catalogo";
+import { idsConNombreParecido } from "@/lib/servicio-duplicados";
 import {
   calcularAnticipoPesos,
-  etiquetaAnticipo,
 } from "@/lib/servicio-anticipo";
 import { fmtPesos } from "@/lib/fmt-pesos";
 import {
@@ -17,8 +16,6 @@ import {
   uiLabel,
   uiSelect,
   uiSubsectionTitle,
-  uiTableHead,
-  uiTableWrap,
 } from "@/lib/ui-classes";
 
 export type ServicioAdmin = {
@@ -73,6 +70,7 @@ export function AdminServiciosManager({
   const [form, setForm] = useState(emptyForm());
   const [editingId, setEditingId] = useState<number | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgKind, setMsgKind] = useState<"ok" | "err">("ok");
   const [pending, setPending] = useState(false);
 
   const resetForm = useCallback(() => {
@@ -89,7 +87,18 @@ export function AdminServiciosManager({
     [list]
   );
 
-  const listOrdenada = useMemo(() => ordenarServiciosArbol(list), [list]);
+  const idsParecidos = useMemo(
+    () =>
+      idsConNombreParecido(
+        list.map((s) => ({
+          id: s.id,
+          nombre: s.nombre,
+          parentId: s.parentId,
+          esGrupo: s.esGrupo,
+        }))
+      ),
+    [list]
+  );
 
   const esFormGrupo = form.tipo === "grupo";
 
@@ -106,6 +115,7 @@ export function AdminServiciosManager({
     e.preventDefault();
     setPending(true);
     setMsg(null);
+    setMsgKind("ok");
     const payload = {
       tipo: form.tipo,
       nombre: form.nombre,
@@ -131,11 +141,17 @@ export function AdminServiciosManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = (await r.json()) as { ok?: boolean; mensaje?: string };
+      const data = (await r.json()) as {
+        ok?: boolean;
+        mensaje?: string;
+        conflicto?: { id: number; nombre: string } | null;
+      };
       if (!r.ok || !data.ok) {
+        setMsgKind("err");
         setMsg(data.mensaje ?? "No se pudo guardar.");
         return;
       }
+      setMsgKind("ok");
       setMsg(editingId ? "Servicio actualizado." : "Servicio creado.");
       resetForm();
       await refresh();
@@ -160,6 +176,7 @@ export function AdminServiciosManager({
       anticipoPorcentaje: s.anticipoPorcentaje ?? 30,
     });
     setMsg(null);
+    setMsgKind("ok");
   }
 
   async function guardarPrecio(id: number, precioPesos: number): Promise<boolean> {
@@ -171,6 +188,7 @@ export function AdminServiciosManager({
     });
     const data = (await r.json()) as { ok?: boolean };
     if (!r.ok || !data.ok) {
+      setMsgKind("err");
       setMsg("No se pudo actualizar el precio.");
       return false;
     }
@@ -182,7 +200,7 @@ export function AdminServiciosManager({
   }
 
   async function onDelete(id: number, nombre: string) {
-    if (!window.confirm(`¿Eliminar el servicio "${nombre}"?`)) return;
+    if (!window.confirm(`Â¿Eliminar el servicio "${nombre}"?`)) return;
     setPending(true);
     setMsg(null);
     try {
@@ -271,7 +289,7 @@ export function AdminServiciosManager({
           <>
           <div>
             <label className={uiLabel}>
-              Duración (min)
+              DuraciÃ³n (min)
             </label>
             <input
               type="number"
@@ -397,7 +415,7 @@ export function AdminServiciosManager({
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-ink-muted">
-                  Definí un precio sugerido para calcular el monto del anticipo
+                  DefinÃ­ un precio sugerido para calcular el monto del anticipo
                   en caja y reservas.
                 </p>
               )}
@@ -416,7 +434,7 @@ export function AdminServiciosManager({
                 onClick={resetForm}
                 className={uiBtnSecondary}
               >
-                Cancelar edición
+                Cancelar ediciÃ³n
               </button>
             ) : null}
           </div>
@@ -433,131 +451,31 @@ export function AdminServiciosManager({
           </div>
         ) : null}
         {msg ? (
-          <p className="mt-3 text-sm font-medium text-ink">{msg}</p>
+          <p
+            className={`mt-3 rounded px-3 py-2 text-sm font-medium ${
+              msgKind === "err"
+                ? "border border-red-200 bg-red-50 text-red-900"
+                : "border border-emerald-200 bg-emerald-50 text-emerald-900"
+            }`}
+          >
+            {msg}
+          </p>
         ) : null}
       </section>
 
       <section>
         <h2 className="mb-4 font-serif text-xl font-semibold text-ink-dark">
-          Catálogo ({list.length})
+          CatÃ¡logo ({list.length})
         </h2>
-        {list.length === 0 ? (
-          <p className="text-sm font-medium text-ink">
-            No hay servicios. Agregá el primero arriba; aparecerán en la web de
-            reservas.
-          </p>
-        ) : (
-          <div className={uiTableWrap}>
-            <table className="min-w-[720px] w-full text-left text-sm">
-              <thead className={uiTableHead}>
-                <tr>
-                  <th className="px-3 py-3 pl-4">Servicio</th>
-                  <th className="px-3 py-3">Tipo</th>
-                  <th className="px-3 py-3">Duración</th>
-                  <th className="px-3 py-3">Precio</th>
-                  <th className="px-3 py-3">Anticipo</th>
-                  <th className="px-3 py-3">Cupo</th>
-                  <th className="px-3 py-3">Responsable</th>
-                  <th className="px-3 py-3">Horario</th>
-                  <th className="px-3 py-3 pr-4 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gold/10">
-                {listOrdenada.map((s) => (
-                  <tr key={s.id} className="hover:bg-cream/60">
-                    <td
-                      className={`px-3 py-2.5 font-medium text-ink-dark ${
-                        s.parentId ? "pl-8" : "pl-4"
-                      }`}
-                    >
-                      {s.nombre}
-                      {s.categoriaNombre ? (
-                        <span className="ml-1 text-xs font-normal text-ink-muted">
-                          ({s.categoriaNombre})
-                        </span>
-                      ) : null}
-                    </td>
-                    <td className="px-3 py-2.5 text-xs uppercase text-ink-muted">
-                      {s.esGrupo
-                        ? "Categor\u00eda"
-                        : s.parentId
-                          ? "Sub"
-                          : "Suelto"}
-                    </td>
-                    <td className="px-3 py-2.5 text-ink-muted">
-                      {s.esGrupo ? "\u2014" : `${s.duracion} min`}
-                    </td>
-                    <td className="px-3 py-2.5 text-ink-muted">
-                      {s.esGrupo ? (
-                        "\u2014"
-                      ) : (
-                        <PrecioInlineEditor
-                          value={s.precioPesos ?? 0}
-                          disabled={pending}
-                          onSave={(precio) => guardarPrecio(s.id, precio)}
-                        />
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 text-ink-muted">
-                      {s.esGrupo ? (
-                        "\u2014"
-                      ) : s.anticipoRequerido ? (
-                        <span title={etiquetaAnticipo(
-                          s.precioPesos,
-                          s.anticipoRequerido,
-                          s.anticipoPorcentaje
-                        ) ?? undefined}
-                        >
-                          {s.anticipoPorcentaje}%
-                          {(s.precioPesos ?? 0) > 0
-                            ? ` (${fmtPesos(
-                                calcularAnticipoPesos(
-                                  s.precioPesos,
-                                  true,
-                                  s.anticipoPorcentaje
-                                )
-                              )})`
-                            : ""}
-                        </span>
-                      ) : (
-                        "\u2014"
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 text-ink-muted">
-                      {s.esGrupo ? "\u2014" : s.capacidad}
-                    </td>
-                    <td className="px-3 py-2.5 text-ink-muted">
-                      {s.esGrupo ? "\u2014" : s.responsable}
-                    </td>
-                    <td className="whitespace-nowrap px-3 py-2.5 text-ink-muted">
-                      {s.esGrupo
-                        ? "\u2014"
-                        : `${s.horarioInicio} \u2013 ${s.horarioFin}`}
-                    </td>
-                    <td className="space-x-2 px-3 py-2 pr-4 text-right">
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => startEdit(s)}
-                        className="text-[0.65rem] font-medium uppercase tracking-wide text-gold-dark underline"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => void onDelete(s.id, s.nombre)}
-                        className="text-[0.65rem] font-medium uppercase tracking-wide text-red-800 underline"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <AdminServiciosCatalogo
+          list={list}
+          idsParecidos={idsParecidos}
+          editingId={editingId}
+          pending={pending}
+          onEdit={startEdit}
+          onDelete={onDelete}
+          onSavePrecio={guardarPrecio}
+        />
       </section>
     </div>
   );

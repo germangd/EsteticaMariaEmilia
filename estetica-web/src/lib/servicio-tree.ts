@@ -65,6 +65,48 @@ export function agruparServiciosParaUi<T extends ServicioJerarquia>(
   return { grupos: gruposUi, sueltos };
 }
 
+/** Catálogo admin: todas las categorías (aunque estén vacías) y sub-servicios agrupados. */
+export function agruparServiciosCatalogoAdmin<T extends ServicioJerarquia>(
+  list: T[]
+): { grupos: { grupo: T; hijos: T[] }[]; sueltos: T[] } {
+  const grupos = list.filter((s) => s.esGrupo);
+  const hijosByParent = new Map<number, T[]>();
+  const sueltos: T[] = [];
+
+  for (const s of list) {
+    if (s.esGrupo) continue;
+    if (s.parentId != null) {
+      const arr = hijosByParent.get(s.parentId) ?? [];
+      arr.push(s);
+      hijosByParent.set(s.parentId, arr);
+    } else {
+      sueltos.push(s);
+    }
+  }
+
+  const sortNombre = (a: T, b: T) =>
+    a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
+
+  const grupoIds = new Set(grupos.map((g) => g.id));
+  for (const [parentId, hijos] of hijosByParent) {
+    if (!grupoIds.has(parentId)) {
+      sueltos.push(...hijos);
+    }
+  }
+
+  const gruposUi = grupos
+    .map((g) => ({
+      grupo: g,
+      hijos: (hijosByParent.get(g.id) ?? []).sort(sortNombre),
+    }))
+    .sort((a, b) =>
+      a.grupo.nombre.localeCompare(b.grupo.nombre, "es", { sensitivity: "base" })
+    );
+
+  sueltos.sort(sortNombre);
+  return { grupos: gruposUi, sueltos };
+}
+
 /** Orden para tabla admin: categoría, luego sus hijos, luego sueltos. */
 export function ordenarServiciosArbol<T extends ServicioJerarquia>(
   list: T[]

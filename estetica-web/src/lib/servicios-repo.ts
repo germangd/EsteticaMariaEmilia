@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { services, type ServiceRow } from "@/db/schema";
+import { buscarConflictoNombre } from "@/lib/servicio-duplicados";
 import { padHoraHHmm } from "@/lib/servicio-format";
 import { normalizarAnticipoPorcentaje } from "@/lib/servicio-anticipo";
 
@@ -107,6 +108,7 @@ export async function crearServicio(
         | "invalido"
         | "parent_invalido"
         | "tiene_hijos";
+      conflicto?: { id: number; nombre: string };
     }
 > {
   const db = getDb();
@@ -116,10 +118,17 @@ export async function crearServicio(
   const val = await validarJerarquia(data);
   if (!val.ok) return { ok: false, reason: val.reason };
 
-  const todos = await db.select({ id: services.id, nombre: services.nombre }).from(services);
-  const key = data.nombre.toLowerCase();
-  if (todos.some((r) => r.nombre.trim().toLowerCase() === key)) {
-    return { ok: false, reason: "duplicado" };
+  const todos = await db
+    .select({
+      id: services.id,
+      nombre: services.nombre,
+      parentId: services.parentId,
+      esGrupo: services.esGrupo,
+    })
+    .from(services);
+  const conflicto = buscarConflictoNombre(todos, data);
+  if (conflicto) {
+    return { ok: false, reason: "duplicado", conflicto };
   }
 
   const [row] = await db
@@ -156,6 +165,7 @@ export async function actualizarServicio(
         | "invalido"
         | "parent_invalido"
         | "tiene_hijos";
+      conflicto?: { id: number; nombre: string };
     }
 > {
   const db = getDb();
@@ -167,10 +177,17 @@ export async function actualizarServicio(
   const val = await validarJerarquia(data, id);
   if (!val.ok) return { ok: false, reason: val.reason };
 
-  const todos = await db.select({ id: services.id, nombre: services.nombre }).from(services);
-  const key = data.nombre.toLowerCase();
-  if (todos.some((r) => r.id !== id && r.nombre.trim().toLowerCase() === key)) {
-    return { ok: false, reason: "duplicado" };
+  const todos = await db
+    .select({
+      id: services.id,
+      nombre: services.nombre,
+      parentId: services.parentId,
+      esGrupo: services.esGrupo,
+    })
+    .from(services);
+  const conflicto = buscarConflictoNombre(todos, data, id);
+  if (conflicto) {
+    return { ok: false, reason: "duplicado", conflicto };
   }
 
   const updated = await db
