@@ -44,11 +44,19 @@ export function agruparServiciosParaUi<T extends ServicioJerarquia>(
   const sortNombre = (a: T, b: T) =>
     a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
 
+  const grupoIds = new Set(grupos.map((g) => g.id));
+  for (const [parentId, hijos] of hijosByParent) {
+    if (!grupoIds.has(parentId)) {
+      sueltos.push(...hijos);
+    }
+  }
+
   const gruposUi = grupos
     .map((g) => ({
       grupo: { id: g.id, nombre: g.nombre },
       hijos: (hijosByParent.get(g.id) ?? []).sort(sortNombre),
     }))
+    .filter((g) => g.hijos.length > 0)
     .sort((a, b) =>
       a.grupo.nombre.localeCompare(b.grupo.nombre, "es", { sensitivity: "base" })
     );

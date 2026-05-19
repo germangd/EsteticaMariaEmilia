@@ -62,7 +62,7 @@ export function ServicioSelectOptgroups({
   const usaCategoria = reservables.some((s) => s.categoriaNombre?.trim());
   const { grupos, sueltos } = usaCategoria
     ? agruparPorCategoriaNombre(reservables)
-    : agruparServiciosParaUi(reservables);
+    : agruparServiciosParaUi(servicios);
 
   const optValue = (s: ServicioOption) =>
     valueMode === "id" ? String(s.id) : s.nombre;

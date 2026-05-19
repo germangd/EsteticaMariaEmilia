@@ -34,10 +34,17 @@ export async function GET() {
       (r): r is ServiceRow => Boolean(r.nombre?.trim()) && !r.esGrupo
     );
     const byId = new Map(
-      reservables.map((x) => [
-        x.id,
-        { id: x.id, nombre: x.nombre, parentId: x.parentId, esGrupo: x.esGrupo },
-      ])
+      rows
+        .filter((r) => Boolean(r.nombre?.trim()))
+        .map((x) => [
+          x.id,
+          {
+            id: x.id,
+            nombre: x.nombre,
+            parentId: x.parentId,
+            esGrupo: x.esGrupo,
+          },
+        ])
     );
     const list = dedupeServiciosPorNombre(
       reservables.map((r) => ({

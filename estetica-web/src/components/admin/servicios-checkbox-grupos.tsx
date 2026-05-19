@@ -26,7 +26,7 @@ export function ServiciosCheckboxGrupos({
   disabled,
 }: Props) {
   const reservables = filtrarServiciosReservables(servicios);
-  const { grupos, sueltos } = agruparServiciosParaUi(reservables);
+  const { grupos, sueltos } = agruparServiciosParaUi(servicios);
 
   const renderCheck = (s: ServicioCheck) => (
     <label
