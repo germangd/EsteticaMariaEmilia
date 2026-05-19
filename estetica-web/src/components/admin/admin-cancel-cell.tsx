@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
-export function AdminCancelCell({ codigo }: { codigo: string }) {
+export function AdminCancelCell({
+  codigo,
+  compact,
+}: {
+  codigo: string;
+  compact?: boolean;
+}) {
   const [pending, setPending] = useState(false);
 
   async function onCancel() {
@@ -33,7 +39,11 @@ export function AdminCancelCell({ codigo }: { codigo: string }) {
       type="button"
       disabled={pending}
       onClick={() => void onCancel()}
-      className="rounded-sm border border-red-300/80 bg-white px-2 py-1 text-[0.65rem] font-medium uppercase tracking-wide text-red-800 transition hover:bg-red-50 disabled:opacity-50"
+      className={
+        compact
+          ? "rounded-sm border border-red-300/80 bg-white px-1 py-0.5 text-[0.55rem] font-medium uppercase leading-none tracking-wide text-red-800 transition hover:bg-red-50 disabled:opacity-50"
+          : "rounded-sm border border-red-300/80 bg-white px-2 py-1 text-[0.65rem] font-medium uppercase tracking-wide text-red-800 transition hover:bg-red-50 disabled:opacity-50"
+      }
     >
       {pending ? "…" : "Cancelar"}
     </button>

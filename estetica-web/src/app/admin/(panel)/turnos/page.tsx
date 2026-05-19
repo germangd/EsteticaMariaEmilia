@@ -191,7 +191,7 @@ export default async function AdminTurnosPage({
       <Suspense fallback={null}>
         <AdminTurnosScrollToList />
       </Suspense>
-      <div className="mx-auto max-w-[min(100%,88rem)] px-4 md:px-6">
+      <div className="mx-auto w-full max-w-[100rem] px-3 sm:px-4 lg:px-5">
         <div className="mb-8 border-b border-gold/35 pb-8">
           <p className={uiPanelKicker}>Turnos</p>
           <h1 className={uiPanelTitle}>Agenda</h1>
@@ -320,7 +320,7 @@ export default async function AdminTurnosPage({
 
           <AdminTurnosPendientesTable rows={turnosPendientes} tz={tz} />
 
-          <div className="mt-8 border-t border-gold/20 pt-8">
+          <div className="-mx-1 mt-8 border-t border-gold/20 pt-8 md:-mx-2">
             <h3 className={uiSectionTitle}>
               {turnos.length} turno{turnos.length === 1 ? "" : "s"} confirmados
             </h3>
