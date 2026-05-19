@@ -71,6 +71,7 @@ export function ServicioPasosSelect({
 }: Props) {
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const [servicioKey, setServicioKey] = useState("");
+  const [pickerAbierto, setPickerAbierto] = useState(() => !value);
 
   const categorias = useMemo(
     () => agruparServiciosPorCategoria(servicios),
@@ -97,9 +98,20 @@ export function ServicioPasosSelect({
     return `${s.nombre}${cupo}${precio}${anticipo}`;
   };
 
+  const servicioSeleccionado = useMemo(
+    () =>
+      servicioKey
+        ? servicios.find((x) =>
+            valueMode === "id" ? String(x.id) === servicioKey : x.nombre === servicioKey
+          ) ?? null
+        : null,
+    [servicioKey, servicios, valueMode]
+  );
+
   useEffect(() => {
     if (!value) {
       setServicioKey("");
+      setPickerAbierto(true);
       if (!omitirCategoria) setExpandedKey(null);
       return;
     }
@@ -108,22 +120,35 @@ export function ServicioPasosSelect({
     );
     if (!s) {
       setServicioKey("");
+      setPickerAbierto(true);
       return;
     }
-    const catKey = s.categoriaNombre?.trim() || SUELTOS_CATEGORIA_KEY;
     setServicioKey(value);
-    setExpandedKey(catKey);
+    setPickerAbierto(false);
+    setExpandedKey(null);
   }, [value, servicios, valueMode, omitirCategoria]);
 
   useEffect(() => {
-    if (omitirCategoria && categorias[0]) {
+    if (omitirCategoria && categorias[0] && pickerAbierto && !servicioKey) {
       setExpandedKey(categorias[0].key);
     }
-  }, [omitirCategoria, categorias]);
+  }, [omitirCategoria, categorias, pickerAbierto, servicioKey]);
 
   function onServicioChange(next: string) {
     setServicioKey(next);
     onChange(next);
+    if (next) {
+      setPickerAbierto(false);
+      setExpandedKey(null);
+    }
+  }
+
+  function abrirPicker() {
+    if (disabled) return;
+    setPickerAbierto(true);
+    const catKey =
+      servicioSeleccionado?.categoriaNombre?.trim() || SUELTOS_CATEGORIA_KEY;
+    if (!omitirCategoria) setExpandedKey(catKey);
   }
 
   function toggleCategoria(key: string) {
@@ -164,6 +189,34 @@ export function ServicioPasosSelect({
     );
   }
 
+  const hiddenRequired = required ? (
+    <input
+      tabIndex={-1}
+      aria-hidden
+      className="pointer-events-none absolute h-0 w-0 opacity-0"
+      required
+      value={servicioKey}
+      readOnly
+      onChange={() => {}}
+    />
+  ) : null;
+
+  const resumenSeleccion = servicioSeleccionado ? (
+    <div className="flex items-start justify-between gap-3 rounded-sm border border-gold/35 bg-cream/80 px-3 py-2.5">
+      <span className="text-sm font-medium leading-snug text-ink-dark">
+        {optLabel(servicioSeleccionado)}
+      </span>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={abrirPicker}
+        className="shrink-0 text-[0.65rem] font-semibold uppercase tracking-wide text-gold-dark underline"
+      >
+        Cambiar
+      </button>
+    </div>
+  ) : null;
+
   if (servicios.length === 0) {
     return (
       <p className="text-sm text-ink-muted">No hay servicios disponibles.</p>
@@ -173,79 +226,65 @@ export function ServicioPasosSelect({
   if (omitirCategoria && categoriaUnica) {
     return (
       <div className={className ?? "space-y-2"}>
-        {required ? (
-          <input
-            tabIndex={-1}
-            aria-hidden
-            className="pointer-events-none absolute h-0 w-0 opacity-0"
-            required
-            value={servicioKey}
-            readOnly
-            onChange={() => {}}
-          />
-        ) : null}
+        {hiddenRequired}
         <label className={uiLabel}>Servicio</label>
-        <div className="space-y-1 rounded-sm border border-gold/25 bg-white/60 p-2">
-          {categoriaUnica.items.map(renderItemButton)}
-        </div>
+        {!pickerAbierto && servicioSeleccionado ? (
+          resumenSeleccion
+        ) : (
+          <div className="space-y-1 rounded-sm border border-gold/25 bg-white/60 p-2">
+            {categoriaUnica.items.map(renderItemButton)}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className={className ?? "space-y-2"}>
-      {required ? (
-        <input
-          tabIndex={-1}
-          aria-hidden
-          className="pointer-events-none absolute h-0 w-0 opacity-0"
-          required
-          value={servicioKey}
-          readOnly
-          onChange={() => {}}
-        />
-      ) : null}
+      {hiddenRequired}
       <label className={uiLabel}>Categoría y servicio</label>
-      <p className="text-xs text-ink-muted">
-        Elegí una categoría para ver los servicios disponibles.
-      </p>
-      <div className="overflow-hidden rounded-sm border border-gold/25 bg-white/50 divide-y divide-gold/15">
-        {categorias.map((c) => {
-          const isOpen = expandedKey === c.key;
-          const selectedInCat = c.items.some(
-            (s) => optValue(s) === servicioKey
-          );
-          return (
-            <div key={c.key}>
-              <button
-                type="button"
-                disabled={disabled}
-                onClick={() => toggleCategoria(c.key)}
-                aria-expanded={isOpen}
-                className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors ${
-                  isOpen
-                    ? "bg-cream/90 font-medium text-ink-dark"
-                    : "hover:bg-cream/50 text-ink"
-                }`}
-              >
-                <span>{c.label}</span>
-                <span className="shrink-0 text-xs text-ink-muted">
-                  {selectedInCat && !isOpen ? "· elegido " : ""}
-                  {c.items.length}
-                  <span className="ml-1.5 inline-block w-4 text-center">
-                    {isOpen ? "▴" : "▾"}
-                  </span>
-                </span>
-              </button>
-              {isOpen ? (
-                <div className="space-y-0.5 border-t border-gold/15 bg-white/70 px-2 py-2">
-                  {c.items.map(renderItemButton)}
+      {!pickerAbierto && servicioSeleccionado ? (
+        resumenSeleccion
+      ) : (
+        <>
+          <p className="text-xs text-ink-muted">
+            Elegí una categoría para ver los servicios disponibles.
+          </p>
+          <div className="overflow-hidden rounded-sm border border-gold/25 bg-white/50 divide-y divide-gold/15">
+            {categorias.map((c) => {
+              const isOpen = expandedKey === c.key;
+              return (
+                <div key={c.key}>
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => toggleCategoria(c.key)}
+                    aria-expanded={isOpen}
+                    className={`flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-sm transition-colors ${
+                      isOpen
+                        ? "bg-cream/90 font-medium text-ink-dark"
+                        : "hover:bg-cream/50 text-ink"
+                    }`}
+                  >
+                    <span>{c.label}</span>
+                    <span className="shrink-0 text-xs text-ink-muted">
+                      {c.items.length}
+                      <span className="ml-1.5 inline-block w-4 text-center">
+                        {isOpen ? "▴" : "▾"}
+                      </span>
+                    </span>
+                  </button>
+                  {isOpen ? (
+                    <div className="space-y-0.5 border-t border-gold/15 bg-white/70 px-2 py-2">
+                      {c.items.map(renderItemButton)}
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }
