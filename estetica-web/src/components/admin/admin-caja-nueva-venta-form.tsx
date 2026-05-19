@@ -370,7 +370,7 @@ export function AdminCajaNuevaVentaForm({
       setLinkAppointmentId(undefined);
       setLinkClientPackageId(undefined);
       await onVentaRegistrada?.();
-      router.push(urlTicketVenta(data.id, { imprimir: true }));
+      router.push(urlTicketVenta(data.id));
     } finally {
       setPending(false);
     }

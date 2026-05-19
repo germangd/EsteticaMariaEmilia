@@ -8,13 +8,9 @@ export function urlCobrarPaquete(clientPackageId: number): string {
   return `/admin/caja?paquete=${clientPackageId}#nueva-venta`;
 }
 
-/** URL del ticket de una venta. Con `imprimir`, la vista dispara el diálogo de impresión. */
-export function urlTicketVenta(
-  ventaId: number,
-  opts?: { imprimir?: boolean }
-): string {
-  const base = `/admin/caja/ticket/${ventaId}`;
-  return opts?.imprimir ? `${base}?imprimir=1` : base;
+/** URL del ticket de una venta. */
+export function urlTicketVenta(ventaId: number): string {
+  return `/admin/caja/ticket/${ventaId}`;
 }
 
 /** Descarga CSV del historial de caja con filtros opcionales. */

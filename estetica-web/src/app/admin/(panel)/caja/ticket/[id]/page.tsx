@@ -12,14 +12,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminCajaTicketPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ imprimir?: string }>;
 }) {
   const { id: idStr } = await params;
-  const sp = await searchParams;
-  const autoPrint = sp.imprimir === "1";
   const id = Number(idStr);
 
   if (!Number.isFinite(id) || id < 1) {
@@ -56,7 +52,7 @@ export default async function AdminCajaTicketPage({
 
   return (
     <main className="min-h-screen bg-surface py-8 print:bg-white print:py-0">
-      <AdminCajaTicket venta={venta} autoPrint={autoPrint} />
+      <AdminCajaTicket venta={venta} />
     </main>
   );
 }
