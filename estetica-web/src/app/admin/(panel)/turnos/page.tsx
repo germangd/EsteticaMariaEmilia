@@ -17,9 +17,11 @@ import { listarPaquetesPublicos } from "@/lib/paquetes-repo";
 import { resolverItemReserva } from "@/lib/reserva-catalogo";
 import { listarServiciosAdmin } from "@/lib/servicios-repo";
 import { listarSedesActivas } from "@/lib/sedes-repo";
+import { AdminTurnosPendientesTable } from "@/components/admin/admin-turnos-pendientes-table";
 import {
   listarNombresServiciosCatalogo,
   listarTurnosActivosFiltrados,
+  listarTurnosPendientesAnticipo,
 } from "@/lib/turnos-repo";
 import { DateTime } from "luxon";
 import {
@@ -169,6 +171,12 @@ export default async function AdminTurnosPage({
       ).filter((p): p is NonNullable<typeof p> => p != null)
     : [];
 
+  const turnosPendientes = await listarTurnosPendientesAnticipo({
+    fechaDesde: hoy,
+    fechaHasta: hasta,
+    sedeId,
+  });
+
   const turnos = await listarTurnosActivosFiltrados({
     fechaDesde: desde,
     fechaHasta: hasta,
@@ -310,9 +318,11 @@ export default async function AdminTurnosPage({
             {"del per\u00edodo mostrado."}
           </p>
 
+          <AdminTurnosPendientesTable rows={turnosPendientes} tz={tz} />
+
           <div className="mt-8 border-t border-gold/20 pt-8">
             <h3 className={uiSectionTitle}>
-              {turnos.length} turno{turnos.length === 1 ? "" : "s"}
+              {turnos.length} turno{turnos.length === 1 ? "" : "s"} confirmados
             </h3>
             <p className="mb-4 text-sm font-medium text-ink-muted">{etiqueta}</p>
             <AdminTurnosTable rows={turnos} tz={tz} showActions />

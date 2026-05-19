@@ -11,6 +11,8 @@ export type TurnoMailPayload = {
   fecha: string;
   hora: string;
   codigoCancelacion: string;
+  anticipoPorcentaje?: number;
+  anticipoMontoPesos?: number;
 };
 
 type MailSendOpts = {
@@ -67,6 +69,65 @@ function htmlCliente(p: TurnoMailPayload): string {
           <div style="background:#f9f0f0;padding:20px;text-align:center;border-top:1px solid #eee;">
             <p style="color:#aaa;font-size:11px;margin:0;">© María Emilia Estética · Ensenada · Bartolomé Bavio · Magdalena</p>
           </div>
+        </div>`;
+}
+
+function htmlPendienteCliente(p: TurnoMailPayload): string {
+  const nombre = escapeHtml(p.nombre);
+  const servicio = escapeHtml(p.servicio);
+  const sede = p.sede ? escapeHtml(p.sede) : "";
+  const fechaL = escapeHtml(fechaLegible(p.fecha));
+  const hora = escapeHtml(p.hora);
+  const codigo = escapeHtml(p.codigoCancelacion);
+  const anticipo =
+    p.anticipoMontoPesos && p.anticipoMontoPesos > 0
+      ? `$${p.anticipoMontoPesos.toLocaleString("es-AR")}`
+      : p.anticipoPorcentaje
+        ? `${p.anticipoPorcentaje}% del tratamiento`
+        : "según lo acordado";
+  return `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;border:1px solid #eee;border-radius:12px;overflow:hidden;">
+          <div style="background:linear-gradient(135deg,#F2D9DF,#E8D9F0);padding:32px;text-align:center;">
+            <p style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#A07830;margin:0 0 8px;">María Emilia Estética</p>
+            <h1 style="font-family:Georgia,serif;font-size:26px;font-weight:300;color:#2C2420;margin:0;">Solicitud de turno recibida</h1>
+          </div>
+          <div style="padding:32px;">
+            <p style="color:#4A3F3A;font-size:15px;">Hola <strong>${nombre}</strong>, registramos tu solicitud. El turno queda <strong>pendiente de confirmación</strong> hasta abonar el anticipo.</p>
+            <table style="width:100%;border-collapse:collapse;margin:20px 0;">
+              <tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">Servicio</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${servicio}</td></tr>
+              ${sede ? `<tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">Sede</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${sede}</td></tr>` : ""}
+              <tr><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;color:#8A7A74;font-size:13px;">Fecha</td><td style="padding:10px 0;border-bottom:1px solid #f0e8e8;font-weight:bold;color:#2C2420;">${fechaL}</td></tr>
+              <tr><td style="padding:10px 0;color:#8A7A74;font-size:13px;">Hora</td><td style="padding:10px 0;font-weight:bold;color:#2C2420;">${hora}</td></tr>
+            </table>
+            <div style="background:#fff8e6;border-radius:10px;padding:16px;margin:16px 0;border:1px solid #e8d4a8;">
+              <p style="margin:0;font-size:14px;color:#5c4a20;"><strong>Anticipo:</strong> ${escapeHtml(anticipo)}. Coordiná el pago con el salón (WhatsApp o en local). Al confirmarlo, te enviaremos la confirmación definitiva.</p>
+            </div>
+            <p style="color:#8A7A74;font-size:12px;">Código de solicitud: <strong>${codigo}</strong></p>
+          </div>
+        </div>`;
+}
+
+function htmlPendienteDuenio(p: TurnoMailPayload): string {
+  const nombre = escapeHtml(p.nombre);
+  const telefono = escapeHtml(p.telefono);
+  const servicio = escapeHtml(p.servicio);
+  const fechaL = escapeHtml(fechaLegible(p.fecha));
+  const hora = escapeHtml(p.hora);
+  const codigo = escapeHtml(p.codigoCancelacion);
+  const anticipo =
+    p.anticipoMontoPesos && p.anticipoMontoPesos > 0
+      ? `$${p.anticipoMontoPesos.toLocaleString("es-AR")}`
+      : p.anticipoPorcentaje
+        ? `${p.anticipoPorcentaje}%`
+        : "—";
+  return `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:20px;">
+          <h2 style="color:#A07830;">Turno pendiente de anticipo</h2>
+          <p><strong>${nombre}</strong> · ${telefono}</p>
+          <p>${servicio} · ${fechaL} ${hora}</p>
+          <p>Anticipo: <strong>${anticipo}</strong></p>
+          <p>Código: <strong>${codigo}</strong></p>
+          <p style="color:#666;font-size:13px;">Confirmá el turno en Admin → Turnos cuando recibas el pago.</p>
         </div>`;
 }
 
@@ -335,5 +396,45 @@ export async function enviarMailsTurnoConfirmado(p: TurnoMailPayload): Promise<v
     }
   } else if (process.env.NODE_ENV === "development") {
     console.warn("[mail] Sin OWNER_EMAIL: no se notifica al dueño.");
+  }
+}
+
+/** Aviso de solicitud pendiente de anticipo (no es confirmación definitiva). */
+export async function enviarMailsTurnoPendienteAnticipo(
+  p: TurnoMailPayload
+): Promise<void> {
+  const from = resolveFromAddress();
+  const ownerEmail = envVar("OWNER_EMAIL");
+  const provider = mailProvider();
+
+  if (!from || !provider) return;
+
+  const fechaL = fechaLegible(p.fecha);
+  const via = provider;
+
+  if (p.emailCliente) {
+    try {
+      await sendMail({
+        from,
+        to: p.emailCliente,
+        subject: `⏳ Turno pendiente — anticipo ${p.servicio} · ${fechaL}`,
+        html: htmlPendienteCliente(p),
+      });
+    } catch (err) {
+      console.error(`[mail:${via}] cliente pendiente:`, err);
+    }
+  }
+
+  if (ownerEmail) {
+    try {
+      await sendMail({
+        from,
+        to: ownerEmail,
+        subject: `⏳ Pendiente anticipo — ${p.nombre} · ${fechaL} ${p.hora}`,
+        html: htmlPendienteDuenio(p),
+      });
+    } catch (err) {
+      console.error(`[mail:${via}] dueño pendiente:`, err);
+    }
   }
 }

@@ -41,6 +41,9 @@ export type ItemReserva = {
   serviceIds: number[];
   paqueteId?: number;
   sesionesTotal?: number;
+  anticipoRequerido?: boolean;
+  anticipoPorcentaje?: number;
+  precioPesos?: number;
 };
 
 async function listarServiciosDePaquete(
@@ -105,6 +108,9 @@ export async function resolverItemReserva(
       tipo: "servicio",
       nombre: servicio.nombre,
       ...sched,
+      anticipoRequerido: servicio.anticipoRequerido,
+      anticipoPorcentaje: servicio.anticipoPorcentaje,
+      precioPesos: servicio.precioPesos,
     };
   }
 

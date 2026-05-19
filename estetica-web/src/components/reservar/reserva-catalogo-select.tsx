@@ -147,7 +147,7 @@ export function ReservaCatalogoSelect({
           }
           valueMode="nombre"
           showAnticipo
-          selectClassName={selectCls}
+          required
           disabled={disabled}
         />
       ) : null}

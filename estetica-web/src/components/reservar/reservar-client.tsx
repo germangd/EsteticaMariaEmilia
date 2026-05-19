@@ -85,6 +85,9 @@ export function ReservarClient() {
     fecha: string;
     hora: string;
     nombre: string;
+    pendienteAnticipo?: boolean;
+    anticipoMontoPesos?: number;
+    anticipoPorcentaje?: number;
   } | null>(null);
   const [reservando, setReservando] = useState(false);
 
@@ -314,9 +317,13 @@ export function ReservarClient() {
         exito?: boolean;
         mensaje?: string;
         codigo?: string;
+        pendienteAnticipo?: boolean;
+        anticipoMontoPesos?: number;
+        anticipoPorcentaje?: number;
       };
       if (data.exito) {
         const nombreGuardado = nombre.trim();
+        const pendiente = data.pendienteAnticipo === true;
         if (data.codigo) {
           setUltimaReserva({
             codigo: data.codigo,
@@ -324,15 +331,24 @@ export function ReservarClient() {
             fecha,
             hora,
             nombre: nombreGuardado,
+            pendienteAnticipo: pendiente,
+            anticipoMontoPesos: data.anticipoMontoPesos,
+            anticipoPorcentaje: data.anticipoPorcentaje,
           });
           setReservaMsg({
             type: "ok",
-            text: "Turno confirmado. Guardá el código de abajo.",
+            text: pendiente
+              ? "Solicitud registrada — pendiente de confirmación por anticipo. Guardá el código y coordiná el pago."
+              : "Turno confirmado. Guardá el código de abajo.",
           });
         } else {
           setReservaMsg({
             type: "ok",
-            text: data.mensaje ?? "Turno confirmado.",
+            text:
+              data.mensaje ??
+              (pendiente
+                ? "Solicitud registrada — pendiente de confirmación."
+                : "Turno confirmado."),
           });
         }
         setNombre("");
@@ -409,9 +425,13 @@ export function ReservarClient() {
           Turnos online
         </h1>
         <p className="mb-8 text-center text-sm font-medium text-ink">
-          Elegí servicio o combo, fecha y horario. Al confirmar verás un{" "}
-          <strong className="font-semibold text-ink-dark">código en pantalla</strong>:
-          guardalo para cancelar o para consultarnos.
+          Elegí servicio o combo, fecha y horario. Al enviar la solicitud verás un{" "}
+          <strong className="font-semibold text-ink-dark">código en pantalla</strong>.
+          Algunos tratamientos requieren anticipo: el turno queda{" "}
+          <strong className="font-semibold text-ink-dark">
+            pendiente de confirmación
+          </strong>{" "}
+          hasta que el salón registre el pago.
         </p>
 
         <div className={uiTabBar}>
@@ -507,9 +527,20 @@ export function ReservarClient() {
                   </p>
                 ) : null}
                 {anticipoEtiqueta ? (
-                  <p className="mb-2 rounded-sm border border-gold/35 bg-cream/80 px-3 py-2 text-sm text-ink-dark">
-                    {anticipoEtiqueta}
-                  </p>
+                  <div className="mb-4 rounded-sm border border-amber-400/50 bg-amber-50/90 px-3 py-3 text-sm text-ink-dark">
+                    <p className="font-semibold text-amber-950">
+                      Anticipo requerido
+                    </p>
+                    <p className="mt-1 leading-relaxed">{anticipoEtiqueta}</p>
+                    <p className="mt-2 text-xs text-ink-muted">
+                      Tu solicitud quedará{" "}
+                      <strong className="font-semibold text-ink-dark">
+                        pendiente de confirmación
+                      </strong>{" "}
+                      hasta que el salón registre el anticipo. Te avisaremos por
+                      mail cuando esté confirmado.
+                    </p>
+                  </div>
                 ) : null}
                 {loadingHorarios ? (
                   <p className="mb-4 text-sm text-ink-muted">
@@ -595,28 +626,66 @@ export function ReservarClient() {
                 )}
 
                 {ultimaReserva && reservaMsg?.type === "ok" ? (
-                  <div className="mb-4 rounded-sm border border-gold/45 bg-white/80 p-4 text-center shadow-sm">
+                  <div
+                    className={`mb-4 rounded-sm border p-4 text-center shadow-sm ${
+                      ultimaReserva.pendienteAnticipo
+                        ? "border-amber-400/55 bg-amber-50/80"
+                        : "border-gold/45 bg-white/80"
+                    }`}
+                  >
+                    {ultimaReserva.pendienteAnticipo ? (
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-amber-950">
+                        Pendiente de confirmación
+                      </p>
+                    ) : null}
                     <p className="text-[0.65rem] font-bold uppercase tracking-wider text-ink-dark">
-                      Tu código de cancelación
+                      {ultimaReserva.pendienteAnticipo
+                        ? "Tu código de solicitud"
+                        : "Tu código de cancelación"}
                     </p>
                     <p className="my-2 font-mono text-2xl font-semibold tracking-[0.2em] text-gold-dark">
                       {ultimaReserva.codigo}
                     </p>
-                    <p className="mb-4 text-xs text-ink-muted">
+                    <p className="mb-2 text-xs text-ink-muted">
                       {ultimaReserva.servicio} · {ultimaReserva.fecha}{" "}
                       {ultimaReserva.hora}
                     </p>
+                    {ultimaReserva.pendienteAnticipo ? (
+                      <p className="mb-4 text-sm font-medium text-ink-dark">
+                        {(ultimaReserva.anticipoMontoPesos ?? 0) > 0 ? (
+                          <>
+                            Anticipo:{" "}
+                            {fmtPesos(ultimaReserva.anticipoMontoPesos!)}
+                            {ultimaReserva.anticipoPorcentaje
+                              ? ` (${ultimaReserva.anticipoPorcentaje}%)`
+                              : ""}
+                          </>
+                        ) : ultimaReserva.anticipoPorcentaje ? (
+                          <>
+                            Anticipo: {ultimaReserva.anticipoPorcentaje}% del
+                            tratamiento
+                          </>
+                        ) : (
+                          "Coordiná el anticipo con el salón."
+                        )}
+                      </p>
+                    ) : (
+                      <p className="mb-4" />
+                    )}
                     <a
                       href={buildWhatsAppTurnoUrl(ultimaReserva)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex w-full items-center justify-center gap-2 rounded bg-[#25D366] py-3 text-xs font-semibold uppercase tracking-widest text-white transition-opacity hover:opacity-90"
                     >
-                      Consultar por WhatsApp
+                      {ultimaReserva.pendienteAnticipo
+                        ? "Coordinar anticipo por WhatsApp"
+                        : "Consultar por WhatsApp"}
                     </a>
                     <p className="mt-2 text-[0.65rem] text-ink-muted">
-                      Abrís el chat con el mensaje listo; tocá Enviar en
-                      WhatsApp.
+                      {ultimaReserva.pendienteAnticipo
+                        ? "Enviá el mensaje para abonar el anticipo. El turno se confirma cuando el salón registre el pago."
+                        : "Abrís el chat con el mensaje listo; tocá Enviar en WhatsApp."}
                     </p>
                   </div>
                 ) : null}

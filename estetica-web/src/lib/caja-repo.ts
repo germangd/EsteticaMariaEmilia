@@ -12,6 +12,7 @@ import {
   services,
 } from "@/db/schema";
 import { normalizarTelefono } from "@/lib/clientes-repo";
+import { ESTADO_TURNO } from "@/lib/appointment-estado";
 import { calcularAnticipoPesos } from "@/lib/servicio-anticipo";
 
 export const METODOS_PAGO = [
@@ -57,6 +58,8 @@ export type PrefillCobroTurno = {
   anticipoRequerido: boolean;
   anticipoPorcentaje: number;
   anticipoSugeridoPesos: number;
+  /** Turno web aún sin confirmar: sugerir cobrar solo el anticipo. */
+  pendienteAnticipo: boolean;
   yaCobrado: boolean;
   ventaId: number | null;
 };
@@ -1002,7 +1005,12 @@ export async function obtenerPrefillCobroTurno(
     .where(eq(appointments.id, appointmentId))
     .limit(1);
 
-  if (!turno || turno.estado !== "activo") return null;
+  if (
+    !turno ||
+    (turno.estado !== "activo" && turno.estado !== "pendiente_anticipo")
+  ) {
+    return null;
+  }
 
   const [svc] = await db
     .select({
@@ -1036,6 +1044,7 @@ export async function obtenerPrefillCobroTurno(
       anticipoRequerido,
       anticipoPorcentaje
     ),
+    pendienteAnticipo: turno.estado === ESTADO_TURNO.PENDIENTE_ANTICIPO,
     yaCobrado: Boolean(venta),
     ventaId: venta?.id ?? null,
   };

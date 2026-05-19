@@ -1,4 +1,5 @@
-import { and, asc, eq, gte, lte, ne } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte, ne } from "drizzle-orm";
+import { ESTADO_TURNO, ESTADOS_OCUPAN_CUPO } from "@/lib/appointment-estado";
 import { getDb } from "@/db/client";
 import {
   appointments,
@@ -40,7 +41,7 @@ export async function listarActivosConDuracion(
   const parts = [
     eq(appointments.fecha, fecha),
     eq(appointments.responsable, responsable),
-    eq(appointments.estado, "activo"),
+    inArray(appointments.estado, [...ESTADOS_OCUPAN_CUPO]),
   ];
   if (!cupoCompartidoEntreSedes() && sedeId != null && sedeId > 0) {
     parts.push(eq(appointments.sedeId, sedeId));
@@ -75,6 +76,7 @@ export async function insertarTurnoSiHayCupo(params: {
   sedeId: number;
   capacidad: number;
   duracionMin: number;
+  estado?: typeof ESTADO_TURNO.ACTIVO | typeof ESTADO_TURNO.PENDIENTE_ANTICIPO;
 }): Promise<
   | { ok: true; id: number; codigo: string }
   | { ok: false; reason: "no_db" | "cupo" | "codigo_duplicado" }
@@ -113,7 +115,7 @@ export async function insertarTurnoSiHayCupo(params: {
           responsable: params.responsable,
           sedeId: params.sedeId,
           codigoCancelacion: codigo,
-          estado: "activo",
+          estado: params.estado ?? ESTADO_TURNO.ACTIVO,
         })
         .returning({ id: appointments.id, codigoCancelacion: appointments.codigoCancelacion });
       if (row) return { ok: true, id: row.id, codigo: row.codigoCancelacion };
@@ -175,7 +177,7 @@ export async function listarTurnosActivosFiltrados(params: {
   const db = getDb();
   if (!db) return [];
   const parts = [
-    eq(appointments.estado, "activo"),
+    eq(appointments.estado, ESTADO_TURNO.ACTIVO),
     gte(appointments.fecha, params.fechaDesde),
   ];
   const hasta = params.fechaHasta?.trim();
@@ -195,4 +197,88 @@ export async function listarTurnosActivosFiltrados(params: {
     .where(and(...parts))
     .orderBy(asc(appointments.fecha), asc(appointments.hora));
   return rows.map((r) => ({ ...r.turno, sedeNombre: r.sedeNombre }));
+}
+
+/** Turnos con anticipo pendiente de confirmación (ocupan cupo hasta confirmar o cancelar). */
+export async function listarTurnosPendientesAnticipo(params: {
+  fechaDesde: string;
+  fechaHasta?: string | null;
+  sedeId?: number | null;
+}): Promise<TurnoListado[]> {
+  const db = getDb();
+  if (!db) return [];
+  const parts = [
+    eq(appointments.estado, ESTADO_TURNO.PENDIENTE_ANTICIPO),
+    gte(appointments.fecha, params.fechaDesde),
+  ];
+  const hasta = params.fechaHasta?.trim();
+  if (hasta) parts.push(lte(appointments.fecha, hasta));
+  if (params.sedeId != null && params.sedeId > 0) {
+    parts.push(eq(appointments.sedeId, params.sedeId));
+  }
+  const rows = await db
+    .select({
+      turno: appointments,
+      sedeNombre: sedes.nombre,
+    })
+    .from(appointments)
+    .innerJoin(sedes, eq(appointments.sedeId, sedes.id))
+    .where(and(...parts))
+    .orderBy(asc(appointments.fecha), asc(appointments.hora));
+  return rows.map((r) => ({ ...r.turno, sedeNombre: r.sedeNombre }));
+}
+
+export async function confirmarTurnoAnticipo(
+  appointmentId: number
+): Promise<
+  | { ok: true; turno: TurnoListado }
+  | { ok: false; reason: "no_db" | "not_found" | "no_pendiente" }
+> {
+  const db = getDb();
+  if (!db) return { ok: false, reason: "no_db" };
+  if (!Number.isFinite(appointmentId) || appointmentId < 1) {
+    return { ok: false, reason: "not_found" };
+  }
+
+  const [row] = await db
+    .update(appointments)
+    .set({ estado: ESTADO_TURNO.ACTIVO })
+    .where(
+      and(
+        eq(appointments.id, appointmentId),
+        eq(appointments.estado, ESTADO_TURNO.PENDIENTE_ANTICIPO)
+      )
+    )
+    .returning();
+
+  if (!row) return { ok: false, reason: "no_pendiente" };
+
+  const [sede] = await db
+    .select({ nombre: sedes.nombre })
+    .from(sedes)
+    .where(eq(sedes.id, row.sedeId))
+    .limit(1);
+
+  return {
+    ok: true,
+    turno: { ...row, sedeNombre: sede?.nombre ?? "—" },
+  };
+}
+
+export async function obtenerTurnoPorId(
+  id: number
+): Promise<TurnoListado | null> {
+  const db = getDb();
+  if (!db || !Number.isFinite(id) || id < 1) return null;
+  const [r] = await db
+    .select({
+      turno: appointments,
+      sedeNombre: sedes.nombre,
+    })
+    .from(appointments)
+    .innerJoin(sedes, eq(appointments.sedeId, sedes.id))
+    .where(eq(appointments.id, id))
+    .limit(1);
+  if (!r) return null;
+  return { ...r.turno, sedeNombre: r.sedeNombre };
 }

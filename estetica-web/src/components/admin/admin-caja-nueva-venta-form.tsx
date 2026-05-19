@@ -133,13 +133,18 @@ export function AdminCajaNuevaVentaForm({
     setClienteTel(initialPrefillTurno.clienteTelefono);
     setLinkAppointmentId(initialPrefillTurno.appointmentId);
     setLinkClientPackageId(undefined);
+    const importeSugerido =
+      initialPrefillTurno.pendienteAnticipo &&
+      initialPrefillTurno.anticipoSugeridoPesos > 0
+        ? initialPrefillTurno.anticipoSugeridoPesos
+        : initialPrefillTurno.precioSugeridoPesos;
     setCola([
       {
         key: crypto.randomUUID(),
         tipo: "servicio",
         descripcion: `${initialPrefillTurno.servicioNombre} (${initialPrefillTurno.fecha} ${initialPrefillTurno.hora})`,
         cantidad: 1,
-        precioUnitarioPesos: initialPrefillTurno.precioSugeridoPesos,
+        precioUnitarioPesos: importeSugerido,
         serviceId: initialPrefillTurno.serviceId ?? undefined,
       },
     ]);
@@ -148,11 +153,12 @@ export function AdminCajaNuevaVentaForm({
         ? ` Anticipo configurado: ${initialPrefillTurno.anticipoPorcentaje}% (${fmtPesos(initialPrefillTurno.anticipoSugeridoPesos)}).`
         : ` Anticipo configurado: ${initialPrefillTurno.anticipoPorcentaje}% (sin precio de referencia).`
       : "";
-    onMensaje(
-      (initialPrefillTurno.precioSugeridoPesos > 0
+    const baseMsg = initialPrefillTurno.pendienteAnticipo
+      ? `Cobro de anticipo del turno #${initialPrefillTurno.appointmentId}: revisá el importe y confirmá. Luego confirmá el turno en Agenda.`
+      : importeSugerido > 0
         ? `Cobro del turno #${initialPrefillTurno.appointmentId}: revisá el importe sugerido y confirmá.`
-        : `Cobro del turno #${initialPrefillTurno.appointmentId}: indicá el importe y confirmá.`) + ant
-    );
+        : `Cobro del turno #${initialPrefillTurno.appointmentId}: indicá el importe y confirmá.`;
+    onMensaje(baseMsg + ant);
   }, [initialPrefillTurno, onMensaje]);
 
   useEffect(() => {

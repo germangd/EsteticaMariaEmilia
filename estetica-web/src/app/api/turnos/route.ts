@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { getDb } from "@/db/client";
 import { esFechaHoraValida, getAppTimeZone, normalizarHora } from "@/lib/agenda";
-import { enviarMailsTurnoConfirmado } from "@/lib/mail-turno";
+import { ESTADO_TURNO } from "@/lib/appointment-estado";
+import {
+  enviarMailsTurnoConfirmado,
+  enviarMailsTurnoPendienteAnticipo,
+} from "@/lib/mail-turno";
+import { calcularAnticipoPesos } from "@/lib/servicio-anticipo";
 import {
   parsearClaveReserva,
   resolverItemReserva,
@@ -119,6 +124,16 @@ export async function POST(request: Request) {
       });
     }
 
+    const requiereAnticipo =
+      item.tipo === "servicio" && item.anticipoRequerido === true;
+    const anticipoMontoPesos = requiereAnticipo
+      ? calcularAnticipoPesos(
+          item.precioPesos ?? 0,
+          true,
+          item.anticipoPorcentaje ?? 0
+        )
+      : 0;
+
     const ins = await insertarTurnoSiHayCupo({
       fecha,
       hora,
@@ -130,6 +145,9 @@ export async function POST(request: Request) {
       sedeId,
       capacidad: item.capacidad,
       duracionMin: item.duracionMin,
+      estado: requiereAnticipo
+        ? ESTADO_TURNO.PENDIENTE_ANTICIPO
+        : ESTADO_TURNO.ACTIVO,
     });
 
     if (ins.ok === false) {
@@ -151,26 +169,50 @@ export async function POST(request: Request) {
       });
     }
 
+    const mailPayload = {
+      nombre,
+      telefono,
+      emailCliente: email || null,
+      servicio: item.nombre,
+      sede: sede.nombre,
+      responsable: item.responsable,
+      fecha,
+      hora,
+      codigoCancelacion: ins.codigo,
+      anticipoPorcentaje: item.anticipoPorcentaje,
+      anticipoMontoPesos,
+    };
+
     try {
-      await enviarMailsTurnoConfirmado({
-        nombre,
-        telefono,
-        emailCliente: email || null,
-        servicio: item.nombre,
-        sede: sede.nombre,
-        responsable: item.responsable,
-        fecha,
-        hora,
-        codigoCancelacion: ins.codigo,
-      });
+      if (requiereAnticipo) {
+        await enviarMailsTurnoPendienteAnticipo(mailPayload);
+      } else {
+        await enviarMailsTurnoConfirmado(mailPayload);
+      }
     } catch (err) {
       console.error("[mail] turno:", err);
     }
 
     const tipoEtiqueta = item.tipo === "paquete" ? "Combo" : "Servicio";
+    if (requiereAnticipo) {
+      const montoTxt =
+        anticipoMontoPesos > 0
+          ? ` Anticipo: $${anticipoMontoPesos.toLocaleString("es-AR")}.`
+          : "";
+      return NextResponse.json({
+        exito: true,
+        pendienteAnticipo: true,
+        anticipoPorcentaje: item.anticipoPorcentaje ?? 0,
+        anticipoMontoPesos,
+        mensaje: `Solicitud registrada (pendiente de confirmación).${montoTxt} Coordiná el pago con el salón. Código: ${ins.codigo}`,
+        codigo: ins.codigo,
+      });
+    }
+
     return NextResponse.json({
       exito: true,
-      mensaje: `${tipoEtiqueta} reservado con ${item.responsable}. Código: ${ins.codigo}`,
+      pendienteAnticipo: false,
+      mensaje: `${tipoEtiqueta} confirmado con ${item.responsable}. Código: ${ins.codigo}`,
       codigo: ins.codigo,
     });
   } catch (e) {

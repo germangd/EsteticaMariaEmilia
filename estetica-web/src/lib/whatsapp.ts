@@ -22,14 +22,32 @@ export function buildWhatsAppTurnoUrl(params: {
   fecha: string;
   hora: string;
   codigo: string;
+  pendienteAnticipo?: boolean;
+  anticipoMontoPesos?: number;
+  anticipoPorcentaje?: number;
 }): string {
-  const text = [
-    "Hola! Acabo de reservar turno en María Emilia Estética:",
+  const lineas = [
+    params.pendienteAnticipo
+      ? "Hola! Solicité un turno en María Emilia Estética (pendiente de confirmación por anticipo):"
+      : "Hola! Acabo de reservar turno en María Emilia Estética:",
     `• ${params.servicio}`,
     `• ${fechaLegible(params.fecha)} ${params.hora}`,
     `• A nombre de: ${params.nombre}`,
-    `• Código de cancelación: ${params.codigo}`,
-  ].join("\n");
+    `• Código: ${params.codigo}`,
+  ];
+  if (params.pendienteAnticipo) {
+    if (params.anticipoMontoPesos && params.anticipoMontoPesos > 0) {
+      lineas.push(
+        `• Anticipo a abonar: $${params.anticipoMontoPesos.toLocaleString("es-AR")}${params.anticipoPorcentaje ? ` (${params.anticipoPorcentaje}%)` : ""}`
+      );
+    } else if (params.anticipoPorcentaje) {
+      lineas.push(`• Anticipo: ${params.anticipoPorcentaje}% del tratamiento`);
+    }
+    lineas.push("• Quiero coordinar el pago del anticipo.");
+  } else {
+    lineas.push(`• Código de cancelación: ${params.codigo}`);
+  }
+  const text = lineas.join("\n");
 
   return `https://wa.me/${getWhatsAppNumber()}?text=${encodeURIComponent(text)}`;
 }
